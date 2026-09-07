@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Install the portable pipeline pack into a project or ~/.pipeline.
+"""Install and inspect the portable pipeline pack.
 
     python3 install.py                          # creates ./.pipeline
     python3 install.py --project /path/to/app   # creates <app>/.pipeline
@@ -7,6 +7,9 @@
     python3 install.py --sync-kit               # refresh the bundled pack from this repo
     python3 install.py --uninstall --project
     python3 install.py --uninstall --user
+
+The packaged ``pipeline-kit`` command provides the preferred subcommand-based
+interface. The legacy flags above remain supported for existing users.
 """
 
 from __future__ import annotations
@@ -334,6 +337,151 @@ def uninstall(*, scope: str, target: Path, home: Path | None = None) -> int:
         removed += 1
     print(f"removed {removed} kit files; features/ and local config edits were left.", file=sys.stderr)
     return 0
+
+
+def resolved_pack(*, target: Path, user: bool, home: Path | None = None) -> Path:
+    home_dir = home or Path.home()
+    if user:
+        return home_dir / ".pipeline"
+    project_pack = target / ".pipeline"
+    return project_pack if project_pack.is_dir() else home_dir / ".pipeline"
+
+
+def doctor(
+    *,
+    target: Path,
+    user: bool,
+    ide: str | None,
+    home: Path | None = None,
+) -> int:
+    home_dir = home or Path.home()
+    pack = resolved_pack(target=target, user=user, home=home_dir)
+    scope = "user" if pack == home_dir / ".pipeline" else "project"
+    checks = {
+        f"Python {sys.version_info.major}.{sys.version_info.minor} (3.11+)": sys.version_info
+        >= (3, 11),
+        f"{scope} pack: {pack}": pack.is_dir(),
+        "install marker": (pack / MARKER_NAME).is_file(),
+        "workflow loader": (pack / "loader" / "load_workflow.py").is_file(),
+        "configuration": (pack / "config.json").is_file(),
+    }
+    if ide and ide != "none":
+        root = home_dir if scope == "user" else target
+        skill_rel = IDE_SKILL_REL.get(ide)
+        if skill_rel:
+            checks[f"{ide} adapter"] = (root / skill_rel).is_file()
+    for label, passed in checks.items():
+        print(f"{'ok' if passed else 'missing'}  {label}")
+    if all(checks.values()):
+        print(f"pipeline-kit {version()} is ready")
+        return 0
+    print("pipeline-kit setup is incomplete", file=sys.stderr)
+    return 1
+
+
+def list_workflows(*, target: Path, user: bool, home: Path | None = None) -> int:
+    pack = resolved_pack(target=target, user=user, home=home)
+    workflows_dir = pack / "workflows"
+    if not workflows_dir.is_dir():
+        print(f"no pipeline workflows found at {workflows_dir}", file=sys.stderr)
+        return 1
+    found = 0
+    for path in sorted(workflows_dir.glob("*.json")):
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            print(f"invalid workflow {path.name}: {exc}", file=sys.stderr)
+            return 1
+        name = data.get("name", path.stem) if isinstance(data, dict) else path.stem
+        print(name)
+        found += 1
+    if not found:
+        print(f"no pipeline workflows found at {workflows_dir}", file=sys.stderr)
+        return 1
+    return 0
+
+
+def _add_install_options(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("--ide", choices=("cursor", "claude-code", "github", "none"), default="cursor")
+    parser.add_argument("--agent-stubs", action="store_true")
+    parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--home", default="", help=argparse.SUPPRESS)
+
+
+def cli_main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(
+        prog="pipeline-kit",
+        description="Install and inspect portable AI delivery workflows.",
+    )
+    parser.add_argument("--version", action="version", version=f"%(prog)s {version()}")
+    commands = parser.add_subparsers(dest="command", required=True)
+
+    init_parser = commands.add_parser("init", help="install or update the pack in a project")
+    init_parser.add_argument("project", nargs="?", default=".")
+    _add_install_options(init_parser)
+
+    setup_parser = commands.add_parser("setup", help="install or update the user-level pack")
+    _add_install_options(setup_parser)
+
+    update_parser = commands.add_parser("update", help="refresh an existing project or user pack")
+    update_parser.add_argument("project", nargs="?", default=".")
+    update_parser.add_argument("--user", action="store_true")
+    _add_install_options(update_parser)
+
+    uninstall_parser = commands.add_parser("uninstall", help="remove files managed by pipeline-kit")
+    uninstall_parser.add_argument("project", nargs="?", default=".")
+    uninstall_parser.add_argument("--user", action="store_true")
+    uninstall_parser.add_argument("--home", default="", help=argparse.SUPPRESS)
+
+    doctor_parser = commands.add_parser("doctor", help="verify the active pipeline-kit setup")
+    doctor_parser.add_argument("project", nargs="?", default=".")
+    doctor_parser.add_argument("--user", action="store_true")
+    doctor_parser.add_argument("--ide", choices=("cursor", "claude-code", "github", "none"))
+    doctor_parser.add_argument("--home", default="", help=argparse.SUPPRESS)
+
+    workflows_parser = commands.add_parser("workflows", help="list workflows in the active pack")
+    workflows_parser.add_argument("project", nargs="?", default=".")
+    workflows_parser.add_argument("--user", action="store_true")
+    workflows_parser.add_argument("--home", default="", help=argparse.SUPPRESS)
+
+    args = parser.parse_args(argv)
+    home = Path(args.home).expanduser().resolve() if args.home else None
+    project = Path(getattr(args, "project", ".")).expanduser().resolve()
+
+    if args.command in {"init", "update"}:
+        user = bool(getattr(args, "user", False))
+        if not user and not project.is_dir():
+            print(f"not a directory: {project}", file=sys.stderr)
+            return 64
+        return install(
+            scope="user" if user else "project",
+            target=(home or Path.home()) if user else project,
+            ide=args.ide,
+            agent_stubs=args.agent_stubs,
+            dry_run=args.dry_run,
+            home=home,
+        )
+    if args.command == "setup":
+        return install(
+            scope="user",
+            target=home or Path.home(),
+            ide=args.ide,
+            agent_stubs=args.agent_stubs,
+            dry_run=args.dry_run,
+            home=home,
+        )
+    if args.command == "uninstall":
+        return uninstall(
+            scope="user" if args.user else "project",
+            target=project,
+            home=home,
+        )
+    if args.command == "doctor":
+        return doctor(target=project, user=args.user, ide=args.ide, home=home)
+    if args.command == "workflows":
+        return list_workflows(target=project, user=args.user, home=home)
+    parser.error(f"unknown command: {args.command}")
+    return 2
 
 
 def main(argv: list[str] | None = None) -> int:

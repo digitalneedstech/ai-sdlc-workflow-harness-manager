@@ -17,12 +17,14 @@ IDE folders (`.cursor`, `.claude`, `.github`) should host only:
 From a clone of this repository (zero extra dependencies):
 
 ```bash
-python3 install.py                    # creates ./.pipeline
-python3 install.py --project /path/to/app
-python3 install.py --project /path/to/app --ide cursor --agent-stubs
-python3 install.py --user             # creates ~/.pipeline
-python3 install.py --uninstall --project
-python3 install.py --uninstall --user
+pipeline-kit init                         # creates ./.pipeline
+pipeline-kit init /path/to/app
+pipeline-kit init /path/to/app --ide cursor --agent-stubs
+pipeline-kit setup                        # creates ~/.pipeline
+pipeline-kit doctor --ide cursor
+pipeline-kit workflows
+pipeline-kit uninstall
+pipeline-kit uninstall --user
 ```
 
 | Scope | Pack location | IDE skill |
@@ -44,6 +46,8 @@ project-local (`.cursor/hooks.json`); a user-level install does not add hooks.
 The installer copies from `kit/pipeline/` in this repository, so it can
 create `.pipeline` in an empty project. Maintainers refresh that bundle with
 `python3 install.py --sync-kit` if they keep a live `.pipeline` working copy.
+That command is maintainer-only; customer installs use the `pipeline-kit`
+system command.
 
 ## What to add to AGENTS.md
 

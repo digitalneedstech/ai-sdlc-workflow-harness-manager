@@ -1,0 +1,4 @@
+include VERSION
+include CUSTOMER-GUIDE.md
+recursive-include kit/pipeline *
+

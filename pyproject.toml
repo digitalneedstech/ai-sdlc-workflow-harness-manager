@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pipeline-kit"
+dynamic = ["version"]
+description = "Portable workflow pack and installer for coding agents"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+authors = [{ name = "Pipeline Kit maintainers" }]
+dependencies = []
+
+[project.scripts]
+pipeline-kit = "pipeline_kit.install:cli_main"
+
+[tool.setuptools]
+packages = ["pipeline_kit"]
+package-dir = { pipeline_kit = "." }
+include-package-data = true
+
+[tool.setuptools.dynamic]
+version = { file = "VERSION" }
+
+[tool.setuptools.package-data]
+pipeline_kit = [
+  "VERSION",
+  "CUSTOMER-GUIDE.md",
+  "kit/pipeline/**/*",
+]
+

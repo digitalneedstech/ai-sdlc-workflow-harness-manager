@@ -34,28 +34,31 @@ guide:
 
 ## Quick start
 
-Install into a customer repo (full flags and scopes:
-[Install](../ai-agents-registry/packages/pipeline-kit/CUSTOMER-GUIDE.md#2-install)):
+Install the `pipeline-kit` tool once:
 
 ```bash
-git clone <this-repo-url> pipeline-kit
-python3 pipeline-kit/install.py --project /path/to/customer-app
-python3 pipeline-kit/install.py --project /path/to/customer-app --ide cursor
-python3 pipeline-kit/install.py --project /path/to/customer-app --ide claude-code
-python3 pipeline-kit/install.py --project /path/to/customer-app --ide none
-python3 pipeline-kit/install.py --user
+uv tool install git+<this-repo-url>
+# or: pipx install git+<this-repo-url>
 ```
 
-From inside this repo:
+For a local clone, `./install.sh` performs the same tool install with `uv`
+or `pipx`.
+
+Set up a customer repository:
 
 ```bash
-python3 install.py --project /path/to/customer-app
-python3 install.py --uninstall --project /path/to/customer-app
+cd /path/to/customer-app
+pipeline-kit init --ide cursor
+pipeline-kit doctor --ide cursor
+pipeline-kit workflows
 ```
 
-`--project` (default: `.`) writes `<repo>/.pipeline`. `--user` writes
-`~/.pipeline`. At runtime the project pack wins; otherwise the user pack is
-used. Run artifacts always land in the **current** project’s `features/`.
+Use `--ide claude-code`, `--ide github`, or `--ide none` when appropriate.
+To install a shared user pack instead, run `pipeline-kit setup --ide cursor`.
+
+`init` writes `<repo>/.pipeline`; `setup` writes `~/.pipeline`. At runtime
+the project pack wins, otherwise the user pack is used. Run artifacts always
+land in the **current** project’s `features/`.
 
 After install, the same handbook is copied to
 `.pipeline/docs/CUSTOMER-GUIDE.md` in the target repo.
@@ -103,12 +106,14 @@ Must-configure overview:
 
 | Path | Role |
 |------|------|
-| `install.py` / `install.sh` | CLI: `--project`, `--user`, `--ide`, `--uninstall`, `--sync-kit` |
+| `pyproject.toml` / `install.sh` | Install the `pipeline-kit` command with `uv` or `pipx` |
+| `install.py` | CLI implementation and backward-compatible Python installer |
 | `kit/pipeline/` | Bundled pack copied to `<app>/.pipeline` |
 | [CUSTOMER-GUIDE.md](../ai-agents-registry/packages/pipeline-kit/CUSTOMER-GUIDE.md) | Architect / developer handbook (canonical copy in `ai-agents-registry`) |
 | `tests/` | Installer tests (`pytest`) |
 
-Maintainers who edit a live `.pipeline` in this repo can refresh the bundle:
+Maintainers who edit a live `.pipeline` in this repo can refresh the bundle
+using the backward-compatible maintainer command:
 
 ```bash
 python3 install.py --sync-kit
@@ -116,6 +121,18 @@ python3 install.py --sync-kit
 
 How to add a workflow after install: see `.pipeline/README.md` in the
 customer repo (“How to add a workflow”).
+
+Common tool commands:
+
+```bash
+pipeline-kit init [project]       # install/update a project pack
+pipeline-kit setup                # install/update the user pack
+pipeline-kit update [project]     # refresh while preserving config.json
+pipeline-kit doctor [project]     # verify the active pack and optional IDE adapter
+pipeline-kit workflows [project]  # list available workflows
+pipeline-kit uninstall [project]  # remove files managed by the kit
+pipeline-kit --version
+```
 
 ---
 

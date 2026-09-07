@@ -17,6 +17,11 @@ def _run(argv: list[str]) -> int:
     return int(ns["main"](argv))
 
 
+def _run_cli(argv: list[str]) -> int:
+    ns = runpy.run_path(str(INSTALL))
+    return int(ns["cli_main"](argv))
+
+
 def test_source_pack_is_bundled_kit():
     ns = runpy.run_path(str(INSTALL))
     pack = ns["source_pack"]()
@@ -113,3 +118,34 @@ def test_dry_run_writes_nothing(tmp_path: Path):
     app.mkdir()
     assert _run(["--project", str(app), "--ide", "none", "--dry-run"]) == 0
     assert not (app / ".pipeline").exists()
+
+
+def test_cli_init_doctor_workflows_and_uninstall(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    app = tmp_path / "app"
+    app.mkdir()
+
+    assert _run_cli(["init", str(app), "--ide", "cursor"]) == 0
+    assert _run_cli(["doctor", str(app), "--ide", "cursor"]) == 0
+    doctor_output = capsys.readouterr().out
+    assert "pipeline-kit 1.1.0 is ready" in doctor_output
+    assert "ok  cursor adapter" in doctor_output
+
+    assert _run_cli(["workflows", str(app)]) == 0
+    workflows_output = capsys.readouterr().out.splitlines()
+    assert "ask" in workflows_output
+    assert "feature-development" in workflows_output
+
+    assert _run_cli(["uninstall", str(app)]) == 0
+    assert not (app / ".pipeline" / "install.json").exists()
+
+
+def test_cli_setup_and_update_user_pack(tmp_path: Path):
+    home = tmp_path / "home"
+    home.mkdir()
+
+    assert _run_cli(["setup", "--ide", "none", "--home", str(home)]) == 0
+    assert _run_cli(["update", "--user", "--ide", "none", "--home", str(home)]) == 0
+    assert _run_cli(["doctor", "--user", "--home", str(home)]) == 0
+    assert _run_cli(["workflows", "--user", "--home", str(home)]) == 0

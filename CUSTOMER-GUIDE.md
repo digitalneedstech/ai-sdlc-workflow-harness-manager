@@ -128,38 +128,49 @@ not auto-load them. The parent reads only the allowlist from the loader.
 
 ## 2. Install
 
-From a machine that has this kit (clone or internal copy):
+Install the command once on each developer machine:
 
 ```bash
-# Current directory → ./ .pipeline
-python3 install.py
+# Directly from the repository
+uv tool install git+<pipeline-kit-repo-url>
 
-# Another repo
-python3 install.py --project /path/to/your-app
-
-# Shared pack for the logged-in user
-python3 install.py --user
-
-# IDE adapter
-python3 install.py --project . --ide cursor
-python3 install.py --project . --ide claude-code
-python3 install.py --project . --ide none
+# Alternative
+pipx install git+<pipeline-kit-repo-url>
 ```
 
-| Flag | Creates |
-|------|---------|
-| `--project` (default: `.`) | `<repo>/.pipeline` |
-| `--user` | `~/.pipeline` |
-| `--ide cursor` | `<repo>/.cursor/skills/run-workflow` (or `~/.cursor/...` with `--user`) |
-| `--ide claude-code` | `<repo>/.claude/skills/run-workflow` |
-| `--ide github` | `<repo>/.github/skills/run-workflow` |
-| `--ide none` | Pack only |
-| `--agent-stubs` | Thin `.cursor/agents/*.md` so Cursor has named Task types |
+From a local clone, `./install.sh` selects `uv` or `pipx` and installs the
+same command.
+
+Then initialize a customer project:
+
+```bash
+cd /path/to/your-app
+pipeline-kit init --ide cursor
+pipeline-kit doctor --ide cursor
+pipeline-kit workflows
+```
+
+| Command | Purpose |
+|---------|---------|
+| `pipeline-kit init [project]` | Install/update `<repo>/.pipeline` and its IDE adapter |
+| `pipeline-kit setup` | Install/update `~/.pipeline` and a user IDE adapter |
+| `pipeline-kit update [project]` | Refresh managed files while retaining local `config.json` values |
+| `pipeline-kit update --user` | Refresh the user pack |
+| `pipeline-kit doctor [project]` | Check Python, pack, config, loader, marker, and optional IDE adapter |
+| `pipeline-kit workflows [project]` | List workflows from the active project or user pack |
+| `pipeline-kit uninstall [project]` | Remove managed project files |
+| `pipeline-kit uninstall --user` | Remove managed user files |
+
+Install/update commands accept `--ide cursor`, `claude-code`, `github`, or
+`none`. Add `--agent-stubs` to create thin `.cursor/agents/*.md` files.
 
 Resolution at run time: project `.pipeline` wins; otherwise `~/.pipeline`.
 Run artifacts always go to **this project’s** `features/{slug}/`.
 
 Open the repository root in the IDE so the skill folder is discovered.
+
+The old `python3 install.py` flags remain available for compatibility and
+for the maintainer-only `--sync-kit` operation.
 
 ---
 
@@ -436,7 +447,7 @@ not commit those. Commit `features/` only if you want specs in git.
 
 ## 11. New-project checklist
 
-1. Install: `python3 install.py --project . --ide cursor` (or `claude-code` / `none`).
+1. Install: `pipeline-kit init --ide cursor` (or `claude-code` / `none`).
 2. Paste the `AGENTS.md` table (section 3.1) and a short product blurb.
 3. Edit `.pipeline/config.json`:
    - `verify.rules` for your folders (or leave `[]`)
