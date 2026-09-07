@@ -1,0 +1,14 @@
+---
+description: Feature pipeline routing — request only when running product work
+alwaysApply: false
+---
+
+# Feature pipeline
+
+When the user wants work done or a question about this repo, follow the IDE `run-workflow` skill first. Run `.pipeline/loader/load_workflow.py` and Read only `allowed_reads`.
+
+Chains, skips, tracker settings, and retry caps come from `.pipeline/config.json`. File packs live in `.pipeline/workflows/`.
+
+Product workflows: spawn **one new Task per agent**. `ask` stays in the parent. Never call tracker MCP from the parent.
+
+Hooks: `.cursor/hooks.json` + `.cursor/hooks/*.py`. Skip when `CHORUS_TASK_ID` + `CHORUS_PORTAL` are set. See `.cursor/hooks/README.md`.

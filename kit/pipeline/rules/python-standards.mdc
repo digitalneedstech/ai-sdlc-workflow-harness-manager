@@ -1,0 +1,25 @@
+---
+description: >-
+  Python conventions for canvas-engine, canvas-agent-daemon, and tests.
+  Apply when editing engine, daemon, or pytest files.
+globs: "{src,tests}/**/*.py"
+alwaysApply: false
+---
+
+# Python (engine and daemon)
+
+- Target the existing packages: `canvas_engine`, `canvas_agent_daemon`. Match imports and module layout; do not invent a parallel package.
+- Use `from __future__ import annotations` and type hints on public functions, as neighboring modules do.
+- Structured logs via existing helpers (e.g. `logging_util.JsonLogger`). Cap field size; never log tokens, passwords, or raw prompt secrets.
+- Fail closed on auth, path sandbox, and tool-gate errors. Do not catch-and-ignore security exceptions.
+- Persistence: use existing SQLite/db helpers. Parameterized queries only — no string-concatenated SQL.
+- Tests: pytest under `tests/`. Extend `conftest.py` fixtures; name files `test_*.py`.
+- Do not commit credentials or change worker trust flags (`--force`, MCP tokens) without an explicit spec requirement.
+
+```python
+# ❌ BAD
+cur.execute(f"SELECT * FROM tasks WHERE id = '{task_id}'")
+
+# ✅ GOOD
+cur.execute("SELECT * FROM tasks WHERE id = ?", (task_id,))
+```

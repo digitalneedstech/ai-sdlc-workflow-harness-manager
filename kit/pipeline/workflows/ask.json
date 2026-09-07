@@ -1,0 +1,14 @@
+{
+  "name": "ask",
+  "context": {
+    "parent": {
+      "files": [
+        ".pipeline/skills/orchestration/SKILL.md",
+        ".pipeline/skills/ask/SKILL.md",
+        ".pipeline/config.json",
+        ".pipeline/workflows/ask.json"
+      ]
+    },
+    "steps": {}
+  }
+}

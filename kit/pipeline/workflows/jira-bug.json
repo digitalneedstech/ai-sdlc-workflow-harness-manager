@@ -1,0 +1,74 @@
+{
+  "name": "jira-bug",
+  "context": {
+    "parent": {
+      "files": [
+        ".pipeline/skills/orchestration/SKILL.md",
+        ".pipeline/skills/bug-fix/SKILL.md",
+        ".pipeline/skills/jira-intake/SKILL.md",
+        ".pipeline/skills/jira-intake/assets/intake-template.md",
+        ".pipeline/skills/feature-development/assets/change-routing.md",
+        ".pipeline/skills/feature-development/assets/parent-task-prompt.md",
+        ".pipeline/config.json",
+        ".pipeline/workflows/jira-bug.json"
+      ]
+    },
+    "steps": {
+      "intake-agent": {
+        "files": [
+          ".pipeline/agents/intake-agent.md",
+          ".pipeline/skills/jira-intake/SKILL.md",
+          ".pipeline/skills/jira-intake/assets/intake-template.md",
+          ".pipeline/config.json"
+        ]
+      },
+      "bug-analyst-agent": {
+        "files": [
+          ".pipeline/agents/bug-analyst-agent.md",
+          ".pipeline/skills/bug-fix/SKILL.md",
+          ".pipeline/skills/bug-fix/assets/rca-template.md"
+        ]
+      },
+      "developer-agent": {
+        "files": [
+          ".pipeline/agents/developer-agent.md",
+          ".pipeline/skills/secure-implementation/SKILL.md",
+          ".pipeline/skills/secure-implementation/assets/security-preflight-template.md",
+          ".pipeline/skills/bug-fix/SKILL.md"
+        ]
+      },
+      "developer-critic-agent": {
+        "files": [
+          ".pipeline/agents/developer-critic-agent.md"
+        ]
+      },
+      "tester-agent": {
+        "files": [
+          ".pipeline/agents/tester-agent.md",
+          ".pipeline/skills/testing-ui-playwright/SKILL.md",
+          ".pipeline/skills/testing-e2e/SKILL.md",
+          ".pipeline/skills/testing-api/SKILL.md",
+          ".pipeline/skills/testing-unit/SKILL.md",
+          ".pipeline/skills/feature-development/assets/qa-test-cases-template.md",
+          ".pipeline/skills/feature-development/assets/qa-signoff-template.md"
+        ]
+      },
+      "devops-agent": {
+        "files": [
+          ".pipeline/agents/devops-agent.md",
+          ".pipeline/skills/local-deployment/SKILL.md",
+          ".pipeline/skills/local-deployment/assets/local-deploy-runbook.md"
+        ]
+      },
+      "retro-agent": {
+        "files": [
+          ".pipeline/agents/retro-agent.md",
+          ".pipeline/skills/pipeline-retro/SKILL.md",
+          ".pipeline/skills/pipeline-retro/assets/retro-template.md",
+          ".pipeline/wiki/README.md",
+          ".pipeline/wiki/INDEX.md"
+        ]
+      }
+    }
+  }
+}

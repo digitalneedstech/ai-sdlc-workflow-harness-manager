@@ -1,0 +1,157 @@
+{
+  "version": 1,
+  "_readme": "Project-specific pipeline config. Add verify.rules and deploy.targets for this repo. Do not put secrets, hosts, or tracker site URLs in other pack files.",
+  "workflows": {
+    "feature-development": {
+      "source": "text",
+      "plan_source": "plan.md",
+      "classes": {
+        "micro": [
+          "developer-agent",
+          "devops-agent",
+          "retro-agent"
+        ],
+        "minor": [
+          "developer-agent",
+          "developer-critic-agent",
+          "devops-agent",
+          "retro-agent"
+        ],
+        "feature": [
+          "product-manager-agent",
+          "ba-agent",
+          "ba-critic-agent",
+          "@waves",
+          "tester-agent",
+          "devops-agent",
+          "retro-agent"
+        ]
+      },
+      "skips": {}
+    },
+    "jira-story": {
+      "source": "jira",
+      "plan_source": "intake.md",
+      "default_change_class": "feature",
+      "chain": [
+        "intake-agent",
+        "ba-agent",
+        "ba-critic-agent",
+        "@waves",
+        "tester-agent",
+        "devops-agent",
+        "retro-agent"
+      ],
+      "skips": {
+        "skip_pm": true
+      }
+    },
+    "jira-epic": {
+      "source": "jira",
+      "plan_source": "epic-plan.md",
+      "default_change_class": "feature",
+      "chain": [
+        "intake-agent",
+        "ba-agent",
+        "ba-critic-agent",
+        "@waves",
+        "tester-agent",
+        "devops-agent",
+        "retro-agent"
+      ],
+      "skips": {
+        "skip_pm": true
+      }
+    },
+    "ask": {
+      "source": "text",
+      "chain": [],
+      "skips": {}
+    },
+    "jira-bug": {
+      "source": "jira",
+      "plan_source": "rca.md",
+      "default_change_class": "minor",
+      "chain": [
+        "intake-agent",
+        "bug-analyst-agent",
+        "developer-agent",
+        "developer-critic-agent",
+        "tester-agent",
+        "devops-agent",
+        "retro-agent"
+      ],
+      "skips": {
+        "skip_pm": true,
+        "skip_ba": true,
+        "skip_ba_critic": true,
+        "skip_telemetry": true,
+        "skip_developer_critic": false
+      },
+      "run_tester": true
+    }
+  },
+  "waves": {
+    "_note": "@waves expands to this per-child chain, read from features/{slug}/spec-order.md.",
+    "child_chain": [
+      "telemetry-agent",
+      "developer-agent",
+      "developer-critic-agent"
+    ]
+  },
+  "intake": {
+    "jira": {
+      "enabled": true,
+      "key_pattern": "\\b[A-Z][A-Z0-9_]+-[0-9]+\\b",
+      "mcp_namespaces": [],
+      "tools": {
+        "issue": "getJiraIssue",
+        "search": "searchJiraIssuesUsingJql"
+      },
+      "epic_children_jql": "parent = {KEY} ORDER BY rank ASC",
+      "max_children": 20,
+      "issue_type_map": {
+        "story": "jira-story",
+        "task": "jira-story",
+        "sub-task": "jira-story",
+        "improvement": "jira-story",
+        "bug": "jira-bug",
+        "defect": "jira-bug",
+        "incident": "jira-bug",
+        "epic": "jira-epic",
+        "initiative": "jira-epic",
+        "default": "jira-story"
+      },
+      "include_comments": false,
+      "write_back": false
+    }
+  },
+  "product": {
+    "_note": "artifact_dir is the only tree analysis agents may write to; everything else is product source.",
+    "artifact_dir": "features/",
+    "readonly_agents": [
+      "intake-agent",
+      "product-manager-agent",
+      "ba-agent",
+      "ba-critic-agent",
+      "bug-analyst-agent",
+      "telemetry-agent"
+    ]
+  },
+  "verify": {
+    "_note": "Add path-substring reminders for this repo after install.",
+    "rules": []
+  },
+  "gates": {
+    "retry_cap": 2,
+    "require_signoff_before_deploy": true,
+    "complete_after": "retro-agent"
+  },
+  "deploy": {
+    "_note": "Set targets this repo's deploy runbook understands.",
+    "target": "auto",
+    "targets": [
+      "auto"
+    ]
+  }
+}

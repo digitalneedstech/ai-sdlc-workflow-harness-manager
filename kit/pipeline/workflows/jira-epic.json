@@ -1,0 +1,106 @@
+{
+  "name": "jira-epic",
+  "context": {
+    "parent": {
+      "files": [
+        ".pipeline/skills/orchestration/SKILL.md",
+        ".pipeline/skills/feature-development/SKILL.md",
+        ".pipeline/skills/feature-development/assets/change-routing.md",
+        ".pipeline/skills/feature-development/assets/tester-policy.md",
+        ".pipeline/skills/feature-development/assets/parent-task-prompt.md",
+        ".pipeline/config.json",
+        ".pipeline/skills/jira-intake/SKILL.md",
+        ".pipeline/skills/jira-intake/assets/intake-template.md",
+        ".pipeline/skills/epic-breakdown/SKILL.md",
+        ".pipeline/skills/epic-breakdown/assets/epic-plan-template.md",
+        ".pipeline/workflows/jira-epic.json"
+      ]
+    },
+    "steps": {
+      "product-manager-agent": {
+        "files": [
+          ".pipeline/agents/product-manager-agent.md",
+          ".pipeline/skills/product-planning/SKILL.md",
+          ".pipeline/skills/feature-development/assets/research-template.md",
+          ".pipeline/skills/feature-development/assets/plan-template.md",
+          ".pipeline/skills/feature-development/assets/handoff-pm-template.md",
+          ".pipeline/skills/feature-development/assets/questions-format.md"
+        ]
+      },
+      "ba-agent": {
+        "files": [
+          ".pipeline/agents/ba-agent.md",
+          ".pipeline/skills/spec-generation/SKILL.md",
+          ".pipeline/skills/feature-development/assets/specification-template.md",
+          ".pipeline/skills/feature-development/assets/example-specification.md",
+          ".pipeline/skills/feature-development/assets/spec-order-template.md",
+          ".pipeline/skills/feature-development/assets/test-plan-template.md",
+          ".pipeline/skills/feature-development/assets/test-strategy-template.md",
+          ".pipeline/skills/feature-development/assets/questions-format.md",
+          ".pipeline/skills/feature-development/assets/handoff-template.md"
+        ]
+      },
+      "ba-critic-agent": {
+        "files": [
+          ".pipeline/agents/ba-critic-agent.md"
+        ]
+      },
+      "telemetry-agent": {
+        "files": [
+          ".pipeline/agents/telemetry-agent.md",
+          ".pipeline/skills/observability-telemetry/SKILL.md",
+          ".pipeline/skills/observability-telemetry/assets/telemetry-contract-template.md"
+        ]
+      },
+      "developer-agent": {
+        "files": [
+          ".pipeline/agents/developer-agent.md",
+          ".pipeline/skills/secure-implementation/SKILL.md",
+          ".pipeline/skills/secure-implementation/assets/security-preflight-template.md"
+        ]
+      },
+      "developer-critic-agent": {
+        "files": [
+          ".pipeline/agents/developer-critic-agent.md"
+        ]
+      },
+      "tester-agent": {
+        "files": [
+          ".pipeline/agents/tester-agent.md",
+          ".pipeline/skills/testing-ui-playwright/SKILL.md",
+          ".pipeline/skills/testing-e2e/SKILL.md",
+          ".pipeline/skills/testing-api/SKILL.md",
+          ".pipeline/skills/testing-unit/SKILL.md",
+          ".pipeline/skills/feature-development/assets/qa-test-cases-template.md",
+          ".pipeline/skills/feature-development/assets/qa-signoff-template.md"
+        ]
+      },
+      "devops-agent": {
+        "files": [
+          ".pipeline/agents/devops-agent.md",
+          ".pipeline/skills/local-deployment/SKILL.md",
+          ".pipeline/skills/local-deployment/assets/local-deploy-runbook.md"
+        ]
+      },
+      "retro-agent": {
+        "files": [
+          ".pipeline/agents/retro-agent.md",
+          ".pipeline/skills/pipeline-retro/SKILL.md",
+          ".pipeline/skills/pipeline-retro/assets/retro-template.md",
+          ".pipeline/wiki/README.md",
+          ".pipeline/wiki/INDEX.md"
+        ]
+      },
+      "intake-agent": {
+        "files": [
+          ".pipeline/agents/intake-agent.md",
+          ".pipeline/skills/jira-intake/SKILL.md",
+          ".pipeline/skills/jira-intake/assets/intake-template.md",
+          ".pipeline/skills/epic-breakdown/SKILL.md",
+          ".pipeline/skills/epic-breakdown/assets/epic-plan-template.md",
+          ".pipeline/config.json"
+        ]
+      }
+    }
+  }
+}
