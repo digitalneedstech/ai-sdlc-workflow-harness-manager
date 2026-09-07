@@ -7,7 +7,7 @@ Clone this repository, then install `.pipeline` into any customer project
 (`run-workflow` only). The pack is not tied to a product, language, or IDE.
 
 **Handbook (architects and developers):** read
-[CUSTOMER-GUIDE.md](../ai-agents-registry/packages/pipeline-kit/CUSTOMER-GUIDE.md)
+[CUSTOMER-GUIDE.md](./CUSTOMER-GUIDE.md)
 first — problem statement, architecture, install, `AGENTS.md`, config, deploy,
 and tests. This README is the project landing page; that file is the
 adaptation contract.
@@ -27,8 +27,8 @@ How the architecture solves that — portable pack, workflow as the unit of
 scale, per-step allowlists, config as the engagement overlay — is in the
 guide:
 
-- [Problem statement](../ai-agents-registry/packages/pipeline-kit/CUSTOMER-GUIDE.md#problem-statement)
-- [How this architecture solves it](../ai-agents-registry/packages/pipeline-kit/CUSTOMER-GUIDE.md#how-this-architecture-solves-it)
+- [Problem statement](./CUSTOMER-GUIDE.md#problem-statement)
+- [How this architecture solves it](./CUSTOMER-GUIDE.md#how-this-architecture-solves-it)
 
 ---
 
