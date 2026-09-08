@@ -9,32 +9,34 @@ A feature-class ask starts at BA with one flat specification.md, or testers run 
 
 ## Root cause
 
-Feature class is now a parent folder: PM plans first, BA splits children, parent fans out implementation waves, one tester signs off.
+Feature class is now a parent folder: PM (or intake) plans first, the user signs requirements, Architect may run, BA splits children, parent fans out implementation waves, one tester signs off.
 
 ## Do not
 
-- Spawn BA before HANDOFF-pm.md is SUCCESS or ASSUMPTIONS_USED
-- Ask PM questions on a clear, simple feature-class ask
+- Spawn Architect or BA before `signoff-requirements.md`
+- Ask what `decisions.md` or the repo already answers
 - Put sibling slugs at features/ instead of features/{feature}/{child}/
 - Run tester-agent per child or between waves
 - Mark tester SUCCESS as TESTS: cases-only on feature class
 - Start devops without FEATURE_SIGNOFF: passed
+- Start waves without `signoff-ba.md`
 
 ## Fix / convention
 
-1. Parent writes features/{slug}/route.md (change_class: feature, all skip_* false).
-2. product-manager-agent writes plan.md and research.md. Blocking questions only (max 10).
-3. ba-agent writes each features/{slug}/{child}/specification.md, spec-order.md (**children:** line), test-plan.md, and per-child test-strategy.md.
-4. After BA critic approve, parent runs waves: per child telemetry then developer then developer-critic. Parallel children share a wave.
-5. One tester-agent at the parent slug runs Playwright/api/unit from the test plan.
-6. Devops only after qa-signoff.md has FEATURE_SIGNOFF: passed.
+1. Parent writes features/{slug}/route.md (change_class: feature).
+2. product-manager-agent writes plan.md, research.md, and decisions.md. Clarify-first questions (max 20).
+3. Parent `@signoff:requirements`. Then architect-policy; large stories run architect-agent.
+4. ba-agent writes each features/{slug}/{child}/specification.md, spec-order.md (**children:** line), test-plan.md, and per-child test-strategy.md.
+5. After BA critic approve and `@signoff:ba`, parent runs waves: per child telemetry then developer then developer-critic. Parallel children share a wave.
+6. One tester-agent at the parent slug runs Playwright/api/unit from the test plan.
+7. Devops only after qa-signoff.md has FEATURE_SIGNOFF: passed.
 
-Micro/minor unchanged (flat folder, no PM, no tester).
+Micro/minor unchanged (flat folder, no PM, no Architect, no tester unless policy on).
 
 ## Files
 
-.pipeline/agents/product-manager-agent.md, .pipeline/skills/product-planning/SKILL.md, .pipeline/skills/spec-generation/SKILL.md, .pipeline/skills/feature-development/SKILL.md, .cursor/hooks/subagent-start.py
+.pipeline/agents/product-manager-agent.md, .pipeline/skills/product-planning/SKILL.md, .pipeline/skills/spec-generation/SKILL.md, .pipeline/skills/feature-development/SKILL.md, .pipeline/wiki/feature-pipeline-architect-and-signoff.md
 
 ## How to confirm
 
-features/{slug}/plan.md exists before BA. Child specs are subfolders. HANDOFF-tester.md is after every child critic. qa-signoff.md exists before devops.
+features/{slug}/plan.md and signoff-requirements.md exist before Architect or BA. Child specs are subfolders. HANDOFF-tester.md is after every child critic. qa-signoff.md exists before devops.

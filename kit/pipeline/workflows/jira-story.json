@@ -7,6 +7,8 @@
         ".pipeline/skills/feature-development/SKILL.md",
         ".pipeline/skills/feature-development/assets/change-routing.md",
         ".pipeline/skills/feature-development/assets/tester-policy.md",
+        ".pipeline/skills/feature-development/assets/planning-signoff-template.md",
+        ".pipeline/skills/feature-development/assets/architect-policy.md",
         ".pipeline/skills/feature-development/assets/parent-task-prompt.md",
         ".pipeline/config.json",
         ".pipeline/skills/jira-intake/SKILL.md",
@@ -22,7 +24,22 @@
           ".pipeline/skills/feature-development/assets/research-template.md",
           ".pipeline/skills/feature-development/assets/plan-template.md",
           ".pipeline/skills/feature-development/assets/handoff-pm-template.md",
-          ".pipeline/skills/feature-development/assets/questions-format.md"
+          ".pipeline/skills/feature-development/assets/questions-format.md",
+          ".pipeline/skills/feature-development/assets/clarify-first.md",
+          ".pipeline/skills/feature-development/assets/decisions-template.md"
+        ]
+      },
+      "architect-agent": {
+        "files": [
+          ".pipeline/agents/architect-agent.md",
+          ".pipeline/skills/architecture-design/SKILL.md",
+          ".pipeline/skills/feature-development/assets/architecture-template.md",
+          ".pipeline/skills/feature-development/assets/implementation-plan-template.md",
+          ".pipeline/skills/feature-development/assets/handoff-architect-template.md",
+          ".pipeline/skills/feature-development/assets/questions-format.md",
+          ".pipeline/skills/feature-development/assets/clarify-first.md",
+          ".pipeline/skills/feature-development/assets/decisions-template.md",
+          ".pipeline/skills/feature-development/assets/architect-policy.md"
         ]
       },
       "ba-agent": {
@@ -35,7 +52,9 @@
           ".pipeline/skills/feature-development/assets/test-plan-template.md",
           ".pipeline/skills/feature-development/assets/test-strategy-template.md",
           ".pipeline/skills/feature-development/assets/questions-format.md",
-          ".pipeline/skills/feature-development/assets/handoff-template.md"
+          ".pipeline/skills/feature-development/assets/handoff-template.md",
+          ".pipeline/skills/feature-development/assets/clarify-first.md",
+          ".pipeline/skills/feature-development/assets/decisions-template.md"
         ]
       },
       "ba-critic-agent": {

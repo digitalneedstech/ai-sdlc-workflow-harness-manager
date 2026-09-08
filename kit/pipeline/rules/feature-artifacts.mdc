@@ -10,9 +10,10 @@ alwaysApply: false
 
 - One folder per request: `features/{kebab-slug}/`. Reuse it; do not fork a second spec for the same ask.
 - **route.md** is required before specialists (`change_class` micro | minor | feature).
-- Feature class: `plan.md`, `spec-order.md`, `test-plan.md`, child folders `features/{slug}/{child}/specification.md`, telemetry/dev HANDOFFs per child, parent `qa-test-cases.md`, `qa-signoff.md`, `RETRO.md`.
+- Feature class: `plan.md`, `decisions.md`, `signoff-requirements.md`, optional `architecture.md` / `implementation-plan.md` / `signoff-architect.md`, `signoff-ba.md`, `spec-order.md`, `test-plan.md`, child folders `features/{slug}/{child}/specification.md`, telemetry/dev HANDOFFs per child, parent `qa-test-cases.md`, `qa-signoff.md`, `RETRO.md`.
 - Micro/minor: `patch.md` plus skipped-step stubs per change-routing; still `deploy-result.env` and `RETRO.md` after devops. Flat folder (no PM, no children).
 - Fill every spec section (`N/A — reason` if needed). Label assumptions. Every Must FR needs an AC.
-- HANDOFF `status` is `SUCCESS` | `BLOCKED` | `ASSUMPTIONS_USED` | `FAILED` as defined by the agent brief. Never `SUCCESS` with blocking open questions.
+- HANDOFF `status` is `SUCCESS` | `BLOCKED` | `BLOCKED_CHALLENGE_PM` | `ASSUMPTIONS_USED` | `FAILED` as defined by the agent brief. Never `SUCCESS` with blocking open questions.
+- Planning sign-off files use `SIGNOFF: approved`. Parent writes them; specialists do not.
 - Critic verdicts: `approve` | `approve-with-nits` | `changes-required`. Findings cite FR/AC/section or file path.
 - Do not put product source under `features/`. Do not treat `assets/example-specification.md` as a live feature spec.

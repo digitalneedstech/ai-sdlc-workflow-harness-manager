@@ -7,6 +7,7 @@ Match **triggers** against the current request, error, port, or pipeline class. 
 | Tracker issue key in the ask; which workflow; `intake.md`; `rca.md`; `epic-plan.md`; bug vs story vs epic; `pipeline.config.json` | [orchestration-and-jira-intake.md](orchestration-and-jira-intake.md) |
 | `CHANGE_CLASS`; micro vs minor vs feature; skip PM/BA; label/copy vs new route; `route.md` | [feature-pipeline-change-class.md](feature-pipeline-change-class.md) |
 | PM first gate; `plan.md`; nested `features/{slug}/{child}/`; `spec-order.md`; waves; one tester | [feature-pipeline-pm-and-multi-spec.md](feature-pipeline-pm-and-multi-spec.md) |
+| Architect; `architecture.md`; implementation plan; `skip_architect`; `RUN_ARCHITECT`; `signoff-requirements.md`; `signoff-architect.md`; `signoff-ba.md`; `@signoff`; `decisions.md`; clarify-first | [feature-pipeline-architect-and-signoff.md](feature-pipeline-architect-and-signoff.md) |
 | Telemetry contract; `EVENTS: none`; G1–G7; `page_view`; GA/`gtag`; JsonLogger | [telemetry-event-extraction.md](telemetry-event-extraction.md) |
 | `4173`; `8000`; `/health`; `deploy-local.sh`; second `canvas-engine`; bootstrap secret | [local-deploy-localhost-ports.md](local-deploy-localhost-ports.md) |
 | Hooks not loading; `.cursor/hooks.json`; `CHORUS_TASK_ID`; `CHORUS_PORTAL`; failClosed off | [cursor-hooks-and-chorus-gate.md](cursor-hooks-and-chorus-gate.md) |

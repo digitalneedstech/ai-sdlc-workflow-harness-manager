@@ -19,8 +19,12 @@
         ],
         "feature": [
           "product-manager-agent",
+          "@signoff:requirements",
+          "architect-agent",
+          "@signoff:architect",
           "ba-agent",
           "ba-critic-agent",
+          "@signoff:ba",
           "@waves",
           "tester-agent",
           "devops-agent",
@@ -35,8 +39,12 @@
       "default_change_class": "feature",
       "chain": [
         "intake-agent",
+        "@signoff:requirements",
+        "architect-agent",
+        "@signoff:architect",
         "ba-agent",
         "ba-critic-agent",
+        "@signoff:ba",
         "@waves",
         "tester-agent",
         "devops-agent",
@@ -52,8 +60,12 @@
       "default_change_class": "feature",
       "chain": [
         "intake-agent",
+        "@signoff:requirements",
+        "architect-agent",
+        "@signoff:architect",
         "ba-agent",
         "ba-critic-agent",
+        "@signoff:ba",
         "@waves",
         "tester-agent",
         "devops-agent",
@@ -85,6 +97,7 @@
         "skip_pm": true,
         "skip_ba": true,
         "skip_ba_critic": true,
+        "skip_architect": true,
         "skip_telemetry": true,
         "skip_developer_critic": false
       },
@@ -132,6 +145,7 @@
     "readonly_agents": [
       "intake-agent",
       "product-manager-agent",
+      "architect-agent",
       "ba-agent",
       "ba-critic-agent",
       "bug-analyst-agent",
@@ -145,6 +159,7 @@
   "gates": {
     "retry_cap": 2,
     "require_signoff_before_deploy": true,
+    "require_planning_signoff_before_build": true,
     "complete_after": "retro-agent"
   },
   "deploy": {

@@ -43,7 +43,15 @@ def test_project_install_and_uninstall(tmp_path: Path):
     assert (app / ".pipeline" / "loader" / "load_workflow.py").is_file()
     assert (app / ".pipeline" / "workflows" / "ask.json").is_file()
     assert (app / ".pipeline" / "agents" / "developer-agent.md").is_file()
+    assert (app / ".pipeline" / "agents" / "architect-agent.md").is_file()
     assert (app / ".pipeline" / "config.json").is_file()
+    cfg_after = json.loads((app / ".pipeline" / "config.json").read_text(encoding="utf-8"))
+    feature_chain = cfg_after["workflows"]["feature-development"]["classes"]["feature"]
+    assert "architect-agent" in feature_chain
+    assert "@signoff:requirements" in feature_chain
+    assert "@signoff:architect" in feature_chain
+    assert "@signoff:ba" in feature_chain
+    assert cfg_after["gates"]["require_planning_signoff_before_build"] is True
     assert (app / ".pipeline" / "install.json").is_file()
     assert (app / ".pipeline" / "docs" / "CUSTOMER-GUIDE.md").is_file()
     guide = (app / ".pipeline" / "docs" / "CUSTOMER-GUIDE.md").read_text(encoding="utf-8")
@@ -73,8 +81,11 @@ def test_project_ide_cursor_and_agent_stubs(tmp_path: Path):
     assert _run(["--project", str(app), "--ide", "cursor", "--agent-stubs"]) == 0
     skill = app / ".cursor" / "skills" / "run-workflow" / "SKILL.md"
     stub = app / ".cursor" / "agents" / "developer-agent.md"
+    arch_stub = app / ".cursor" / "agents" / "architect-agent.md"
     assert skill.is_file()
     assert stub.is_file()
+    assert arch_stub.is_file()
+    assert ".pipeline/agents/architect-agent.md" in arch_stub.read_text(encoding="utf-8")
     text = stub.read_text(encoding="utf-8")
     assert ".pipeline/agents/developer-agent.md" in text
     assert "Thin Cursor stub" in text
@@ -149,3 +160,33 @@ def test_cli_setup_and_update_user_pack(tmp_path: Path):
     assert _run_cli(["update", "--user", "--ide", "none", "--home", str(home)]) == 0
     assert _run_cli(["doctor", "--user", "--home", str(home)]) == 0
     assert _run_cli(["workflows", "--user", "--home", str(home)]) == 0
+
+
+def test_architect_step_allowlist_installs(tmp_path: Path):
+    app = tmp_path / "app"
+    app.mkdir()
+    assert _run(["--project", str(app), "--ide", "none"]) == 0
+    loader = app / ".pipeline" / "loader" / "load_workflow.py"
+    import subprocess
+
+    result = subprocess.run(
+        [
+            "python3",
+            str(loader),
+            "--workflow",
+            "feature-development",
+            "--step",
+            "architect-agent",
+            "--slug",
+            "try-architect",
+        ],
+        cwd=app,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    pack = json.loads((app / "features" / "try-architect" / "context-pack.json").read_text())
+    assert pack["step"] == "architect-agent"
+    assert ".pipeline/agents/architect-agent.md" in pack["allowed_reads"]
+    assert ".pipeline/skills/architecture-design/SKILL.md" in pack["allowed_reads"]
+    assert result.returncode == 0

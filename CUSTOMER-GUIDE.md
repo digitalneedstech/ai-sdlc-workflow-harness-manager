@@ -121,8 +121,8 @@ not auto-load them. The parent reads only the allowlist from the loader.
 | Name | When it runs |
 |------|----------------|
 | `ask` | Question about this repo (how / what / why / explain). No Task chain. |
-| `feature-development` | Product work from chat (“add”, “fix”, “change”, “implement”). |
-| `jira-story` / `jira-epic` / `jira-bug` | Tracker issue key, if Jira intake is enabled. |
+| `feature-development` | Product work from chat (“add”, “fix”, “change”, “implement”). Feature class: PM → user sign-off → Architect (large stories) → user sign-off → BA → critic → user sign-off → developers. |
+| `jira-story` / `jira-epic` / `jira-bug` | Tracker issue key, if Jira intake is enabled. Stories/epics use intake as the requirements pack (same Architect + sign-off gates). Bugs skip planning. |
 
 ---
 
@@ -320,10 +320,17 @@ uses different names. Do not put the Jira site URL or API token in this file.
 
 | Key | Default meaning |
 |-----|-----------------|
-| `workflows.*` chains / `classes` | Delivery ladder (micro / minor / feature). Change only if you drop or add a specialist. |
+| `workflows.*` chains / `classes` | Delivery ladder (micro / minor / feature). Change only if you drop or add a specialist. Feature class includes `@signoff:*` and `architect-agent`. |
 | `product.artifact_dir` | `features/` — analysis agents write here only. |
 | `gates.retry_cap` | Critic `changes-required` retries (default 2). |
+| `gates.require_planning_signoff_before_build` | User must approve PM / Architect / BA artifacts before waves (default true). |
 | `waves.child_chain` | Per-child telemetry → developer → critic. |
+
+PM, Architect, and BA follow **clarify-first**: they read prior `features/{slug}/`
+artifacts (`decisions.md`, plan, architecture) before asking, then ask remaining
+checklist items instead of silent defaults. Override Architect with
+`RUN_ARCHITECT: true|false`. Size policy lives in
+`.pipeline/skills/feature-development/assets/architect-policy.md`.
 
 ---
 

@@ -108,7 +108,7 @@ EPIC_PLAN_PATH: features/{slug}/epic-plan.md | n/a
 CHILDREN: n/a | {count} ({keys})
 REDACTIONS: NONE | {fields}
 NOTES: {ambiguities, missing ACs, raw type mismatch}
-PARENT_NEXT: ba-agent | bug-analyst-agent | stop for user
+PARENT_NEXT: @signoff:requirements | bug-analyst-agent | stop for user
 ```
 
 ## Anti-patterns

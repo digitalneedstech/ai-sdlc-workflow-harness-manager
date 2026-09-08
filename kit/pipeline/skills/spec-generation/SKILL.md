@@ -22,7 +22,7 @@ Turn a **plan source** into on-disk child specifications, a wave order, and a ca
 
 Everything after S1 is identical across the three. A defect never reaches this skill — it is specified by `rca.md` in [bug-fix](../bug-fix/SKILL.md).
 
-**Parent:** spawn BA as a separate `Task` after PM SUCCESS (text-sourced) or after intake SUCCESS (tracker-sourced). **BA:** write child specs + order + test plan + HANDOFF, then return. **Do not** implement code, spawn critic, or spawn developer.
+**Parent:** spawn BA as a separate `Task` after `@signoff:requirements` and, when Architect ran, after `@signoff:architect`. **BA:** write child specs + order + test plan + HANDOFF, then return. **Do not** implement code, spawn critic, or spawn developer.
 
 **Success:** every child `specification.md` is complete, `spec-order.md` and `test-plan.md` exist, assumptions labeled, ACs testable.  
 **Failure:** chat-only spec, silent invention, open Must questions, or no as-is evidence from the repo.
@@ -31,6 +31,7 @@ Everything after S1 is identical across the three. A defect never reaches this s
 
 | When | Read (feature-development) |
 |------|------|
+| S1 / S3 (clarify-first) | [../feature-development/assets/clarify-first.md](../feature-development/assets/clarify-first.md), [../feature-development/assets/decisions-template.md](../feature-development/assets/decisions-template.md) |
 | S3 (interactive questions) | [../feature-development/assets/questions-format.md](../feature-development/assets/questions-format.md) |
 | S4 (draft) | [../feature-development/assets/specification-template.md](../feature-development/assets/specification-template.md) |
 | S4 (density check) | [../feature-development/assets/example-specification.md](../feature-development/assets/example-specification.md) |
@@ -45,8 +46,8 @@ Everything after S1 is identical across the three. A defect never reaches this s
 
 | Role | Allowed |
 |------|---------|
-| Parent | Create `features/{slug}/`, `Task` the plan-source step then BA, then BA critic |
-| BA (this skill) | Read the plan source, explore repo, bounded questions, write child specs + order + test plan + HANDOFF |
+| Parent | Create `features/{slug}/`, `Task` the plan-source step, Architect if required, then BA, then BA critic, then `@signoff:ba` |
+| BA (this skill) | Read the plan source + architecture + decisions, explore repo, clarify-first questions, write child specs + order + test plan + HANDOFF |
 | BA critic | Later `Task` only |
 
 ```text
@@ -57,6 +58,9 @@ features/{slug}/
   stories/{child}.md   # jira-epic detail per story
   spec-order.md        # required
   test-plan.md         # required
+  architecture.md      # when Architect ran
+  implementation-plan.md
+  decisions.md
   questions.md         # if S3 ran
   HANDOFF.md           # required
   {child-slug}/
@@ -64,7 +68,7 @@ features/{slug}/
     test-strategy.md   # required
 ```
 
-Reuse `{slug}` if the folder exists. One child is valid. Disk is source of truth. Do not re-ask questions already answered in `questions.md` or the plan source. Tracker-sourced runs must **not** call tracker MCP — intake already fetched everything.
+Reuse `{slug}` if the folder exists. One child is valid. Disk is source of truth. Do not re-ask questions already answered in `decisions.md`, `questions.md`, the plan source, or signed-off architecture. Tracker-sourced runs must **not** call tracker MCP — intake already fetched everything. If Architect ran, do not contradict signed-off ADRs. If Architect revised the child split, that split **wins**.
 
 ---
 
@@ -72,22 +76,22 @@ Reuse `{slug}` if the folder exists. One child is valid. Disk is source of truth
 
 `S1 DISCOVER → S2 GAP → S3 CLARIFY? → S4 DRAFT → S4b ORDER → S4c TEST PLAN → S5 SELF-GATE → S6 HANDOFF`
 
-**S1 Discover** — Read the plan source first, then explore. Restate intent. Scan screens/routes/APIs/models. Record path + fact. Greenfield: say so.
+**S1 Discover** — Read the plan source first, then `decisions.md`, signed-off `architecture.md` / `implementation-plan.md` when present, then explore. Restate intent. Scan screens/routes/APIs/models. Record path + fact. Greenfield: say so. Load [clarify-first.md](../feature-development/assets/clarify-first.md). Append extracted facts to `decisions.md`.
 
 | Kind | Read | Child-spec split |
 |------|------|------------------|
-| `pm-plan` | `plan.md`, `research.md` | Confirm or refine the PM split (kebab slugs) |
+| `pm-plan` | `plan.md`, `research.md`, architecture if present | Confirm or refine the Architect split when it exists; otherwise the PM split |
 | `jira-story` | `intake.md` — description and ACs are **verbatim requirements**, section 7 lists the gaps | Split only if the story genuinely holds several independent jobs; one child is the normal answer |
 | `jira-epic` | `epic-plan.md` child table, then each `stories/{child}.md` | **One child spec per story**, slugs taken from the plan's child table — do not merge or re-split without saying why in the HANDOFF |
 
 Tracker-sourced: treat the issue text as the requirement, not as a suggestion. A gap in the issue is a gap (S2), never something you quietly fill. Each child spec records `**source:** {ISSUE-KEY}` under its title so the spec traces back to the tracker.
 
-**S2 Gap** — Bucket every decision: **Given** (requirement / plan source / issue AC) / **Inferred** (Assumption + rationale) / **Unknown**.
+**S2 Gap** — Bucket every decision: **Given** (requirement / plan source / issue AC / architecture ADR / `decisions.md`) / **Inferred** (Assumption + rationale) / **Unknown**.
 
-- Proceed without asking if Unknown is non-blocking (copy, density) and you state a default.
-- **Must ask or default-and-label** if Unknown changes authz, PII/secrets/network, money/irreversible actions, in vs out of scope, or success criteria the user would reject.
+- Cosmetic Unknowns (copy, density) may be defaulted and labeled.
+- Every other Unknown on the **BA** coverage checklist must be asked. Do not silently invent ACs, error states, or authz.
 
-**S3 Clarify** — One batch, max 7, multiple-choice with recommended default. Never ask what the repo or the plan source already answers. Interactive: write questions, **stop**, wait for answers or “proceed”. Non-interactive: apply documented defaults, continue S4, HANDOFF `ASSUMPTIONS_USED`. Format: load questions asset.
+**S3 Clarify** — Follow clarify-first. Run the **BA** coverage checklist. One batch, **max 15**, multiple-choice with recommended default. Never ask what the repo, plan source, architecture, or `decisions.md` already answers. Interactive: write questions, **stop**, wait for answers or “proceed”. `ASSUMPTIONS_USED` only when the user said proceed or leftovers are cosmetic. Format: load questions asset.
 
 **S4 Draft** — For each child slug, create `features/{slug}/{child}/` and write `specification.md` from the specification template (`N/A — reason` if needed). Load the example only to match density. Cite existing files as **constraints**, not as an implementation file list.
 
@@ -129,6 +133,8 @@ Must FRs still in Open questions ⇒ not Ready. Do not start `developer-agent`.
 ## S5 blockers (all required)
 
 - [ ] The plan source for `PLAN_SOURCE_KIND` exists (`plan.md` | `intake.md` | `epic-plan.md`)
+- [ ] `features/{slug}/decisions.md` updated this step
+- [ ] Specs do not contradict signed-off `architecture.md` when that file exists
 - [ ] `jira-epic`: one child spec per in-scope story, each carrying `**source:** {ISSUE-KEY}`
 - [ ] Every child in `**children:**` has `features/{slug}/{child}/specification.md`
 - [ ] `features/{slug}/spec-order.md` with a parseable `**children:**` line
@@ -159,4 +165,4 @@ Full file shape: [../feature-development/assets/handoff-template.md](../feature-
 
 ## Anti-patterns
 
-Chat-only spec · >7 questions · re-asking the PM · asking the repo · FR/AC as code tasks · Ready with blocking OQs · spawning developer from BA · copying the example spec · tester between waves · flat sibling slugs instead of `features/{slug}/{child}/` · calling tracker MCP instead of reading `intake.md` · paraphrasing an issue AC into something weaker · merging two epic stories into one spec.
+Chat-only spec · re-asking PM or Architect decisions · asking the repo · FR/AC as code tasks · Ready with blocking OQs · silent defaults on Must ACs · spawning developer from BA · copying the example spec · tester between waves · flat sibling slugs instead of `features/{slug}/{child}/` · calling tracker MCP instead of reading `intake.md` · paraphrasing an issue AC into something weaker · merging two epic stories into one spec · ignoring signed-off architecture.

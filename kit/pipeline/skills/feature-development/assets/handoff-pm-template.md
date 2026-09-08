@@ -10,6 +10,8 @@ Owned by **feature-development**. PM writes `features/{slug}/HANDOFF-pm.md` and 
 **plan_path:** features/{slug}/plan.md
 **research_path:** features/{slug}/research.md
 **questions_path:** features/{slug}/questions.md | none
+**decisions_path:** features/{slug}/decisions.md
+**ready_for_signoff:** true | false
 **ready_for_ba:** true | false
 
 ## Summary
@@ -32,15 +34,15 @@ Owned by **feature-development**. PM writes `features/{slug}/HANDOFF-pm.md` and 
 - What the parent should do:
 
 ## Parent next step
-Spawn ba-agent on plan.md. Do not start developer-agent.
+Wait for @signoff:requirements. Then spawn architect-agent unless skip_architect. Do not start developer-agent.
 ```
 
 ### Status values (mandatory)
 
 | status | When | `ready_for_ba` | Parent |
 |--------|------|----------------|--------|
-| `SUCCESS` | P5 blockers pass | `true` | Spawn BA |
-| `ASSUMPTIONS_USED` | Non-interactive or user said proceed; defaults labeled | `true` | Spawn BA; BA critic must stress-test Assumptions |
+| `SUCCESS` | P5 blockers pass | `true` | `@signoff:requirements`, then Architect or BA |
+| `ASSUMPTIONS_USED` | User said proceed; defaults labeled | `true` | Same; later agents must stress-test Assumptions |
 | `BLOCKED` | Interactive wait, unsafe ask, or missing scope | `false` | Wait for user then re-run PM, or stop |
 
 Do not report `SUCCESS` when blockers fail or Must decisions are still open.

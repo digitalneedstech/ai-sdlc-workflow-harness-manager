@@ -16,7 +16,8 @@ One ladder does not fit all. Parent must classify **before** any `Task`.
 - Classify **micro** if there is a new route, API, persistence, authz, money, or PII.
 - Implement in the parent chat “because it’s small.”
 - Keep `skip_*` after the diff grows into a new screen.
-- Start BA on feature class before PM `HANDOFF-pm.md`.
+- Start BA on feature class before `signoff-requirements.md`.
+- Start Architect before requirements sign-off, or on micro/minor.
 
 ## Fix / convention
 
@@ -26,7 +27,7 @@ Table in `.pipeline/skills/feature-development/assets/change-routing.md`. Write 
 |-------|--------|
 | micro | developer → devops → retro |
 | minor | developer → developer-critic → devops → retro |
-| feature | PM → BA → BA critic → waves → one tester → devops → retro |
+| feature | PM → sign-off → Architect? → sign-off → BA → BA critic → sign-off → waves → one tester → devops → retro |
 
 Unsure → **feature**. Mid-flight growth → rewrite `route.md` to `feature` and start **PM**.
 
@@ -36,4 +37,4 @@ Unsure → **feature**. Mid-flight growth → rewrite `route.md` to `feature` an
 
 ## How to confirm
 
-`features/{slug}/route.md` exists before the first specialist. Hard-upgrade triggers force `feature`. Feature class has `skip_pm: false`.
+`features/{slug}/route.md` exists before the first specialist. Hard-upgrade triggers force `feature`. Feature class has `skip_pm: false`. `skip_architect` is set from architect-policy after requirements exist.

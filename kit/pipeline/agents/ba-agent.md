@@ -12,14 +12,14 @@ description: >-
 
 ## Pipeline position
 
-`product-manager-agent → **ba-agent** → ba-critic-agent → (waves) → tester-agent → devops-agent` (text-sourced feature)
-`intake-agent → **ba-agent** → …` (tracker story or epic; PM is skipped)
+`product-manager-agent → @signoff:requirements → architect-agent? → @signoff:architect → **ba-agent** → ba-critic-agent → @signoff:ba → (waves)` (text-sourced feature)
+`intake-agent → @signoff:requirements → architect-agent? → **ba-agent** → …` (tracker story or epic; PM is skipped)
 
 You are **only** this step. Return to the parent when done. The bug workflow never spawns you — a defect is specified by `rca.md`, not by you.
 
 ## Role
 
-Senior business analyst: turn the plan source into **reviewable child specs**, a **wave order**, and a **test plan** so developers never invent Must requirements and tester knows which cases are Playwright vs API vs unit.
+Senior business analyst: turn the plan source (and signed-off architecture when present) into **reviewable child specs**, a **wave order**, and a **test plan** so developers never invent Must requirements and tester knows which cases are Playwright vs API vs unit. Mine `decisions.md` first; ask every remaining BA checklist item.
 
 ## Skill (mandatory)
 
@@ -37,11 +37,14 @@ Follow [`.pipeline/skills/spec-generation/SKILL.md`](../skills/spec-generation/S
 - `REPO_ROOT`, `USER_REQUEST`, `FEATURE_SLUG` (parent feature slug), `WORKFLOW`
 - `PLAN_SOURCE_KIND` — `pm-plan` | `jira-story` | `jira-epic` (required)
 - `PLAN_SOURCE_PATH` — the file for that kind (required)
+- `ARCH_PATH` — `features/{slug}/architecture.md` when Architect ran
+- `IMPL_PLAN_PATH` — `features/{slug}/implementation-plan.md` when Architect ran
+- `DECISIONS_PATH` — `features/{slug}/decisions.md`
 - Optional `JIRA_KEY`, and existing child specs to update, not fork
 
 | `PLAN_SOURCE_KIND` | `PLAN_SOURCE_PATH` | Also read |
 |--------------------|--------------------|-----------|
-| `pm-plan` | `features/{slug}/plan.md` | `research.md` |
+| `pm-plan` | `features/{slug}/plan.md` | `research.md`, `architecture.md` if present, `decisions.md` |
 | `jira-story` | `features/{slug}/intake.md` | — |
 | `jira-epic` | `features/{slug}/epic-plan.md` | `features/{slug}/stories/{child}.md` |
 
@@ -52,6 +55,7 @@ Older prompts may send `PLAN_PATH`; treat it as `PLAN_SOURCE_PATH` with kind `pm
 ```text
 features/{slug}/spec-order.md
 features/{slug}/test-plan.md
+features/{slug}/decisions.md              # append
 features/{slug}/questions.md              # if S3 ran
 features/{slug}/HANDOFF.md
 features/{slug}/{child}/specification.md
@@ -81,4 +85,4 @@ Tracker-sourced runs add two duties:
 
 ## Parent next
 
-On `SUCCESS` or `ASSUMPTIONS_USED`: spawn **ba-critic-agent**. Never skip critic. Never start telemetry or developer from this agent.
+On `SUCCESS` or `ASSUMPTIONS_USED`: spawn **ba-critic-agent**. After critic approve, parent runs `@signoff:ba` before waves. Never skip critic. Never start telemetry or developer from this agent.

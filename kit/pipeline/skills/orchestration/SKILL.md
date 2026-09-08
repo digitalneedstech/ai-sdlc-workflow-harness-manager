@@ -76,19 +76,19 @@ Slug rules:
 - `text`: kebab summary of the ask.
 - `jira`: `{issue-key lowercased}-{short kebab summary}`, truncated to a readable length. Reuse the folder if it already exists; never fork a second one for the same key.
 
-Template and field meanings: [`../feature-development/assets/change-routing.md`](../feature-development/assets/change-routing.md). Fill `workflow`, `work_source`, `jira_key`, `issue_type` in addition to the class fields. Seed every `skip_*` from the workflow’s `skips` in the config; `skip_tester` still comes from [`../feature-development/assets/tester-policy.md`](../feature-development/assets/tester-policy.md) or a one-run `RUN_TESTER`.
+Template and field meanings: [`../feature-development/assets/change-routing.md`](../feature-development/assets/change-routing.md). Fill `workflow`, `work_source`, `jira_key`, `issue_type` in addition to the class fields. Seed every `skip_*` from the workflow’s `skips` in the config; `skip_tester` still comes from [`../feature-development/assets/tester-policy.md`](../feature-development/assets/tester-policy.md) or a one-run `RUN_TESTER`. Seed `skip_architect: true` for micro/minor/jira-bug. On feature-class story/epic/text work, refine `skip_architect` **after** `@signoff:requirements` using [`../feature-development/assets/architect-policy.md`](../feature-development/assets/architect-policy.md) or `RUN_ARCHITECT`.
 
 `route.md` is always written at the **parent** slug, even when children exist.
 
 ### O5 Drive the chain
 
-Read the chain for the resolved workflow (and class) from the config and spawn **one new `Task` per step**, in order, waiting for each HANDOFF. `@waves` expands to `waves.child_chain` per child, read from `features/{slug}/spec-order.md`.
+Read the chain for the resolved workflow (and class) from the config and spawn **one new `Task` per step**, in order, waiting for each HANDOFF. `@waves` expands to `waves.child_chain` per child, read from `features/{slug}/spec-order.md`. `@signoff:requirements`, `@signoff:architect`, and `@signoff:ba` are **parent-only stops** — present the artifact, wait for the user, write `signoff-*.md`. Do not treat them as Tasks. When `skip_architect` is true, drop both `architect-agent` and `@signoff:architect`.
 
 | Workflow | Chain | Owning skill for the work |
 |----------|-------|---------------------------|
 | `ask` | none (parent only) | [`../ask/SKILL.md`](../ask/SKILL.md) |
 | `feature-development` | class chain (`micro` / `minor` / `feature`) | [`../feature-development/SKILL.md`](../feature-development/SKILL.md) |
-| `jira-story` | intake → BA → BA critic → waves → tester → devops → retro | [`../feature-development/SKILL.md`](../feature-development/SKILL.md), BA reads `intake.md` |
+| `jira-story` | intake → `@signoff:requirements` → architect? → `@signoff:architect` → BA → BA critic → `@signoff:ba` → waves → tester → devops → retro | [`../feature-development/SKILL.md`](../feature-development/SKILL.md), BA reads `intake.md` |
 | `jira-epic` | same as `jira-story` | same, BA reads `epic-plan.md` and writes one child spec per story |
 | `jira-bug` | intake → bug analyst → developer → developer critic → tester → devops → retro | [`../bug-fix/SKILL.md`](../bug-fix/SKILL.md) |
 
@@ -98,7 +98,7 @@ Prompts for every step: [`../feature-development/assets/parent-task-prompt.md`](
 
 ## What the parent does and does not do
 
-**Parent (no Task):** detect source, resolve workflow, answer `ask` inline, write `route.md` for product work, write `patch.md` / telemetry stubs for micro|minor, paste HANDOFFs between steps, read `spec-order.md` and fan out waves, set `DEPLOY_TARGET` from `deploy.target`. Default Task type is `generalPurpose` plus `.pipeline/agents/{name}.md` (named Cursor types only if `--agent-stubs` was installed).
+**Parent (no Task):** detect source, resolve workflow, answer `ask` inline, write `route.md` for product work, write `patch.md` / telemetry stubs for micro|minor, paste HANDOFFs between steps, run `@signoff:*`, apply architect-policy after requirements, read `spec-order.md` and fan out waves, set `DEPLOY_TARGET` from `deploy.target`. Default Task type is `generalPurpose` plus `.pipeline/agents/{name}.md` (named Cursor types only if `--agent-stubs` was installed).
 
 **Never in the parent:** tracker MCP calls, root-cause analysis, spec writing, product edits, test runs, deploys.
 
@@ -107,6 +107,7 @@ Every specialist is a **fresh context**. The isolation table in [`../feature-dev
 | Agent | Why a separate window | Inline in parent? |
 |-------|----------------------|-------------------|
 | `intake-agent` | Raw issue payload and MCP discovery must not fill the parent | **No** |
+| `architect-agent` | Challenge + diagrams must not share PM or BA reasoning | **No** |
 | `bug-analyst-agent` | Deep code tracing; must not share the fixer’s context | **No** — never the same Task as the developer |
 
 ---
@@ -121,6 +122,8 @@ Semantics are inherited, not redefined: critic verdicts and failure rows live in
 | Intake `ISSUE_TYPE` unmapped | Use the map’s `default`, and record the raw type in `route.md` `reason` |
 | Bug analyst `BLOCKED` (cannot reproduce) | Stop; ask the user for the missing environment/steps. Do not let the developer “fix” an unreproduced bug |
 | `changes-required` | Re-spawn the **previous** agent in a new Task, up to `gates.retry_cap`, then stop |
+| `@signoff:*` waiting | Stop; do not spawn the next specialist until `SIGNOFF: approved` is on disk |
+| Architect `BLOCKED_CHALLENGE_PM` | Void requirements (and downstream) sign-off; re-spawn PM |
 | Scope grows past the class mid-flight | Rewrite `route.md` to the higher class and restart at that class’s first step |
 
 ---

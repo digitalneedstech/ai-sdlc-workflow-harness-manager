@@ -28,6 +28,8 @@ User override: if they type `CHANGE_CLASS: feature` (or micro/minor), honor it u
 
 Load [tester-policy.md](tester-policy.md). Set `skip_tester` from that file’s `run_tester` column (or `RUN_TESTER: true|false` in the user ask). Feature default is on; micro/minor default is off. Changing the policy is how you turn testing on for selected classes.
 
+After requirements exist, load [architect-policy.md](architect-policy.md). Set `skip_architect` from that file (or `RUN_ARCHITECT: true|false`). Micro/minor/jira-bug are always skip. Feature-class work runs Architect only when a run trigger matches.
+
 ## `features/{slug}/route.md` (required)
 
 ```markdown
@@ -41,6 +43,7 @@ Load [tester-policy.md](tester-policy.md). Set `skip_tester` from that file’s 
 **reason:** {one sentence}
 
 skip_pm: true | false
+skip_architect: true | false
 skip_ba: true | false
 skip_ba_critic: true | false
 skip_telemetry: true | false
@@ -54,6 +57,7 @@ skip_tester: true | false
 | `work_source` | orchestration O1 | `jira` means intake ran and wrote `intake.md` |
 | `jira_key` / `issue_type` | intake HANDOFF | `issue_type` is the mapped type; the raw tracker type goes in `reason` when they differ |
 | `change_class` | this file | Hard-upgrade triggers apply to every workflow, including bugs |
+| `skip_architect` | architect-policy after requirements, or `RUN_ARCHITECT` | true on micro/minor/jira-bug; feature class starts tentative then refined |
 
 Hooks read `workflow` and the `skip_*` flags, so keep them one per line exactly as shown.
 
@@ -63,17 +67,17 @@ Chains below are the **text-sourced** workflow. Tracker workflows use the chain 
 
 | Workflow | Chain | Plan source for BA |
 |----------|-------|--------------------|
-| `jira-story` | `intake → ba → ba-critic → waves → tester → devops → retro` | `intake.md` |
+| `jira-story` | `intake → @signoff:requirements → architect? → @signoff:architect → ba → ba-critic → @signoff:ba → waves → tester → devops → retro` | `intake.md` |
 | `jira-epic` | same | `epic-plan.md` (one child spec per story) |
 | `jira-bug` | `intake → bug-analyst → developer → developer-critic → tester → devops → retro` | `rca.md` replaces the spec |
 
-`jira-bug` sets `skip_pm`, `skip_ba`, `skip_ba_critic`, `skip_telemetry` to `true` and keeps `skip_developer_critic: false`. Its tester default is on regardless of class — a fix without a verified regression is not a fix.
+`jira-bug` sets `skip_pm`, `skip_ba`, `skip_ba_critic`, `skip_architect`, `skip_telemetry` to `true` and keeps `skip_developer_critic: false`. Its tester default is on regardless of class — a fix without a verified regression is not a fix.
 
 **feature** (default)
 
-`pm → ba → ba-critic → waves (telemetry → developer → developer-critic per child) → tester → devops → retro`
+`pm → @signoff:requirements → architect? → @signoff:architect → ba → ba-critic → @signoff:ba → waves (telemetry → developer → developer-critic per child) → tester → devops → retro`
 
-Set all `skip_*` to `false`. Child specs live under `features/{slug}/{child}/`. One tester at the parent after all waves.
+Set `skip_pm`, `skip_ba`, `skip_ba_critic`, `skip_telemetry` to `false`. Set `skip_architect` from [architect-policy.md](architect-policy.md) after requirements exist. Child specs live under `features/{slug}/{child}/`. One tester at the parent after all waves. Parent must not start waves without `signoff-ba.md`.
 
 **minor**
 
@@ -81,9 +85,9 @@ Set all `skip_*` to `false`. Child specs live under `features/{slug}/{child}/`. 
 
 If tester-policy `run_tester` is true for minor (or `RUN_TESTER: true`): insert `tester-agent` before devops.
 
-Parent **before** developer: write `patch.md` (problem, 1–3 ACs, out of scope), `telemetry-contract.md` with `EVENTS: none`, and `HANDOFF-telemetry.md` `STATUS: SUCCESS` (no telemetry Task). Skip PM, BA, BA critic.
+Parent **before** developer: write `patch.md` (problem, 1–3 ACs, out of scope), `telemetry-contract.md` with `EVENTS: none`, and `HANDOFF-telemetry.md` `STATUS: SUCCESS` (no telemetry Task). Skip PM, Architect, BA, BA critic.
 
-`skip_pm: true`, `skip_ba: true`, `skip_ba_critic: true`, `skip_telemetry: true`, `skip_developer_critic: false`, `skip_tester:` from [tester-policy.md](tester-policy.md)
+`skip_pm: true`, `skip_architect: true`, `skip_ba: true`, `skip_ba_critic: true`, `skip_telemetry: true`, `skip_developer_critic: false`, `skip_tester:` from [tester-policy.md](tester-policy.md)
 
 **micro**
 
@@ -99,6 +103,7 @@ Parent **before** developer: same stubs as minor (`patch.md` can be 10 lines). S
 
 - Deploy gate: devops `OVERALL=passed` (all classes)
 - When `skip_tester` is false (any class): `features/{slug}/qa-signoff.md` with `FEATURE_SIGNOFF: passed` before devops
+- Feature-class build gate: `signoff-requirements.md`, `signoff-ba.md`, and `signoff-architect.md` unless `skip_architect`
 - Pipeline complete: after **retro-agent** (`SUCCESS` or `NO_NEW_PAGE`)
 
 If implementation grows (new route, new API) mid-flight: rewrite `route.md` to `feature` and start **PM** — do not keep skipping.

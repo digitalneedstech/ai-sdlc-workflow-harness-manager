@@ -65,4 +65,4 @@ Run I1–I6 from the intake skill: read config → connect or discover the track
 
 ## Parent next
 
-On `SUCCESS` or `ASSUMPTIONS_USED`, the parent reads `WORKFLOW` from your HANDOFF and spawns **ba-agent** (story or epic) or **bug-analyst-agent** (bug). Never start either yourself.
+On `SUCCESS` or `ASSUMPTIONS_USED`, the parent reads `WORKFLOW` from your HANDOFF. For story or epic it runs `@signoff:requirements`, then Architect (unless skipped) and BA. For a bug it spawns **bug-analyst-agent**. Never start those yourself.

@@ -13,6 +13,8 @@ Owned by **feature-development**. BA writes `features/{slug}/HANDOFF.md` and pas
 **spec_paths:**
 - features/{slug}/{child}/specification.md
 **questions_path:** features/{slug}/questions.md | none
+**decisions_path:** features/{slug}/decisions.md
+**architecture_path:** features/{slug}/architecture.md | none
 **ready_for_ba_critic:** true | false
 
 ## Summary
@@ -32,7 +34,7 @@ Owned by **feature-development**. BA writes `features/{slug}/HANDOFF.md` and pas
 - What the parent should do:
 
 ## Parent next step
-Spawn BA critic on all child specs + spec-order.md + test-plan.md. Do not start developer-agent.
+Spawn BA critic. After critic approve, wait for @signoff:ba. Do not start developer-agent.
 ```
 
 ### Status values (mandatory)

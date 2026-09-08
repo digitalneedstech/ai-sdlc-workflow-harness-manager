@@ -7,7 +7,7 @@ alwaysApply: false
 
 When the user wants work done or a question about this repo, follow the IDE `run-workflow` skill first. Run `.pipeline/loader/load_workflow.py` and Read only `allowed_reads`.
 
-Chains, skips, tracker settings, and retry caps come from `.pipeline/config.json`. File packs live in `.pipeline/workflows/`.
+Chains, skips, tracker settings, retry caps, and planning sign-off gates come from `.pipeline/config.json`. File packs live in `.pipeline/workflows/`. Feature class may run `architect-agent` after `@signoff:requirements`.
 
 Product workflows: spawn **one new Task per agent**. `ask` stays in the parent. Never call tracker MCP from the parent.
 

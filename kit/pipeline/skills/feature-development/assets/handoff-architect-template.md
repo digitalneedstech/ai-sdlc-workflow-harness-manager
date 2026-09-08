@@ -1,0 +1,52 @@
+# HANDOFF template (Architect step)
+
+Owned by **feature-development**. Architect writes
+`features/{slug}/HANDOFF-architect.md` and pastes this body in the final message.
+
+```markdown
+# HANDOFF — architect-agent
+
+**status:** SUCCESS | BLOCKED | BLOCKED_CHALLENGE_PM | ASSUMPTIONS_USED
+**slug:** {slug}
+**architecture_path:** features/{slug}/architecture.md | none
+**implementation_plan_path:** features/{slug}/implementation-plan.md | none
+**questions_path:** features/{slug}/questions.md | none
+**decisions_path:** features/{slug}/decisions.md
+**ready_for_ba:** true | false
+**child_split_changed:** true | false
+
+## Summary
+{3–6 sentences: chosen shape, ADRs, child split, what was challenged}
+
+## Evidence used
+- {path}: {fact}
+
+## Challenge audience
+none | user | pm
+
+## Assumptions used (if any)
+- A-1: …
+
+## Open questions left
+- none | OQ-1: …
+
+## Failure / recovery (if not SUCCESS)
+- What failed:
+- What the parent should do:
+
+## Parent next step
+Wait for @signoff:architect, then spawn ba-agent. Do not start developer-agent.
+If BLOCKED_CHALLENGE_PM: void signoff-requirements.md, re-spawn PM, user re-signs, then Architect again.
+If BLOCKED with user questions: wait, then re-spawn Architect.
+```
+
+### Status values (mandatory)
+
+| status | When | `ready_for_ba` | Parent |
+|--------|------|----------------|--------|
+| `SUCCESS` | A4 blockers pass | `true` | `@signoff:architect`, then BA |
+| `ASSUMPTIONS_USED` | User said proceed; defaults labeled in ADRs | `true` | Same; BA critic stress-tests defaults |
+| `BLOCKED` | User questions or incomplete design | `false` | Wait; re-spawn Architect |
+| `BLOCKED_CHALLENGE_PM` | Requirements must change (feature-development only) | `false` | Void requirements sign-off; re-spawn PM |
+
+Do not report `SUCCESS` when blockers fail or Must architecture decisions are still open.

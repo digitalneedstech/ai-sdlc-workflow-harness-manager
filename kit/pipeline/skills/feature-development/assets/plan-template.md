@@ -67,7 +67,7 @@ At least one. Each becomes `features/{slug}/{child-slug}/`.
 
 none | OQ-1: …
 
-## 11. Ready for BA
+## 11. Ready for sign-off
 
-Yes — split is stable. | No — {what is still blocking}
+Yes — split is stable; parent may request requirements sign-off. | No — {what is still blocking}
 ```

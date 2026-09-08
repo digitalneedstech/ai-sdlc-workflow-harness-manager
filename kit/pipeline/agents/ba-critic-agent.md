@@ -12,7 +12,7 @@ readonly: true
 
 ## Pipeline position
 
-`ba-agent → **ba-critic-agent** → parent runs implementation waves → tester-agent → …`
+`ba-agent → **ba-critic-agent** → @signoff:ba → parent runs implementation waves → tester-agent → …`
 
 You are the **reviewer**, not the author. Default: notes + verdict only.
 
@@ -25,12 +25,14 @@ You are the **reviewer**, not the author. Default: notes + verdict only.
 ## Inputs (parent injects)
 
 - `REPO_ROOT`, `FEATURE_SLUG` (parent slug), `USER_REQUEST`
-- `PLAN_PATH` — `features/{slug}/plan.md`
+- `PLAN_PATH` — `features/{slug}/plan.md` | `intake.md` | `epic-plan.md`
+- `ARCH_PATH` — `features/{slug}/architecture.md` when Architect ran
+- `IMPL_PLAN_PATH` — `features/{slug}/implementation-plan.md` when Architect ran
 - `SPEC_ORDER_PATH` — `features/{slug}/spec-order.md`
 - `TEST_PLAN_PATH` — `features/{slug}/test-plan.md`
 - `BA_HANDOFF_PATH` — `features/{slug}/HANDOFF.md`
 - Child `SPEC_PATH`s from the HANDOFF `spec_paths` list
-- Optional `questions.md`
+- Optional `questions.md`, `decisions.md`
 
 ## What to review (all required)
 
@@ -43,6 +45,7 @@ You are the **reviewer**, not the author. Default: notes + verdict only.
 7. **Safety** — authz, PII, secrets, money, irreversible actions not silently guessed.
 8. **Order** — `spec-order.md` `**children:**` matches folders on disk; waves have real dependencies; independent children are parallel.
 9. **Test plan** — every Must AC appears in `test-plan.md` with a layer (`ui` / `e2e` / `api` / `unit` / `telemetry` / `a11y`). Feature-class `e2e` is required. Each child has `test-strategy.md`.
+10. **Architecture** — when `architecture.md` exists, flag specs that ignore ADRs, the technical child split, or do-not-invent constraints.
 
 Write findings to `features/{slug}/ba-critic-report.md` when verdict is not `approve`.
 
@@ -50,15 +53,15 @@ Write findings to `features/{slug}/ba-critic-report.md` when verdict is not `app
 
 | `CRITIC_VERDICT` | Meaning | Parent |
 |------------------|---------|--------|
-| `approve` | Specs + order + test plan are implementable | Start wave 1 (`telemetry-agent` per child) |
-| `approve-with-nits` | Ship-quality gaps are non-blocking | Start wave 1; pass nits to developers later |
+| `approve` | Specs + order + test plan are implementable | Parent runs `@signoff:ba`, then wave 1 |
+| `approve-with-nits` | Ship-quality gaps are non-blocking | Parent runs `@signoff:ba`; pass nits to developers later |
 | `changes-required` | Blocking gaps | Re-spawn **ba-agent**. Do **not** start telemetry or developer |
 
 ## How parent handles comments
 
 - **changes-required:** parent re-runs ba-agent with `CRITIC_REPORT_PATH` and `HUMAN_DIRECTIVE: address critic findings`. Cap retries (suggested: 2). After cap, stop for the user.
-- **approve-with-nits:** proceed to waves; developers may fix nits if cheap.
-- **approve:** read `spec-order.md` and spawn telemetry per child in wave 1.
+- **approve-with-nits:** `@signoff:ba`, then waves; developers may fix nits if cheap.
+- **approve:** `@signoff:ba`, then read `spec-order.md` and spawn telemetry per child in wave 1.
 
 Critic must give **file + section + what to change**. No vague “make it better.”
 
@@ -81,7 +84,7 @@ SPEC_ORDER_PATH: features/{slug}/spec-order.md
 SPEC_PATHS: features/{slug}/{child}/specification.md
 REPORT_PATH: features/{slug}/ba-critic-report.md | N/A
 GAPS_SUMMARY: NONE | {one paragraph}
-PARENT_NEXT: wave-1 telemetry-agent | re-run ba-agent | stop for user
+PARENT_NEXT: @signoff:ba then wave-1 telemetry-agent | re-run ba-agent | stop for user
 ```
 
 On `changes-required`, include numbered `FIXES:` with spec section IDs (child slug, FR-x, AC-x, §n).

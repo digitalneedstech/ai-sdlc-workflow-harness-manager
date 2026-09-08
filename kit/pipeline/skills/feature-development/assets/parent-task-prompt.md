@@ -4,7 +4,9 @@ Owned by **feature-development**. Parent picks the **workflow** ([orchestration]
 
 **Always include:** `REPO_ROOT` (absolute), `FEATURE_SLUG`, `WORKFLOW`, `CHANGE_CLASS: micro|minor|feature`, disk paths.
 
-Feature class: parent slug for PM, BA, BA critic, tester, devops, retro. Child work uses `FEATURE_SLUG: {parent}/{child}`.
+Feature class: parent slug for PM, Architect, BA, BA critic, tester, devops, retro. Child work uses `FEATURE_SLUG: {parent}/{child}`.
+
+`@signoff:requirements`, `@signoff:architect`, and `@signoff:ba` are parent-only. Do not spawn a Task. Present the artifact, wait for the user, write `signoff-*.md` from [planning-signoff-template.md](planning-signoff-template.md).
 
 ---
 
@@ -120,10 +122,37 @@ FEATURE_SLUG: {parent-slug}
 
 1. Create features/{slug}/ if missing (parent may already have).
 2. Run P1–P6. Research the repo and the web; do not implement product code.
-3. Ask questions only when a blocking unknown would change scope, actors, success, or the child-spec split. Max 10. Otherwise label defaults.
+3. Follow clarify-first. Mine prior artifacts into decisions.md. Ask every remaining PM checklist item (max 20). Never ask what the repo or decisions.md already answers.
 4. If interactive questions are required, return BLOCKED with questions.md and stop.
-5. Otherwise write plan.md + research.md + HANDOFF-pm.md.
+5. Otherwise write plan.md + research.md + decisions.md + HANDOFF-pm.md.
 6. Return the HANDOFF body in your final message.
+Do not call Architect, BA, or developer. Do not write specification.md.
+```
+
+---
+
+## Architect step (feature class, when skip_architect is false)
+
+```text
+subagent_type: generalPurpose
+CONTEXT: This is a new Task. You do not have the parent chat. Use only this prompt and files on disk.
+You are the architect. Follow .pipeline/agents/architect-agent.md and .pipeline/skills/architecture-design/SKILL.md exactly.
+Load templates from .pipeline/skills/feature-development/assets/ only when architecture-design names them.
+
+REPO_ROOT: {absolute path}
+USER_REQUEST: {verbatim}
+FEATURE_SLUG: {parent-slug}
+WORKFLOW: {feature-development|jira-story|jira-epic}
+PLAN_SOURCE_KIND: pm-plan | jira-story | jira-epic
+PLAN_SOURCE_PATH: features/{slug}/plan.md | features/{slug}/intake.md | features/{slug}/epic-plan.md
+DECISIONS_PATH: features/{slug}/decisions.md
+SIGNOFF_REQUIREMENTS_PATH: features/{slug}/signoff-requirements.md
+
+1. Run A1–A5. Read signed-off requirements, decisions.md, and the repo first.
+2. Challenge remaining Architect checklist items (max 15) before drawing diagrams.
+3. audience: user → BLOCKED. audience: pm on feature-development → BLOCKED_CHALLENGE_PM. On jira-story/epic treat pm as user.
+4. Write architecture.md (mermaid only) + implementation-plan.md + append decisions.md + HANDOFF-architect.md.
+5. Return the HANDOFF body in your final message.
 Do not call BA or developer. Do not write specification.md.
 ```
 
@@ -142,13 +171,17 @@ USER_REQUEST: {verbatim}
 FEATURE_SLUG: {parent-slug}
 PLAN_SOURCE_KIND: pm-plan | jira-story | jira-epic
 PLAN_SOURCE_PATH: features/{slug}/plan.md | features/{slug}/intake.md | features/{slug}/epic-plan.md
+ARCH_PATH: features/{slug}/architecture.md | none
+IMPL_PLAN_PATH: features/{slug}/implementation-plan.md | none
+DECISIONS_PATH: features/{slug}/decisions.md
 JIRA_KEY: {KEY} | n/a
 
-1. Read the plan source. Do not re-ask answered questions. Never call tracker MCP — intake already fetched everything.
-2. Run S1–S6. Write one specification.md per child under features/{slug}/{child}/, each carrying its source key.
-3. Write spec-order.md (waves) and test-plan.md plus each child’s test-strategy.md.
-4. If interactive clarifying questions are required, return BLOCKED with questions.md and stop.
-5. Write HANDOFF.md. Return the HANDOFF body in your final message.
+1. Read the plan source, decisions.md, and architecture/implementation-plan when present. Do not re-ask answered questions. Never call tracker MCP — intake already fetched everything.
+2. Run S1–S6. Follow clarify-first. Ask remaining BA checklist items (max 15).
+3. Write one specification.md per child under features/{slug}/{child}/, each carrying its source key. Honor the Architect child split when it exists.
+4. Write spec-order.md (waves) and test-plan.md plus each child’s test-strategy.md.
+5. If interactive clarifying questions are required, return BLOCKED with questions.md and stop.
+6. Write HANDOFF.md. Return the HANDOFF body in your final message.
 Do not call the critic or developer. Do not edit product source.
 ```
 
@@ -167,11 +200,14 @@ REPO_ROOT: {absolute path}
 FEATURE_SLUG: {parent-slug}
 USER_REQUEST: {verbatim}
 PLAN_SOURCE_PATH: features/{slug}/plan.md | features/{slug}/intake.md | features/{slug}/epic-plan.md
+ARCH_PATH: features/{slug}/architecture.md | none
+IMPL_PLAN_PATH: features/{slug}/implementation-plan.md | none
 SPEC_ORDER_PATH: features/{slug}/spec-order.md
 TEST_PLAN_PATH: features/{slug}/test-plan.md
 BA_HANDOFF_PATH: features/{slug}/HANDOFF.md
 
-Review the plan source, every child specification.md, spec-order.md, and test-plan.md.
+Review the plan source, architecture when present, every child specification.md, spec-order.md, and test-plan.md.
+Flag specs that ignore signed-off ADRs.
 Tracker-sourced: check each spec against the verbatim issue text — a paraphrase that weakens an AC is a finding.
 Emit CRITIC_VERDICT. Write features/{slug}/HANDOFF-ba-critic.md. Do not spawn telemetry or developer.
 ```
@@ -208,10 +244,12 @@ REPO_ROOT: {absolute path}
 FEATURE_SLUG: {parent-slug}/{child-slug}
 PARENT_SLUG: {parent-slug}
 SPEC_PATH: features/{parent-slug}/{child-slug}/specification.md
+ARCH_PATH: features/{parent-slug}/architecture.md | none
+IMPL_PLAN_PATH: features/{parent-slug}/implementation-plan.md | none
 TELEMETRY_CONTRACT_PATH: features/{parent-slug}/{child-slug}/telemetry-contract.md
 BA_CRITIC_VERDICT: {approve | approve-with-nits}
 
-Implement this child’s Must FRs and the telemetry allowlist only. Fill security-preflight.md in the child folder. Do not spawn the critic.
+Implement this child’s Must FRs and the telemetry allowlist only. Follow the signed-off implementation plan when it exists. BLOCKED if spec and plan conflict. Fill security-preflight.md in the child folder. Do not spawn the critic.
 Return HANDOFF-developer.md in the child folder.
 ```
 

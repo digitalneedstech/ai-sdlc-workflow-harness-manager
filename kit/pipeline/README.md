@@ -93,8 +93,8 @@ Confirm `allowed_reads` is the smallest set that step needs. Do not add every
 skill in the pack.
 
 Existing workflows: `ask`, `feature-development`, `jira-story`, `jira-epic`,
-`jira-bug`. Architecture-diagram work is not in this pack yet — add it with
-the same checklist.
+`jira-bug`. Feature-class work can run `architect-agent` after signed-off
+requirements (see `architect-policy.md` and `@signoff:*` in `config.json`).
 
 ## What you do not edit
 

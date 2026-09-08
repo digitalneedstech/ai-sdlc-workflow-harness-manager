@@ -26,7 +26,7 @@ Entry point is `.cursor/skills/orchestration/SKILL.md` (O1 detect → O2 intake 
 | Work source | Workflow | Chain |
 |-------------|----------|-------|
 | plain text | `feature-development` | class chain (micro / minor / feature) |
-| story or task | `jira-story` | intake → BA → BA critic → waves → tester → devops → retro |
+| story or task | `jira-story` | intake → sign-off requirements → architect? → sign-off → BA → BA critic → sign-off BA → waves → tester → devops → retro |
 | epic | `jira-epic` | same, BA gets `epic-plan.md` and writes one child spec per story |
 | bug | `jira-bug` | intake → bug analyst → developer → developer critic → tester → devops → retro |
 
