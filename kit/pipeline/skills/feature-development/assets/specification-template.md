@@ -95,6 +95,13 @@ If no UI: `N/A — backend/service only`.
 
 Prefer Given/When/Then when it clarifies. Every Must FR needs ≥1 AC.
 
+When `TEST_DESIGN_ENABLED: true`, add a binding row per AC (no free-form
+automation steps):
+
+| AC | Lowest level | Actions | Fixtures | Oracles | E2E reason |
+|----|--------------|---------|----------|---------|------------|
+| AC-1 | api | ACT-… | FIX-… | ORC-… | — |
+
 ## 11. Assumptions
 
 | ID | Assumption | Default chosen | Impact if wrong |

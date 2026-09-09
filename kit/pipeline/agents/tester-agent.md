@@ -58,7 +58,7 @@ Turn the BA test plan into executed cases. You are not devops.
 
 1. Read `test-plan.md` and every child `test-strategy.md` when they exist. On micro/minor, read `patch.md` ACs instead. On the bug workflow, read `rca.md`.
 2. Load [qa-test-cases-template.md](../skills/feature-development/assets/qa-test-cases-template.md). Map **every Must AC** to ≥1 test case (bug: every RCA reproduction, blast-radius caller, and the regression case). Include layer (`ui` / `e2e` / `api` / `unit` / `telemetry` / `a11y`) and owning spec slug (`patch` or `rca` when there are no child specs).
-3. Write `features/{slug}/qa-test-cases.md`. Browser rows (`ui` / browser `e2e` / `a11y`) must have numbered, automatable **Steps** and a concrete **Expected** (exact copy, role, or observable state). Vague steps → `FAILED` `INPUT_MISSING` before Playwright.
+3. Write `features/{slug}/qa-test-cases.md`. Browser rows (`ui` / browser `e2e` / `a11y`) must have numbered, automatable **Steps** and a concrete **Expected** (exact copy, role, or observable state). Vague steps → `FAILED` `INPUT_MISSING` before Playwright. When `TEST_DESIGN_ENABLED: true` and `features/{slug}/test-design/cases.json` exists, use the rendered `qa-test-cases.md` **procedures** (numbered Steps / Expected) — do not re-plan from Must ACs and do not collapse them back to overlay IDs. Still execute the existing tester path. Do not write a new product test tree from `cases.json`.
 4. Run required layers via the tester-only skills. Feature class: do not skip because a runner “does not exist”:
    - [testing-unit](../skills/testing-unit/SKILL.md) when `unit: required`
    - [testing-api](../skills/testing-api/SKILL.md) when `api: required`

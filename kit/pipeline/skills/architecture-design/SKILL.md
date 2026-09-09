@@ -99,7 +99,9 @@ every section. Use **mermaid only** (no images). Sequence diagram is required
 when a new API or multi-step flow exists. If you revise the PM / intake child
 split for technical reasons, that split **wins** for BA. Append ADRs to
 `decisions.md`. Keep `recorded` concerns visible — do not drop them because
-diagrams exist.
+diagrams exist. When `TEST_DESIGN_ENABLED: true`, write
+`features/{slug}/test-design/model-delta.json` (`planned` nodes) or set
+`no_test_model_change: true`.
 
 **A4 Self-gate** — All **blockers** below must pass. Else fix or return to A2.
 Never HANDOFF `SUCCESS` on a failing design.
@@ -137,6 +139,7 @@ concerns), then BA.
 - [ ] Child-spec split listed (at least one kebab slug)
 - [ ] Constraints and do-not-invent non-empty
 - [ ] Assumptions labeled; no silent auth, persistence, or vendor invention
+- [ ] When `TEST_DESIGN_ENABLED`: `test-design/model-delta.json` exists or `no_test_model_change` is true
 - [ ] As-is is factual (paths or explicit greenfield)
 - [ ] No product file edits outside `features/{slug}/`
 

@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "items": [
+    {
+      "id": "INV-1",
+      "what": "",
+      "why": "",
+      "level": "unit | api | e2e | ui",
+      "e2e_reason": "",
+      "technique": "boundary | partition | decision-table | role-flag | state-transition | negative | path",
+      "ac": "AC-1",
+      "fr": "FR-1",
+      "spec": "child-slug"
+    }
+  ]
+}

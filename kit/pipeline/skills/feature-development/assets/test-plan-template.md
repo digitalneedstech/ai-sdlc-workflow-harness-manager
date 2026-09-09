@@ -57,4 +57,6 @@ No CSS selectors here — Playwright chooses `getByRole` after implementation. *
 ## Execution
 
 One **tester-agent** at feature level after every child developer-critic approves. Not per spec. Not between waves.
+
+When `TEST_DESIGN_ENABLED: true`, keep this file as the layer rollup. Structured cases live in `test-design/cases.json`; do not write free-form automation steps here.
 ```

@@ -12,7 +12,7 @@ State contract: [pipeline-state.md](pipeline-state.md). Do **not** paste a prior
 
 **Always include:** `REPO_ROOT` (absolute), `FEATURE_SLUG`, `WORKFLOW`, `CHANGE_CLASS: micro|minor|feature`, the two state paths.
 
-Feature class: parent slug for PM, Architect, BA, BA critic, tester, devops, retro. Child work uses `FEATURE_SLUG: {parent}/{child}`.
+Feature class: parent slug for PM, Architect, BA, BA critic, test-designer, tester, devops, retro. Child work uses `FEATURE_SLUG: {parent}/{child}`. When `test_design.enabled`, add `TEST_DESIGN_ENABLED: true` to Architect, BA, BA critic, test-designer, and tester.
 
 `@signoff:requirements`, `@signoff:architect`, and `@signoff:ba` are parent-only. Do not spawn a Task. Present the artifact **and recorded concerns**, wait for the user, write `signoff-*.md` from [planning-signoff-template.md](planning-signoff-template.md), update `pipeline-state.json`.
 
@@ -43,6 +43,24 @@ PRIOR_STATE_PATH: features/{slug}/state/{prior-agent}.json | none
 ## Parent: create state (before the first specialist)
 
 Write `features/{slug}/pipeline-state.json` from [pipeline-state-template.json](pipeline-state-template.json). Set `current_step` to the first agent. Mark unused class steps `skipped`. After each HANDOFF, set that step `completed` or `blocked` and move `current_step`.
+
+---
+
+## Knowledge curator step (`test-knowledge-bootstrap` only)
+
+```text
+subagent_type: generalPurpose
+{isolation preamble}
+FEATURE_SLUG: qa-knowledge-bootstrap
+CANDIDATE_RUN: {run}
+PRIOR_STATE_PATH: none
+You are the knowledge curator. Follow .pipeline/agents/knowledge-curator-agent.md
+and .pipeline/skills/test-knowledge-bootstrap/SKILL.md exactly.
+
+Require graphify-out/graph.json. Write candidates only under
+test-knowledge/_candidates/{run}/. Write REVIEW.md. Do not promote.
+Do not import Graphify. Do not invent a graph.
+```
 
 ---
 
@@ -144,6 +162,7 @@ PLAN_SOURCE_KIND: pm-plan | jira-story | jira-epic
 
 Run A1–A5. Open files from the prior state only. Raise blocking or recorded concerns.
 Write architecture.md, implementation-plan.md, state/architect-agent.json.
+If TEST_DESIGN_ENABLED is true, also write features/{slug}/test-design/model-delta.json or set no_test_model_change.
 Do not call BA or developer. Do not write specification.md.
 ```
 
@@ -161,6 +180,7 @@ PLAN_SOURCE_KIND: pm-plan | jira-story | jira-epic
 
 Read the prior state, then only listed files. Honor the Architect child split when it exists.
 Write child specification.md files, spec-order.md, test-plan.md, state/ba-agent.json.
+If TEST_DESIGN_ENABLED is true, bind each Must AC to overlay nodes and a lowest test level. Do not write free-form automation steps.
 If interactive questions are required, return BLOCKED and stop.
 Do not call the critic or developer. Do not edit product source.
 ```
@@ -179,6 +199,27 @@ You are the BA critic. Follow .pipeline/agents/ba-critic-agent.md. Read-only.
 
 Review files listed in the BA state. Flag specs that ignore signed-off ADRs or recorded architect concerns.
 Write state/ba-critic-agent.json. Do not spawn telemetry or developer.
+If TEST_DESIGN_ENABLED is true, also review AC bindings and that the test plan is not free-form automation.
+```
+
+---
+
+## Test designer step (feature class, only when test_design.enabled)
+
+Spawn only after ba-critic `approve` | `approve-with-nits`, before `@signoff:ba`. Skip on micro, minor, and jira-bug.
+
+```text
+subagent_type: generalPurpose
+{isolation preamble}
+PRIOR_STATE_PATH: features/{slug}/state/ba-critic-agent.json
+TEST_DESIGN_ENABLED: true
+You are the test designer. Follow .pipeline/agents/test-designer-agent.md and .pipeline/skills/test-design/SKILL.md exactly.
+
+Write inventory.json and cases.json under features/{slug}/test-design/.
+Every ui / browser e2e case needs numbered steps[].do and expected[].see
+(click-path: open, sign-in from env names, navigate, click, assert).
+Overlay IDs alone are not enough. Run pipeline-kit knowledge render --slug {slug}.
+Do not write product test trees. Do not import Graphify.
 ```
 
 ---
@@ -240,6 +281,7 @@ You are the tester agent. Follow .pipeline/agents/tester-agent.md.
 Feature class cannot finish as TESTS: cases-only.
 
 Write qa-test-cases.md, run required layers, write qa-signoff.md and state/tester-agent.json.
+If TEST_DESIGN_ENABLED is true and features/{slug}/test-design/cases.json exists, use the rendered qa-test-cases.md. Do not re-plan from Must ACs.
 PARENT_NEXT must be devops-agent if STATUS is SUCCESS.
 ```
 

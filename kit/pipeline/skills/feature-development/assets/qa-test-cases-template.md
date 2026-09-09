@@ -8,7 +8,9 @@
 
 Owned by **feature-development**. Tester copies this to `features/{slug}/qa-test-cases.md`. Every child Must AC must appear. Feature class must execute automated layers — not cases-only.
 
-Browser rows (`ui` / browser `e2e` / `a11y`) become one Playwright `test('TC-N')` each. **Steps** and **Expected** in this file are binding; locators are chosen later. Number the steps; do not leave a one-line slogan.
+Browser rows (`ui` / browser `e2e` / `a11y`) become one Playwright `test('TC-N')` each. **Steps** and **Expected** in this file are binding; locators are chosen later. Number the steps (open → sign-in from env names → click named nav/button → assert heading/form). Do not leave a one-line slogan or catalog IDs only.
+
+When `test_design.enabled`, prefer the rendered procedure sections (`### TC-N`) over a cramped table.
 
 ```markdown
 # Test cases — {slug}

@@ -113,6 +113,7 @@ Tracker-sourced: treat the issue text as the requirement, not as a suggestion. A
 - Feature class: `e2e` cannot be `n/a`. `ui: n/a` only when there is no user-visible surface.
 - `ui` = Playwright in the browser (unattended, feature-level tester). `api` = existing HTTP/RPC runner. `unit` = existing unit runner.
 - Execution is **one tester after all child developer-critics**, not per spec and not between waves.
+- When `TEST_DESIGN_ENABLED: true`: bind each Must AC to overlay action/fixture/oracle IDs and the lowest effective level. Do not write free-form automation steps. Login is an auth fixture unless login is under test. E2E needs a written reason. Test-designer writes `cases.json` after critic; you still write `test-plan.md` as the layer rollup.
 
 **S5 Self-gate** — All **blockers** below must pass. Else fix or return to S3. Never HANDOFF `SUCCESS` on a failing pack.
 
@@ -156,6 +157,7 @@ Must FRs still in Open questions ⇒ not Ready. Do not start `developer-agent`.
 - [ ] As-is is factual (paths or explicit greenfield)
 - [ ] Out of scope non-empty (or increment bounded with reason)
 - [ ] Feature-class `e2e` is `required` on the test plan
+- [ ] When `TEST_DESIGN_ENABLED`: every Must AC names a lowest level and overlay IDs, or an explicit gap
 - [ ] No product file edits outside `features/{slug}/`
 
 Cheap quality fixes before SUCCESS: atomic FRs, error paths, UI empty/loading/error, product language (not “edit file X”), implementable length (see example asset).

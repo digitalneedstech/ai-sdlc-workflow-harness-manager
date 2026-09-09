@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "no_test_model_change": false,
+  "planned": [
+    {
+      "id": "ACT-new-step",
+      "kind": "action | fixture | oracle | area",
+      "name": "",
+      "evidence": "planned",
+      "reason": ""
+    }
+  ]
+}

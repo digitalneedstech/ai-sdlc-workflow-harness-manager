@@ -167,6 +167,9 @@ pipeline-kit workflows
 | `pipeline-kit workflows [project]` | List workflows from the active project or user pack |
 | `pipeline-kit uninstall [project]` | Remove managed project files |
 | `pipeline-kit uninstall --user` | Remove managed user files |
+| `pipeline-kit knowledge init [project]` | Opt-in: create `test-knowledge/` and set `test_design.enabled` |
+| `pipeline-kit knowledge extract [project]` | Run official `graphify extract . --code-only` (no homemade graph) |
+| `pipeline-kit knowledge status [project]` | Graphify CLI and `graphify-out/graph.json` |
 
 Install/update commands accept `--ide cursor`, `claude-code`, `github`, or
 `none`. Add `--agent-stubs` to create thin `.cursor/agents/*.md` files.
@@ -178,6 +181,36 @@ Open the repository root in the IDE so the skill folder is discovered.
 
 The old `python3 install.py` flags remain available for compatibility and
 for the maintainer-only `--sync-kit` operation.
+
+### 2.1 Optional QA knowledge (opt-in)
+
+`pipeline-kit init` / `update` do **not** turn this on. Absent
+`test_design.enabled` keeps today’s planning ladder.
+
+```bash
+pipeline-kit init --ide cursor
+pipeline-kit knowledge init --register-skill
+# If graphify is missing, install it the official way, then:
+pipeline-kit knowledge extract
+```
+
+Official Graphify (not a kit extra):
+
+```text
+uv tool install graphifyy
+graphify install
+graphify extract . --code-only
+```
+
+That writes `graphify-out/graph.json`. Pipeline-kit never imports Graphify
+and never invents a substitute graph. If extract fails, stop and run those
+commands. Then in the IDE: **Bootstrap QA knowledge for this repo**. Approve
+one Markdown report. After that, “work on …” writes stepwise click-path
+cases in `features/{slug}/qa-test-cases.md` when `test_design.enabled` is
+true (open → sign-in from env names → navigate → click → assert).
+
+`graphify-out/` is Graphify-owned. The team chooses whether to commit it or
+ignore it. Do not create a second graph store.
 
 ---
 
@@ -207,6 +240,7 @@ Unrelated asks (weather, locations, trivia): do not run the loader.
 |-------------|------------|
 | Product work (“work on …”, “fix …”, “change …”, “develop …”, “implement …”, “add …”, or a tracker issue key) | Follow `.cursor/skills/run-workflow/SKILL.md` (or `.claude/skills/run-workflow/SKILL.md`). Run `.pipeline/loader/load_workflow.py` (or `~/.pipeline/loader/load_workflow.py`). Read **only** `allowed_reads`. |
 | Question about this repo (how / what / why / where / explain) | Same skill, workflow `ask`. No Task chain. |
+| Bootstrap QA knowledge for this repo | Workflow `test-knowledge-bootstrap`. Not the feature ladder. |
 | Unrelated asks | Do not run the loader. |
 
 Chains and skips: `.pipeline/config.json`.
@@ -431,6 +465,11 @@ Add:
 features/
 .pipeline/state/
 ```
+
+`graphify-out/` is optional in git. Commit it if the team wants a shared
+structural graph; ignore it if each checkout re-runs
+`pipeline-kit knowledge extract`. `test-knowledge/` (reviewed catalogs) is
+usually committed after a bootstrap promote.
 
 `features/` holds plans, specs, HANDOFFs, and deploy logs for one run.
 `.pipeline/state/active-context.json` is the live allowlist. Most teams do

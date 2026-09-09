@@ -69,12 +69,17 @@ features/{slug}/questions.md              # if A2 ran
 features/{slug}/state/architect-agent.json
 features/{slug}/pipeline-state.json
 features/{slug}/HANDOFF-architect.md
+features/{slug}/test-design/model-delta.json   # only when TEST_DESIGN_ENABLED
 ```
 
 ## Work
 
 Run A1–A5 from the architecture-design skill: discover → challenge / concerns →
 design → self-gate → state + handoff. Do not draw diagrams until A2 is clear.
+
+When `TEST_DESIGN_ENABLED: true`, also write
+`features/{slug}/test-design/model-delta.json` from the model-delta template,
+or set `no_test_model_change: true` when the overlay does not change.
 
 ## Failure
 

@@ -68,6 +68,9 @@ features/{slug}/{child}/specification.md
 features/{slug}/{child}/test-strategy.md
 ```
 
+When `TEST_DESIGN_ENABLED: true`, bind each Must AC to overlay action/fixture/oracle
+IDs and a lowest test level. Do not write free-form automation steps.
+
 Handoff shape: [feature-development/assets/handoff-template.md](../skills/feature-development/assets/handoff-template.md).
 
 ## Work

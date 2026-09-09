@@ -16,8 +16,8 @@ dependencies = []
 pipeline-kit = "pipeline_kit.install:cli_main"
 
 [tool.setuptools]
-packages = ["pipeline_kit"]
-package-dir = { pipeline_kit = "." }
+packages = ["pipeline_kit", "knowledge"]
+package-dir = { pipeline_kit = ".", knowledge = "knowledge" }
 include-package-data = true
 
 [tool.setuptools.dynamic]

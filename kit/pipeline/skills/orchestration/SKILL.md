@@ -4,7 +4,8 @@ description: >-
   Top layer for any product-work ask. Invoke first when the user wants work
   done: “work on …”, “fix …”, “change …”, “develop …”, or a message that
   contains a tracker issue key. Decide the **workflow** (ask |
-  feature-development | jira-story | jira-bug | jira-epic). Questions stay on
+  feature-development | jira-story | jira-bug | jira-epic |
+  test-knowledge-bootstrap). Questions stay on
   `ask` (no Task chain). Product work writes features/{slug}/route.md, then
   drives that workflow’s Task chain. Parent-only. Never implements product
   code and never replaces a workflow skill.
@@ -48,6 +49,7 @@ When `work_source` is `text`, also classify **intent**:
 | Intent | Signals |
 |--------|---------|
 | `question` | how / what / why / where / explain / “can you tell”, and no product verb |
+| `knowledge_bootstrap` | bootstrap QA knowledge, bootstrap test knowledge |
 | `product` | work on, fix, change, develop, implement, add, build, or an explicit `WORKFLOW:` other than `ask` |
 
 ### O2 Intake (only when `work_source: jira`)
@@ -63,10 +65,13 @@ If intake returns `BLOCKED` because no tracker MCP is reachable, relay its recov
 | `work_source` | Workflow |
 |---------------|----------|
 | `text` + `question` | `ask` — parent answers from the allowlist; **no Task chain** |
+| `text` + `knowledge_bootstrap` | `test-knowledge-bootstrap` — not the feature ladder |
 | `text` + `product` | `feature-development` |
 | `jira` | `intake.jira.issue_type_map[{issue_type}]`, falling back to that map’s `default` |
 
 `ask` still runs the loader (`--workflow ask --step parent`) so the pack gate has an allowlist. Then follow [`../ask/SKILL.md`](../ask/SKILL.md) and stop — do not write `route.md` or spawn specialists.
+
+`test-knowledge-bootstrap` runs the loader (`--workflow test-knowledge-bootstrap --step parent`). Then follow [`../test-knowledge-bootstrap/SKILL.md`](../test-knowledge-bootstrap/SKILL.md). Do not classify a change class and do not start feature-development.
 
 Then set `change_class`:
 
@@ -76,6 +81,8 @@ Then set `change_class`:
 User override: an explicit `WORKFLOW: {name}` or `CHANGE_CLASS: {class}` in the ask wins, unless a hard-upgrade trigger contradicts `micro`.
 
 ### O4 Write `features/{slug}/route.md`
+
+Skip this step for `ask` and `test-knowledge-bootstrap`.
 
 Slug rules:
 
@@ -88,7 +95,7 @@ Template and field meanings: [`../feature-development/assets/change-routing.md`]
 
 ### O5 Drive the chain
 
-Read the chain for the resolved workflow (and class) from the config and spawn **one new `Task` per step**, in order, waiting for each HANDOFF. `@waves` expands to `waves.child_chain` per child, read from `features/{slug}/spec-order.md`. `@signoff:requirements`, `@signoff:architect`, and `@signoff:ba` are **parent-only stops** — present the artifact, wait for the user, write `signoff-*.md`. Do not treat them as Tasks. When `skip_architect` is true, drop both `architect-agent` and `@signoff:architect`.
+Read the chain for the resolved workflow (and class) from the config and spawn **one new `Task` per step**, in order, waiting for each HANDOFF. `@waves` expands to `waves.child_chain` per child, read from `features/{slug}/spec-order.md`. `@signoff:requirements`, `@signoff:architect`, and `@signoff:ba` are **parent-only stops** — present the artifact, wait for the user, write `signoff-*.md`. Do not treat them as Tasks. When `skip_architect` is true, drop both `architect-agent` and `@signoff:architect`. When `test_design.enabled` is true on feature / jira-story / jira-epic, insert `test-designer-agent` after `ba-critic-agent` and before `@signoff:ba` ([test-design-policy.md](../feature-development/assets/test-design-policy.md)). Do not insert it on micro, minor, or jira-bug.
 
 | Workflow | Chain | Owning skill for the work |
 |----------|-------|---------------------------|
@@ -97,6 +104,7 @@ Read the chain for the resolved workflow (and class) from the config and spawn *
 | `jira-story` | intake → `@signoff:requirements` → architect? → `@signoff:architect` → BA → BA critic → `@signoff:ba` → waves → tester → devops → retro | [`../feature-development/SKILL.md`](../feature-development/SKILL.md), BA reads `intake.md` |
 | `jira-epic` | same as `jira-story` | same, BA reads `epic-plan.md` and writes one child spec per story |
 | `jira-bug` | intake → bug analyst → developer → developer critic → tester → devops → retro | [`../bug-fix/SKILL.md`](../bug-fix/SKILL.md) |
+| `test-knowledge-bootstrap` | knowledge-curator-agent → one Markdown review → promote | [`../test-knowledge-bootstrap/SKILL.md`](../test-knowledge-bootstrap/SKILL.md) |
 
 Prompts for every step: [`../feature-development/assets/parent-task-prompt.md`](../feature-development/assets/parent-task-prompt.md). Always inject `WORKFLOW`, `CHANGE_CLASS`, `FEATURE_SLUG`, `REPO_ROOT`, and the disk paths that step needs.
 
@@ -115,6 +123,8 @@ Every specialist is a **fresh context**. The isolation table in [`../feature-dev
 | `intake-agent` | Raw issue payload and MCP discovery must not fill the parent | **No** |
 | `architect-agent` | Challenge + diagrams must not share PM or BA reasoning | **No** |
 | `bug-analyst-agent` | Deep code tracing; must not share the fixer’s context | **No** — never the same Task as the developer |
+| `knowledge-curator-agent` | Overlay candidates must not mix with feature planning | **No** |
+| `test-designer-agent` | Structured cases must not share BA authoring | **No** — never the same Task as BA |
 
 ---
 

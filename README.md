@@ -75,7 +75,8 @@ After install, the same handbook is copied to
 | `.cursor/skills/run-workflow/` or `.claude/skills/run-workflow/` | The only IDE-discovered skill |
 
 Shipped workflows: `ask`, `feature-development`, `jira-story` / `jira-epic` /
-`jira-bug`. Details:
+`jira-bug`, `test-knowledge-bootstrap`. Structured test design is opt-in
+(`pipeline-kit knowledge init`). Details:
 [What you get](../ai-agents-registry/packages/pipeline-kit/CUSTOMER-GUIDE.md#1-what-you-get).
 
 ---
@@ -130,6 +131,9 @@ pipeline-kit setup                # install/update the user pack
 pipeline-kit update [project]     # refresh while preserving config.json
 pipeline-kit doctor [project]     # verify the active pack and optional IDE adapter
 pipeline-kit workflows [project]  # list available workflows
+pipeline-kit knowledge init       # opt-in QA overlay (does not run Graphify)
+pipeline-kit knowledge extract    # official graphify extract --code-only
+pipeline-kit knowledge status     # Graphify CLI and graphify-out
 pipeline-kit uninstall [project]  # remove files managed by the kit
 pipeline-kit --version
 ```

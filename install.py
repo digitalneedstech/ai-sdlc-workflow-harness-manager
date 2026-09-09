@@ -347,6 +347,22 @@ def resolved_pack(*, target: Path, user: bool, home: Path | None = None) -> Path
     return project_pack if project_pack.is_dir() else home_dir / ".pipeline"
 
 
+def _knowledge_commands():
+    root = str(HERE)
+    if root not in sys.path:
+        sys.path.insert(0, root)
+    from knowledge.commands import (  # noqa: WPS433
+        cmd_extract,
+        cmd_init,
+        cmd_promote,
+        cmd_render,
+        cmd_status,
+        cmd_validate,
+    )
+
+    return cmd_extract, cmd_init, cmd_promote, cmd_render, cmd_status, cmd_validate
+
+
 def doctor(
     *,
     target: Path,
@@ -370,6 +386,15 @@ def doctor(
         skill_rel = IDE_SKILL_REL.get(ide)
         if skill_rel:
             checks[f"{ide} adapter"] = (root / skill_rel).is_file()
+    root = str(HERE)
+    if root not in sys.path:
+        sys.path.insert(0, root)
+    from knowledge.doctor import graphify_doctor_checks
+
+    info_lines, required = graphify_doctor_checks(target)
+    for line in info_lines:
+        print(f"info  {line}")
+    checks.update(required)
     for label, passed in checks.items():
         print(f"{'ok' if passed else 'missing'}  {label}")
     if all(checks.values()):
@@ -444,8 +469,52 @@ def cli_main(argv: list[str] | None = None) -> int:
     workflows_parser.add_argument("--user", action="store_true")
     workflows_parser.add_argument("--home", default="", help=argparse.SUPPRESS)
 
+    knowledge_parser = commands.add_parser(
+        "knowledge",
+        help="init QA overlay and run official Graphify extract",
+    )
+    knowledge_commands = knowledge_parser.add_subparsers(dest="knowledge_command", required=True)
+    k_init = knowledge_commands.add_parser("init", help="create test-knowledge overlay (opt-in)")
+    k_init.add_argument("project", nargs="?", default=".")
+    k_init.add_argument(
+        "--ide",
+        choices=("cursor", "claude-code", "github", "none"),
+        default="cursor",
+    )
+    k_init.add_argument(
+        "--register-skill",
+        action="store_true",
+        help="run official graphify install for this IDE",
+    )
+    k_extract = knowledge_commands.add_parser(
+        "extract",
+        help="run graphify extract --code-only (no homemade graph)",
+    )
+    k_extract.add_argument("project", nargs="?", default=".")
+    k_extract.add_argument("--force", action="store_true")
+    k_status = knowledge_commands.add_parser("status", help="Graphify CLI and graphify-out status")
+    k_status.add_argument("project", nargs="?", default=".")
+    k_validate = knowledge_commands.add_parser(
+        "validate",
+        help="validate a bootstrap candidate run (after human review)",
+    )
+    k_validate.add_argument("project", nargs="?", default=".")
+    k_validate.add_argument("--run", required=True, dest="run_id")
+    k_promote = knowledge_commands.add_parser(
+        "promote",
+        help="atomically promote a reviewed candidate run",
+    )
+    k_promote.add_argument("project", nargs="?", default=".")
+    k_promote.add_argument("--run", required=True, dest="run_id")
+    k_render = knowledge_commands.add_parser(
+        "render",
+        help="write feature Markdown views from cases.json",
+    )
+    k_render.add_argument("project", nargs="?", default=".")
+    k_render.add_argument("--slug", required=True)
+
     args = parser.parse_args(argv)
-    home = Path(args.home).expanduser().resolve() if args.home else None
+    home = Path(args.home).expanduser().resolve() if getattr(args, "home", "") else None
     project = Path(getattr(args, "project", ".")).expanduser().resolve()
 
     if args.command in {"init", "update"}:
@@ -480,6 +549,36 @@ def cli_main(argv: list[str] | None = None) -> int:
         return doctor(target=project, user=args.user, ide=args.ide, home=home)
     if args.command == "workflows":
         return list_workflows(target=project, user=args.user, home=home)
+    if args.command == "knowledge":
+        (
+            cmd_extract,
+            cmd_init,
+            cmd_promote,
+            cmd_render,
+            cmd_status,
+            cmd_validate,
+        ) = _knowledge_commands()
+        if not project.is_dir():
+            print(f"not a directory: {project}", file=sys.stderr)
+            return 64
+        if args.knowledge_command == "init":
+            return cmd_init(
+                project,
+                register_skill=args.register_skill,
+                ide=args.ide,
+            )
+        if args.knowledge_command == "extract":
+            return cmd_extract(project, force=args.force)
+        if args.knowledge_command == "status":
+            return cmd_status(project)
+        if args.knowledge_command == "validate":
+            return cmd_validate(project, run_id=args.run_id)
+        if args.knowledge_command == "promote":
+            return cmd_promote(project, run_id=args.run_id)
+        if args.knowledge_command == "render":
+            return cmd_render(project, slug=args.slug)
+        parser.error("unknown knowledge command")
+        return 2
     parser.error(f"unknown command: {args.command}")
     return 2
 

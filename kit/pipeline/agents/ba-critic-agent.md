@@ -18,7 +18,7 @@ readonly: true
 
 ## Pipeline position
 
-`ba-agent → **ba-critic-agent** → @signoff:ba → parent runs implementation waves → tester-agent → …`
+`ba-agent → **ba-critic-agent** → (test-designer-agent if enabled) → @signoff:ba → parent runs implementation waves → tester-agent → …`
 
 You are the **reviewer**, not the author. Default: notes + verdict only.
 
@@ -47,6 +47,7 @@ You are the **reviewer**, not the author. Default: notes + verdict only.
 8. **Order** — `spec-order.md` `**children:**` matches folders on disk; waves have real dependencies; independent children are parallel.
 9. **Test plan** — every Must AC appears in `test-plan.md` with a layer (`ui` / `e2e` / `api` / `unit` / `telemetry` / `a11y`). Feature-class `e2e` is required. Each child has `test-strategy.md`.
 10. **Architecture** — when `architecture.md` exists, flag specs that ignore ADRs, the technical child split, recorded concerns, or do-not-invent constraints.
+11. **Test design (only when `TEST_DESIGN_ENABLED`)** — every Must AC names a lowest level and overlay IDs (or an explicit gap). Reject free-form automation steps. E2E without a reason is `changes-required`.
 
 Write findings to `features/{slug}/ba-critic-report.md` when verdict is not `approve`.
 
@@ -54,7 +55,7 @@ Write findings to `features/{slug}/ba-critic-report.md` when verdict is not `app
 
 | `CRITIC_VERDICT` | Meaning | Parent |
 |------------------|---------|--------|
-| `approve` | Specs + order + test plan are implementable | Parent runs `@signoff:ba`, then wave 1 |
+| `approve` | Specs + order + test plan are implementable | Parent runs test-designer when enabled, then `@signoff:ba`, then wave 1 |
 | `approve-with-nits` | Ship-quality gaps are non-blocking | Parent runs `@signoff:ba`; pass nits to developers later |
 | `changes-required` | Blocking gaps | Re-spawn **ba-agent**. Do **not** start telemetry or developer |
 

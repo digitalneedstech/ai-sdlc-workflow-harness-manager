@@ -80,6 +80,21 @@
       "chain": [],
       "skips": {}
     },
+    "test-knowledge-bootstrap": {
+      "source": "text",
+      "chain": [
+        "knowledge-curator-agent"
+      ],
+      "skips": {
+        "skip_pm": true,
+        "skip_ba": true,
+        "skip_ba_critic": true,
+        "skip_architect": true,
+        "skip_telemetry": true,
+        "skip_developer_critic": true,
+        "skip_tester": true
+      }
+    },
     "jira-bug": {
       "source": "jira",
       "plan_source": "rca.md",
@@ -142,15 +157,24 @@
   "product": {
     "_note": "artifact_dir is the only tree analysis agents may write to; everything else is product source.",
     "artifact_dir": "features/",
-    "readonly_agents": [
+      "readonly_agents": [
       "intake-agent",
       "product-manager-agent",
       "architect-agent",
       "ba-agent",
       "ba-critic-agent",
       "bug-analyst-agent",
-      "telemetry-agent"
+      "telemetry-agent",
+      "knowledge-curator-agent",
+      "test-designer-agent"
     ]
+  },
+  "test_design": {
+    "_note": "Opt-in. pipeline-kit knowledge init sets enabled true. Absent or false keeps the current ladder. Do not add test-designer-agent to class chains.",
+    "enabled": false,
+    "graph_provider": "graphify-cli",
+    "graph_path": "graphify-out/graph.json",
+    "design_only": true
   },
   "verify": {
     "_note": "Add path-substring reminders for this repo after install.",

@@ -88,3 +88,12 @@ Copy blocking rows into `questions.md` and HANDOFF `BLOCKED` /
 
 Severity is `blocking` or `recorded`. Do not mark Ready while a blocking
 row remains.
+
+## 10. Test model delta (only when `TEST_DESIGN_ENABLED`)
+
+Write `features/{slug}/test-design/model-delta.json` from the model-delta
+template, or set `no_test_model_change: true` here and in that file.
+
+| Planned node | Kind | Why |
+|--------------|------|-----|
+| none | — | overlay already covers this change |

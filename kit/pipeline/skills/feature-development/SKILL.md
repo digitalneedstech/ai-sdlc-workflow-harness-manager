@@ -8,6 +8,7 @@ description: >-
   orchestrates the matching Task chain. Feature ladder: PM → user sign-off →
   Architect (when large) → user sign-off → BA → BA critic → user sign-off →
   waved telemetry/developer/critic → one tester → devops → retro.
+  When test_design.enabled, insert test-designer-agent after BA critic.
 ---
 
 # Feature development (parent workflow)
@@ -28,7 +29,7 @@ Spawn **one agent per step in a new `Task` (separate context window)**. Classify
 
 1. Load [assets/change-routing.md](assets/change-routing.md).
 2. Set `change_class` (`micro` | `minor` | `feature`). **Default `feature`** if any hard-upgrade trigger matches or the ask is unclear.
-3. Load [assets/tester-policy.md](assets/tester-policy.md). Set `skip_tester` from `run_tester` for that class, unless the user typed `RUN_TESTER: true|false`.
+3. Load [assets/tester-policy.md](assets/tester-policy.md). Set `skip_tester` from `run_tester` for that class, unless the user typed `RUN_TESTER: true|false`. Read [assets/test-design-policy.md](assets/test-design-policy.md) before driving a feature-class chain.
 4. Write `features/{slug}/route.md` (and `patch.md` for micro/minor). Seed `skip_architect: true` for micro/minor. On feature class, set it after requirements exist using [assets/architect-policy.md](assets/architect-policy.md) (or `RUN_ARCHITECT: true|false`).
 5. Spawn **only** the chain for that class. Do not run the full PM/Architect/BA ladder for a label change.
 
@@ -36,7 +37,7 @@ Spawn **one agent per step in a new `Task` (separate context window)**. Classify
 |-------|------------|
 | **micro** | `developer-agent` → (`tester-agent` if policy on) → `devops-agent` → `retro-agent` |
 | **minor** | `developer-agent` → `developer-critic-agent` → (`tester-agent` if policy on) → `devops-agent` → `retro-agent` |
-| **feature** | `product-manager-agent` → `@signoff:requirements` → `architect-agent`? → `@signoff:architect` → `ba-agent` → `ba-critic-agent` → `@signoff:ba` → **waves** (`telemetry-agent` → `developer-agent` → `developer-critic-agent` per child) → `tester-agent` (unless policy off) → `devops-agent` → `retro-agent` |
+| **feature** | `product-manager-agent` → `@signoff:requirements` → `architect-agent`? → `@signoff:architect` → `ba-agent` → `ba-critic-agent` → (`test-designer-agent` if `test_design.enabled`) → `@signoff:ba` → **waves** (`telemetry-agent` → `developer-agent` → `developer-critic-agent` per child) → `tester-agent` (unless policy off) → `devops-agent` → `retro-agent` |
 
 ## Context isolation (mandatory — by complexity)
 
@@ -48,6 +49,7 @@ A `Task` subagent is a **fresh context**. Required for every specialist below. D
 | `architect-agent` | **High** | Challenge + diagrams + implementation plan | **No** |
 | `ba-agent` | **High** | Child specs + order + test plan | **No** |
 | `ba-critic-agent` | **High (independence)** | Must not share the author’s reasoning | **No** — never same Task as BA |
+| `test-designer-agent` | **High** | Overlay + graph → structured cases | **No** — only when `test_design.enabled` |
 | `telemetry-agent` | **Medium** | Allowlist must not inherit BA extras or later code dumps | **No** — never same Task as BA or developer |
 | `developer-agent` | **Highest** (feature) / **Low–medium** (micro) | Still product edits | **No** — never inline |
 | `developer-critic-agent` | **High (independence)** | Fresh read of diff vs spec | **No** — never same Task as developer |
@@ -67,7 +69,7 @@ A `Task` subagent is a **fresh context**. Required for every specialist below. D
 
 | When | Asset |
 |------|--------|
-| Parent classifies | [assets/change-routing.md](assets/change-routing.md), [assets/tester-policy.md](assets/tester-policy.md), [assets/architect-policy.md](assets/architect-policy.md) |
+| Parent classifies | [assets/change-routing.md](assets/change-routing.md), [assets/tester-policy.md](assets/tester-policy.md), [assets/test-design-policy.md](assets/test-design-policy.md), [assets/architect-policy.md](assets/architect-policy.md) |
 | Parent + every specialist | [assets/pipeline-state.md](assets/pipeline-state.md), [assets/pipeline-state-template.json](assets/pipeline-state-template.json), [assets/agent-state-template.json](assets/agent-state-template.json) |
 | Parent sign-off | [assets/planning-signoff-template.md](assets/planning-signoff-template.md) |
 | Parent spawns any step | [assets/parent-task-prompt.md](assets/parent-task-prompt.md) |
@@ -108,15 +110,16 @@ Each step is a **new `Task` with a slim state prompt**. Wait for HANDOFF before 
 5. **`@signoff:architect`** — present `architecture.md` + `implementation-plan.md` + recorded concerns. Stop until the user approves.
 6. **BA** — after requirements sign-off and (if Architect ran) architect sign-off.
 7. **BA critic** — reviews plan + architecture (if any) + all child specs + order + test plan. `changes-required` voids any draft BA sign-off and re-spawns BA.
-8. **`@signoff:ba`** — present child specs after critic approve. Stop until the user approves. Do not start waves without `signoff-ba.md`.
-9. **Waves** — read `spec-order.md`. For each wave, for each child in that wave:
+8. **Test designer** — when `test_design.enabled` only. After critic approve, spawn `test-designer-agent`. Then `@signoff:ba`.
+9. **`@signoff:ba`** — present child specs after critic approve (and the short inventory/case table when test design ran). Stop until the user approves. Do not start waves without `signoff-ba.md`.
+10. **Waves** — read `spec-order.md`. For each wave, for each child in that wave:
    - `telemetry-agent` → `developer-agent` → `developer-critic-agent`
    - Inject `FEATURE_SLUG: {parent}/{child}` and that child’s `SPEC_PATH`
    - `parallel` wave: spawn one chain per child; wait for every child’s developer-critic `approve` | `approve-with-nits` before the next wave
    - `sequential` wave: finish one child chain before the next child
-10. **Tester** — **once**, parent slug, after **all** children have approved developer-critics. Not per spec. Not between waves.
-11. **Devops** — only if `FEATURE_SIGNOFF: passed`
-12. **Retro** — then **PIPELINE_COMPLETE**
+11. **Tester** — **once**, parent slug, after **all** children have approved developer-critics. Not per spec. Not between waves.
+12. **Devops** — only if `FEATURE_SIGNOFF: passed`
+13. **Retro** — then **PIPELINE_COMPLETE**
 
 **minor / micro:** do not run this list. Follow the chain in the routing table. Developer still gets a **new Task**; parent never edits product source.
 
@@ -130,7 +133,7 @@ Set `DEPLOY_TARGET` from `deploy.target` / `deploy.targets` in `.pipeline/config
 
 | Verdict | Parent |
 |---------|--------|
-| `approve` | Next agent **in a new Task**. After BA critic: `@signoff:ba` first, then waves. |
+| `approve` | Next agent **in a new Task**. After BA critic: `test-designer-agent` when enabled, then `@signoff:ba`, then waves. |
 | `approve-with-nits` | Same; nits optional |
 | `changes-required` | Re-spawn **previous** agent in a **new Task** with the report. Void `signoff-ba.md` if BA is re-run. Retry cap **2**, then stop for the user |
 

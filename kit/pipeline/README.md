@@ -97,8 +97,10 @@ python3 .pipeline/loader/load_workflow.py --workflow {name} --step parent --slug
 Confirm `allowed_reads` is the smallest set that step needs.
 
 Shipped workflows: `ask`, `feature-development`, `jira-story`, `jira-epic`,
-`jira-bug`. Feature-class work can run `architect-agent` after signed-off
-requirements (see `architect-policy.md` and `@signoff:*` in `config.json`).
+`jira-bug`, `test-knowledge-bootstrap`. Feature-class work can run
+`architect-agent` after signed-off requirements (see `architect-policy.md`
+and `@signoff:*` in `config.json`). `test-designer-agent` is opt-in via
+`pipeline-kit knowledge init` (`test_design.enabled`).
 
 ## What you do not edit
 

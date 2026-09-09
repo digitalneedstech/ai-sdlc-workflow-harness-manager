@@ -12,7 +12,7 @@ Edit the `run_tester` column only. Do not invent extra classes.
 
 | Class | run_tester | What runs when true |
 |-------|------------|---------------------|
-| micro | true | `tester-agent` after developer, before devops. Cases from `patch.md`. Playwright only if a case is tagged `ui`. |
+| micro | false | `tester-agent` after developer, before devops. Cases from `patch.md`. Playwright only if a case is tagged `ui`. |
 | minor | false | `tester-agent` after developer-critic, before devops. Cases from `patch.md`. Playwright only if a case is tagged `ui`. |
 | feature | true | `tester-agent` once after all child developer-critics. Full BA `test-plan.md`. Playwright for `ui` / browser `e2e`. |
 

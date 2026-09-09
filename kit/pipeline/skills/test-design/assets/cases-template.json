@@ -1,0 +1,54 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "TC-1",
+      "title": "Operator opens Run from the left nav",
+      "spec": "child-slug",
+      "ac": "AC-1",
+      "fr": "FR-1",
+      "level": "ui",
+      "type": "happy",
+      "technique": "path",
+      "actor": "operator",
+      "fixtures": [
+        {
+          "id": "FIX-session",
+          "text": "Browser at the local operator-console base URL. Use project test-env names for sign-in. Never write a real password."
+        }
+      ],
+      "actions": ["ACT-login", "ACT-nav-run"],
+      "oracles": ["ORC-dashboard", "ORC-run-form"],
+      "steps": [
+        {
+          "do": "Open the local operator console in the browser",
+          "action_id": "ACT-open-console"
+        },
+        {
+          "do": "If a sign-in screen is shown, fill the operator email and password from the project test env (names only, no secret values) and submit",
+          "action_id": "ACT-login"
+        },
+        {
+          "do": "Confirm you landed on the dashboard (main heading visible)",
+          "action_id": "ACT-see-dashboard"
+        },
+        {
+          "do": "Click Run in the left-hand navigation",
+          "action_id": "ACT-nav-run"
+        }
+      ],
+      "expected": [
+        {
+          "see": "The dashboard is visible after sign-in",
+          "oracle_id": "ORC-dashboard"
+        },
+        {
+          "see": "The Run page shows the start-run form",
+          "oracle_id": "ORC-run-form"
+        }
+      ],
+      "future_test_ids": [],
+      "e2e_reason": "This AC is a user-visible navigation path; a unit or API check cannot see the left nav."
+    }
+  ]
+}
