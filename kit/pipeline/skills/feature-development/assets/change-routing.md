@@ -1,5 +1,11 @@
 # Change-class routing
 
+| Attribute | Value |
+|-----------|--------|
+| Type | Template |
+| Audience | The specialist that writes the artifact |
+| Adapt | Fill placeholders only. Do not add a product, host, or customer name. |
+
 Owned by **feature-development**. Parent classifies **before** any specialist `Task`. Write `features/{slug}/route.md`. When unsure, use **`feature`**.
 
 The **workflow** is chosen first, by [orchestration](../../orchestration/SKILL.md); this file decides the **class** inside it. Tracker workflows start from their `default_change_class` in [`.pipeline/config.json`](../../../config.json) and then apply the same hard-upgrade triggers below.

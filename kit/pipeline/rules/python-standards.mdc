@@ -1,20 +1,31 @@
 ---
 description: >-
-  Python conventions for canvas-engine, canvas-agent-daemon, and tests.
-  Apply when editing engine, daemon, or pytest files.
-globs: "{src,tests}/**/*.py"
+  Python conventions. Apply when editing application or test Python.
+globs: "**/*.py"
 alwaysApply: false
 ---
 
-# Python (engine and daemon)
+# Python
 
-- Target the existing packages: `canvas_engine`, `canvas_agent_daemon`. Match imports and module layout; do not invent a parallel package.
-- Use `from __future__ import annotations` and type hints on public functions, as neighboring modules do.
-- Structured logs via existing helpers (e.g. `logging_util.JsonLogger`). Cap field size; never log tokens, passwords, or raw prompt secrets.
-- Fail closed on auth, path sandbox, and tool-gate errors. Do not catch-and-ignore security exceptions.
-- Persistence: use existing SQLite/db helpers. Parameterized queries only — no string-concatenated SQL.
-- Tests: pytest under `tests/`. Extend `conftest.py` fixtures; name files `test_*.py`.
-- Do not commit credentials or change worker trust flags (`--force`, MCP tokens) without an explicit spec requirement.
+| Attribute | Value |
+|-----------|--------|
+| Type | Rule |
+| Audience | Developer when editing Python |
+| Adapt | Narrow `globs` if this repository keeps Python in a subset of folders. |
+
+- Match imports and module layout already in this repository. Do not invent
+  a parallel package.
+- Use `from __future__ import annotations` and type hints on public functions,
+  as neighboring modules do.
+- Structured logs via the helpers already in this repository. Cap field size;
+  never log tokens, passwords, or raw prompt secrets.
+- Fail closed on auth, path sandbox, and authorization errors. Do not
+  catch-and-ignore security exceptions.
+- Persistence: parameterized queries only — no string-concatenated SQL.
+- Tests: extend the existing runner and fixtures. Do not add a second
+  framework.
+- Do not commit credentials or weaken worker trust flags without an explicit
+  specification requirement.
 
 ```python
 # ❌ BAD

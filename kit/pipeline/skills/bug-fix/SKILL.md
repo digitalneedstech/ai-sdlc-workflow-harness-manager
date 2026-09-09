@@ -10,6 +10,12 @@ description: >-
 
 # Bug fix (analysis then repair)
 
+| Attribute | Value |
+|-----------|--------|
+| Type | Skill |
+| Audience | The named agent, or the parent when this file is on the allowlist |
+| Adapt | Change commands or paths only in deploy and testing skills. Planning skills stay product-neutral. |
+
 A defect is not a small feature. There is no plan and no specification: the **root cause on disk** is the requirement. Analysis and repair run in **separate Tasks** so the person who formed the theory is not the person grading their own fix.
 
 `intake-agent → bug-analyst-agent (B1–B6) → developer-agent (B7) → developer-critic-agent → tester-agent → devops-agent → retro-agent`

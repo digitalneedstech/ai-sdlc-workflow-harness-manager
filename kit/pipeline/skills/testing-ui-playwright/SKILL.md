@@ -9,11 +9,18 @@ disable-model-invocation: true
 
 # UI / Playwright testing (tester skill)
 
+| Attribute | Value |
+|-----------|--------|
+| Type | Skill |
+| Audience | The named agent, or the parent when this file is on the allowlist |
+| Adapt | If this repository’s UI e2e project is not `automation-tests/`, change the paths in this skill only. |
+
 Maps to [Playwright Test Agents](https://playwright.dev/docs/test-agents): **planner → generator → healer**. CLI-only; optional Playwright MCP for exploration.
 
 ## Project (repo-level, outside `.cursor`)
 
-All Playwright code and artifacts live in [`automation-tests/`](../../../automation-tests/README.md):
+All Playwright code and artifacts live in the project’s UI e2e directory
+(default `automation-tests/`):
 
 ```text
 automation-tests/

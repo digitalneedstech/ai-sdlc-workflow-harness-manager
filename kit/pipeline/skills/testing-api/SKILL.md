@@ -8,7 +8,18 @@ disable-model-invocation: true
 
 # API testing (tester skill)
 
+| Attribute | Value |
+|-----------|--------|
+| Type | Skill |
+| Audience | The named agent, or the parent when this file is on the allowlist |
+| Adapt | Override the runner with `API_TEST_CMD` or `api_test_cmd` in the test strategy. Change the fallback command in this skill if this repository does not use pytest. |
+
 Load only when **tester-agent** has `api: required` in `features/{slug}/test-strategy.md`.
+
+## Adapt for this project
+
+Prefer `API_TEST_CMD` or the strategy `api_test_cmd`. The fallback examples
+below are defaults, not a required stack.
 
 ## Inputs
 

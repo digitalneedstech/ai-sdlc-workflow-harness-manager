@@ -5,10 +5,23 @@ alwaysApply: false
 
 # Feature pipeline
 
-When the user wants work done or a question about this repo, follow the IDE `run-workflow` skill first. Run `.pipeline/loader/load_workflow.py` and Read only `allowed_reads`.
+| Attribute | Value |
+|-----------|--------|
+| Type | Rule |
+| Audience | Parent when the user wants product work |
+| Adapt | Do not add application folders or tracker URLs. Overlay those in `config.json`. |
 
-Chains, skips, tracker settings, retry caps, and planning sign-off gates come from `.pipeline/config.json`. File packs live in `.pipeline/workflows/`. Feature class may run `architect-agent` after `@signoff:requirements`.
+When the user wants work done or a question about this repository, follow the
+IDE `run-workflow` skill first. Run `.pipeline/loader/load_workflow.py` and
+Read only `allowed_reads`.
 
-Product workflows: spawn **one new Task per agent**. `ask` stays in the parent. Never call tracker MCP from the parent.
+Chains, skips, tracker settings, retry caps, and planning sign-off gates come
+from `.pipeline/config.json`. File packs live in `.pipeline/workflows/`.
+Feature class may run `architect-agent` after `@signoff:requirements`.
 
-Hooks: `.cursor/hooks.json` + `.cursor/hooks/*.py`. Skip when `CHORUS_TASK_ID` + `CHORUS_PORTAL` are set. See `.cursor/hooks/README.md`.
+Product workflows: spawn **one new Task per agent**. `ask` stays in the parent.
+Never call tracker MCP from the parent.
+
+Hooks are optional and project-local (`.cursor/hooks.json`). If an external
+agent portal already owns human-in-the-loop, pipeline hooks should yield to
+that portal (see the project hook README).

@@ -1,5 +1,11 @@
 # QA sign-off template
 
+| Attribute | Value |
+|-----------|--------|
+| Type | Template |
+| Audience | The specialist that writes the artifact |
+| Adapt | Fill placeholders only. Do not add a product, host, or customer name. |
+
 Owned by **feature-development**. Tester copies this to `features/{slug}/qa-signoff.md`. Devops must not run while `FEATURE_SIGNOFF` is missing or not `passed` (unless `skip_tester: true`).
 
 ```markdown

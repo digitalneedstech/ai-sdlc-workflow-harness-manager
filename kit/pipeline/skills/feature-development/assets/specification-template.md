@@ -1,5 +1,11 @@
 # Specification template
 
+| Attribute | Value |
+|-----------|--------|
+| Type | Template |
+| Audience | The specialist that writes the artifact |
+| Adapt | Fill placeholders only. Do not add a product, host, or customer name. |
+
 Owned by **feature-development**. BA fills this into `features/{slug}/specification.md`. Use `N/A — {reason}` instead of deleting a section.
 
 ```markdown

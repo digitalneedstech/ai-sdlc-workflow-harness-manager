@@ -1,5 +1,11 @@
 # Implementation plan — {title}
 
+| Attribute | Value |
+|-----------|--------|
+| Type | Template |
+| Audience | The specialist that writes the artifact |
+| Adapt | Fill placeholders only. Do not add a product, host, or customer name. |
+
 **Slug:** `{slug}`
 **Architecture:** `features/{slug}/architecture.md`
 **Created:** {YYYY-MM-DD}

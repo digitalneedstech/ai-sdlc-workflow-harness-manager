@@ -9,13 +9,25 @@ disable-model-invocation: true
 
 # E2E testing (tester skill)
 
+| Attribute | Value |
+|-----------|--------|
+| Type | Skill |
+| Audience | The named agent, or the parent when this file is on the allowlist |
+| Adapt | Default UI e2e tree is `automation-tests/`. Change those paths here if this repository uses a different layout. |
+
 Load when **tester-agent** has `e2e: required`. **Mandatory for `change_class: feature`.**
+
+## Adapt for this project
+
+Default layout: `automation-tests/` (specs, artifacts, toolchain script). If this
+repository already has a UI e2e project, replace every `automation-tests/` path
+in this skill with that directory. Do not add a second Playwright tree.
 
 ## Inputs
 
 - `REPO_ROOT`, `FEATURE_SLUG`
 - `TEST_STRATEGY_PATH` — includes Target `base_url`, optional `web_server_cmd`, `health_path`
-- Playwright project: `automation-tests/`
+- Playwright project: `automation-tests/` (or the path you set above)
 
 ## UI path (base_url set)
 

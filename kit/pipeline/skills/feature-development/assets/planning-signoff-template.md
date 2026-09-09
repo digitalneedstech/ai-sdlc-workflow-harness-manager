@@ -1,5 +1,11 @@
 # Planning sign-off
 
+| Attribute | Value |
+|-----------|--------|
+| Type | Template |
+| Audience | The specialist that writes the artifact |
+| Adapt | Fill placeholders only. Do not add a product, host, or customer name. |
+
 Owned by **feature-development**. The **parent** writes this file after the
 user approves a planning artifact. Specialists do not write sign-off files.
 
@@ -15,7 +21,8 @@ Write one of:
 **SIGNOFF:** approved
 **role:** requirements | architect | ba
 **slug:** {slug}
-**artifact:** features/{slug}/plan.md | features/{slug}/intake.md | features/{slug}/epic-plan.md | features/{slug}/architecture.md | features/{slug}/HANDOFF.md
+**artifact:** features/{slug}/prd.md | features/{slug}/intake.md | features/{slug}/epic-plan.md | features/{slug}/architecture.md | features/{slug}/HANDOFF.md
+**concerns_reviewed:** none | {C-ids the user accepted or deferred}
 **approved_at:** {YYYY-MM-DD}
 **note:** {optional user comment} | none
 ```

@@ -1,5 +1,11 @@
 # Retro template
 
+| Attribute | Value |
+|-----------|--------|
+| Type | Template |
+| Audience | The specialist that writes the artifact |
+| Adapt | Fill placeholders only. Do not add a product, host, or customer name. |
+
 Write to `features/{slug}/RETRO.md`.
 
 ```markdown

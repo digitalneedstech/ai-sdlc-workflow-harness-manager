@@ -8,6 +8,12 @@ description: >-
 
 # Retro agent — post-success learning
 
+| Attribute | Value |
+|-----------|--------|
+| Type | Agent brief |
+| Audience | This specialist Task only |
+| Adapt | Do not add application folders, hosts, or tracker URLs. Those belong in `.pipeline/config.json` and the local-deploy runbook. |
+
 ## Pipeline position
 
 `devops-agent (SUCCESS, OVERALL=passed) → **retro-agent** → parent PIPELINE_COMPLETE`
@@ -20,6 +26,8 @@ Follow [`.pipeline/skills/pipeline-retro/SKILL.md`](../skills/pipeline-retro/SKI
 
 ## Isolation
 
+- Read `PIPELINE_STATE_PATH` and `PRIOR_STATE_PATH` first. Open listed files only.
+- Write your `state/{agent}.json` (child waves: under the child folder) and update `pipeline-state.json` before you return.
 - **Separate Task** (medium). No parent chat — artifacts + optional `CONVERSATION_DIGEST` only.
 - No product code. No `Task` nesting. No git commit unless the user asked to persist wiki (wiki files are in-repo; writing them is in scope).
 - Scan `.pipeline/wiki/INDEX.md` before adding a page.

@@ -1,15 +1,25 @@
 ---
 description: >-
-  Product and engine telemetry must match the feature telemetry contract.
-  Apply when editing logs, analytics, or JsonLogger call sites.
-globs: "{src,web,ecommerce-store,tests}/**/*.{py,js,jsx,ts,tsx}"
+  Application telemetry must match the feature telemetry contract.
+  Apply when editing logs or analytics call sites.
+globs: "**/*.{py,js,jsx,ts,tsx}"
 alwaysApply: false
 ---
 
 # Telemetry
 
-- Implement **only** events in `features/{slug}/telemetry-contract.md`. If the contract says `EVENTS: none`, do not add analytics.
-- Every event needs a spec FR/AC and a named business decision. No per-click vanity events.
-- Allowlisted properties only. No email, tokens, passwords, raw prompts, or unconstrained free text.
-- Engine: `JsonLogger` with field caps. Do not log full payloads.
-- Do not add GA/Segment/Mixpanel/`gtag`/`fbq` unless a Must FR names that vendor.
+| Attribute | Value |
+|-----------|--------|
+| Type | Rule |
+| Audience | Telemetry and developer specialists |
+| Adapt | Narrow `globs` to this repository's application folders if needed. |
+
+- Implement **only** events in `features/{slug}/telemetry-contract.md`. If the
+  contract says `EVENTS: none`, do not add analytics.
+- Every event needs a specification FR/AC and a named business decision. No
+  per-click vanity events.
+- Allowlisted properties only. No email, tokens, passwords, raw prompts, or
+  unconstrained free text.
+- Use the structured logger already in this repository. Do not log full
+  payloads.
+- Do not add a third-party analytics SDK unless a Must FR names that vendor.

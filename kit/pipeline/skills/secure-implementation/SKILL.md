@@ -8,6 +8,12 @@ description: >-
 
 # Secure implementation (preflight)
 
+| Attribute | Value |
+|-----------|--------|
+| Type | Skill |
+| Audience | The named agent, or the parent when this file is on the allowlist |
+| Adapt | Change commands or paths only in deploy and testing skills. Planning skills stay product-neutral. |
+
 Developer copies [assets/security-preflight-template.md](assets/security-preflight-template.md) to `features/{slug}/security-preflight.md` and checks every row that applies. Unchecked Must-security rows ⇒ developer HANDOFF is not SUCCESS.
 
 Developer critic confirms the file exists and matches the diff (authz on new actions, no secret writes, no unsafe HTML).

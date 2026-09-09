@@ -1,5 +1,11 @@
 # Decisions — `{slug}`
 
+| Attribute | Value |
+|-----------|--------|
+| Type | Template |
+| Audience | The specialist that writes the artifact |
+| Adapt | Fill placeholders only. Do not add a product, host, or customer name. |
+
 Owned by **feature-development**. PM, Architect, and BA **append** rows. Do not
 delete a decided row; add a superseding row with a new source if the user
 changed it. Next planning agents read this file first.
@@ -9,7 +15,7 @@ changed it. Next planning agents read this file first.
 
 | ID | Decision | Value | Source |
 |----|----------|-------|--------|
-| D-1 | {what was decided} | {the answer} | `features/{slug}/plan.md` §n \| `user Q1` \| repo `{path}` |
+| D-1 | {what was decided} | {the answer} | `features/{slug}/prd.md` §n \| `user Q1` \| repo `{path}` |
 
 ## Open (not yet decided)
 

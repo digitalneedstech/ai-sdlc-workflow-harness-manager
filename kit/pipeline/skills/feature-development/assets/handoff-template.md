@@ -1,5 +1,11 @@
 # HANDOFF template (BA step)
 
+| Attribute | Value |
+|-----------|--------|
+| Type | Template |
+| Audience | The specialist that writes the artifact |
+| Adapt | Fill placeholders only. Do not add a product, host, or customer name. |
+
 Owned by **feature-development**. BA writes `features/{slug}/HANDOFF.md` and pastes this body in the final message.
 
 ```markdown
@@ -7,7 +13,8 @@ Owned by **feature-development**. BA writes `features/{slug}/HANDOFF.md` and pas
 
 **status:** SUCCESS | BLOCKED | ASSUMPTIONS_USED
 **slug:** {slug}
-**plan_path:** features/{slug}/plan.md
+**prd_path:** features/{slug}/prd.md | features/{slug}/intake.md | features/{slug}/epic-plan.md
+**state_path:** features/{slug}/state/ba-agent.json
 **spec_order_path:** features/{slug}/spec-order.md
 **test_plan_path:** features/{slug}/test-plan.md
 **spec_paths:**

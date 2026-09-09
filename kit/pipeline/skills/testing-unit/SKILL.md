@@ -8,7 +8,18 @@ disable-model-invocation: true
 
 # Unit testing (tester skill)
 
+| Attribute | Value |
+|-----------|--------|
+| Type | Skill |
+| Audience | The named agent, or the parent when this file is on the allowlist |
+| Adapt | Override the runner with `UNIT_TEST_CMD` or `unit_test_cmd` in the test strategy. Change the fallback (`pytest` / `npm test`) if this repository uses another runner. |
+
 Load only when **tester-agent** has `unit: required` in `features/{slug}/test-strategy.md`.
+
+## Adapt for this project
+
+Prefer `UNIT_TEST_CMD` or the strategy `unit_test_cmd`. Do not add a new test
+framework. Use the layout already in this repository.
 
 ## Inputs
 

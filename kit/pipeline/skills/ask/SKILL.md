@@ -7,6 +7,12 @@ description: >-
 
 # Ask (read-only Q&A)
 
+| Attribute | Value |
+|-----------|--------|
+| Type | Skill |
+| Audience | The named agent, or the parent when this file is on the allowlist |
+| Adapt | Change commands or paths only in deploy and testing skills. Planning skills stay product-neutral. |
+
 The parent stays in this skill. Do **not** spawn specialists. Do **not** start feature-development.
 
 ## When this workflow runs

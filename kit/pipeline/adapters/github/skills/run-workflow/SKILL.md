@@ -8,6 +8,12 @@ description: >-
 
 # Run workflow (harness)
 
+| Attribute | Value |
+|-----------|--------|
+| Type | IDE adapter |
+| Audience | Receptionist in this IDE |
+| Adapt | Do not fork per product. Process lives in `.pipeline/`. |
+
 You are the receptionist. Real workflow files live under `.pipeline/` (project, else `~/.pipeline`) so they are not auto-loaded.
 
 ## Steps

@@ -1,5 +1,11 @@
 # Orchestration and tracker intake
 
+| Attribute | Value |
+|-----------|--------|
+| Type | Wiki |
+| Audience | Parent or specialist when INDEX triggers match |
+| Adapt | Add a new page after retro. Do not store secrets or customer identifiers. |
+
 - **Layer:** pipeline
 - **Load when:** the ask contains a tracker issue key, or you are deciding which workflow runs before classifying micro / minor / feature
 
@@ -19,7 +25,7 @@ Class (`micro` | `minor` | `feature`) answers **how big**, not **where the work 
 - Write `route.md` before intake returns, on a tracker workflow — `issue_type` comes from the intake HANDOFF.
 - Hardcode a project key, JQL, MCP server name, or issue-type mapping in a skill, agent, or hook.
 
-## Fix / convention
+## Convention
 
 Entry point is `.cursor/skills/orchestration/SKILL.md` (O1 detect → O2 intake → O3 resolve → O4 route → O5 drive). Chains and skips come from `.pipeline/config.json`.
 
@@ -38,6 +44,6 @@ No tracker MCP reachable is not a reason to guess: intake returns `BLOCKED` and 
 
 `.cursor/skills/orchestration/SKILL.md`, `.pipeline/skills/jira-intake/SKILL.md`, `.pipeline/skills/epic-breakdown/SKILL.md`, `.pipeline/skills/bug-fix/SKILL.md`, `.pipeline/config.json`, `.cursor/hooks/subagent-start.py`
 
-## How to confirm
+## Verify
 
 `features/{slug}/route.md` names a `workflow`. Tracker runs have `intake.md`; epics also have `epic-plan.md` + `stories/`. Bug runs have `rca.md` and a regression test that was red before the fix. `subagent-start.py` denies a bug-workflow developer until the analyst HANDOFF is SUCCESS.

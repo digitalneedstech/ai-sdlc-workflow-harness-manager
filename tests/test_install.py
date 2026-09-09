@@ -54,9 +54,16 @@ def test_project_install_and_uninstall(tmp_path: Path):
     assert cfg_after["gates"]["require_planning_signoff_before_build"] is True
     assert (app / ".pipeline" / "install.json").is_file()
     assert (app / ".pipeline" / "docs" / "CUSTOMER-GUIDE.md").is_file()
+    assert (app / ".pipeline" / "docs" / "DOCUMENT-STANDARD.md").is_file()
     guide = (app / ".pipeline" / "docs" / "CUSTOMER-GUIDE.md").read_text(encoding="utf-8")
     assert "customer guide" in guide.lower()
     assert "chorus" not in guide.lower()
+    script = (app / ".pipeline" / "skills" / "local-deployment" / "scripts" / "deploy-local.sh").read_text(
+        encoding="utf-8"
+    )
+    assert "placeholder" in script.lower()
+    assert "ecommerce-store" not in script
+    assert "chorus" not in script.lower()
     assert not (app / ".cursor").exists()
     cfg = json.loads((app / ".pipeline" / "config.json").read_text(encoding="utf-8"))
     assert cfg["verify"]["rules"] == []
@@ -189,4 +196,65 @@ def test_architect_step_allowlist_installs(tmp_path: Path):
     assert pack["step"] == "architect-agent"
     assert ".pipeline/agents/architect-agent.md" in pack["allowed_reads"]
     assert ".pipeline/skills/architecture-design/SKILL.md" in pack["allowed_reads"]
+    assert ".pipeline/skills/feature-development/assets/pipeline-state.md" in pack["allowed_reads"]
     assert result.returncode == 0
+
+
+def test_prd_and_pipeline_state_are_installed(tmp_path: Path):
+    app = tmp_path / "app"
+    app.mkdir()
+    assert _run(["--project", str(app), "--ide", "none"]) == 0
+    assets = app / ".pipeline" / "skills" / "feature-development" / "assets"
+    assert (assets / "prd-template.md").is_file()
+    assert (assets / "pipeline-state.md").is_file()
+    assert (assets / "pipeline-state-template.json").is_file()
+    assert (assets / "agent-state-template.json").is_file()
+    prd = (assets / "prd-template.md").read_text(encoding="utf-8")
+    assert "As-is" in prd
+    assert "To-be" in prd
+    arch = (assets / "architecture-template.md").read_text(encoding="utf-8")
+    assert "Concerns" in arch
+    prompt = (assets / "parent-task-prompt.md").read_text(encoding="utf-8")
+    assert "PIPELINE_STATE_PATH" in prompt
+    assert "PRIOR_STATE_PATH" in prompt
+    cfg = json.loads((app / ".pipeline" / "config.json").read_text(encoding="utf-8"))
+    assert cfg["workflows"]["feature-development"]["plan_source"] == "prd.md"
+    pm = (app / ".pipeline" / "agents" / "product-manager-agent.md").read_text(encoding="utf-8")
+    assert "prd.md" in pm
+    assert "plan.md" not in pm or "PRD" in pm
+
+
+FORBIDDEN_PACK_TOKENS = (
+    "chorus",
+    "ecommerce-store",
+    "northline",
+    "canvas-engine",
+    "canvas_engine",
+    "canvas_agent",
+    "identityiq",
+    "jsonlogger",
+    "shop-1842",
+    "dark-factory",
+)
+
+
+def test_pack_markdown_is_portable_and_headed():
+    pack = REPO / "kit" / "pipeline"
+    missing_type: list[str] = []
+    leaks: list[str] = []
+    headed = {".md", ".mdc"}
+    for path in sorted(pack.rglob("*")):
+        if not path.is_file() or path.suffix.lower() not in {".md", ".mdc", ".sh", ".json"}:
+            continue
+        text = path.read_text(encoding="utf-8")
+        lower = text.lower()
+        rel = str(path.relative_to(pack))
+        for token in FORBIDDEN_PACK_TOKENS:
+            if token in lower:
+                leaks.append(f"{rel}: {token}")
+        if path.suffix.lower() in headed and "| Type |" not in text:
+            missing_type.append(rel)
+    assert leaks == [], "pack files still name a demo product:\n" + "\n".join(leaks)
+    assert missing_type == [], "pack markdown missing Type header:\n" + "\n".join(missing_type)
+    assert (pack / "docs" / "DOCUMENT-STANDARD.md").is_file()
+    assert (pack / "docs" / "CUSTOMER-GUIDE.md").is_file()

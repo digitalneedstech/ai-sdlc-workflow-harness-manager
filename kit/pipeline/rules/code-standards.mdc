@@ -1,20 +1,26 @@
 ---
 description: >-
   JavaScript and TypeScript coding standards (naming, modules, patterns).
-  Apply when editing .js, .jsx, .ts, or .tsx in this repo.
+  Apply when editing .js, .jsx, .ts, or .tsx in this repository.
 globs: "**/*.{js,jsx,ts,tsx}"
 alwaysApply: false
 ---
 
 # JS / TS standards
 
+| Attribute | Value |
+|-----------|--------|
+| Type | Rule |
+| Audience | Developer when editing JavaScript or TypeScript |
+| Adapt | Do not add a product folder name. Match the module style already in the file. |
+
 - **Names:** `camelCase` functions/variables, `PascalCase` components/classes/contexts, `SCREAMING_SNAKE` constants. No one-letter names except loop indexes.
-- **Modules:** ES modules only. Match neighbors: `ecommerce-store` uses `.jsx` default exports; `web/` uses TypeScript.
+- **Modules:** ES modules only. Match neighbors (default export vs named, JSX vs TSX).
 - **Functions:** Small and single-purpose. Prefer pure helpers over hidden side effects.
-- **Patterns:** Use factory / strategy / context **only** when the surrounding file already does. Do not introduce singleton global stores or prototype hacks for new features.
+- **Patterns:** Use factory / strategy / context **only** when the surrounding file already does. Do not introduce singleton global stores for new features.
 - **Types:** In `.ts`/`.tsx`, type public props and API payloads. Do not use `any` to silence errors.
 - **Errors:** Do not empty-catch. Log internally without secrets/PII; show a generic message in the UI.
-- **Deps:** Do not add a library if existing React/router/context can do it.
+- **Deps:** Do not add a library if existing code can do it.
 
 ```javascript
 // ❌ BAD

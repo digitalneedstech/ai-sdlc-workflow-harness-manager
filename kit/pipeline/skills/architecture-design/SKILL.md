@@ -9,6 +9,12 @@ description: >-
 
 # Architecture design (autonomous Architect loop)
 
+| Attribute | Value |
+|-----------|--------|
+| Type | Skill |
+| Audience | The named agent, or the parent when this file is on the allowlist |
+| Adapt | Change commands or paths only in deploy and testing skills. Planning skills stay product-neutral. |
+
 Turn signed-off requirements into on-disk architecture and an ordered
 implementation plan BA can specify against and developers can implement
 without inventing structure.
@@ -19,7 +25,8 @@ implementation plan + HANDOFF, then return. **Do not** write `specification.md`,
 implement code, or spawn BA.
 
 **Success:** `architecture.md` and `implementation-plan.md` are complete,
-ADRs labeled, child split stable, `decisions.md` updated.  
+ADRs labeled, child split stable, `decisions.md` updated, concerns recorded
+or raised as blocking.  
 **Failure:** chat-only design, silent invention, or open Must technical questions.
 
 **Progressive loading:** follow A1–A5 first. Templates are owned by
@@ -27,10 +34,11 @@ ADRs labeled, child split stable, `decisions.md` updated.
 
 | When | Read (feature-development) |
 |------|------|
+| Every step (state) | [../feature-development/assets/pipeline-state.md](../feature-development/assets/pipeline-state.md) |
 | A1 (decisions) | [../feature-development/assets/decisions-template.md](../feature-development/assets/decisions-template.md), [../feature-development/assets/clarify-first.md](../feature-development/assets/clarify-first.md) |
 | A2 (questions) | [../feature-development/assets/questions-format.md](../feature-development/assets/questions-format.md) |
 | A3 (design) | [../feature-development/assets/architecture-template.md](../feature-development/assets/architecture-template.md), [../feature-development/assets/implementation-plan-template.md](../feature-development/assets/implementation-plan-template.md) |
-| A5 (handoff) | [../feature-development/assets/handoff-architect-template.md](../feature-development/assets/handoff-architect-template.md) |
+| A5 (handoff) | [../feature-development/assets/handoff-architect-template.md](../feature-development/assets/handoff-architect-template.md), [../feature-development/assets/agent-state-template.json](../feature-development/assets/agent-state-template.json) |
 
 ---
 
@@ -46,8 +54,11 @@ ADRs labeled, child split stable, `decisions.md` updated.
 features/{slug}/
   architecture.md
   implementation-plan.md
+  architect-concerns.md     # if any concern was recorded
   decisions.md
   questions.md              # if A2 ran
+  state/architect-agent.json
+  pipeline-state.json
   HANDOFF-architect.md
 ```
 
@@ -59,35 +70,44 @@ Reuse `{slug}` if the folder exists; update the architecture, do not fork.
 
 `A1 DISCOVER → A2 CHALLENGE → A3 DESIGN → A4 SELF-GATE → A5 HANDOFF`
 
-**A1 Discover** — Read the signed-off plan source (`plan.md` or `intake.md` /
-`epic-plan.md`), `research.md`, `HANDOFF-pm.md`, `questions.md`, `decisions.md`,
-`signoff-requirements.md`, then the repo. Restate the technical problem. List
-2–4 structural options and why one is preferred. Greenfield: say so. Append
-extracted facts to `decisions.md`. Load [clarify-first.md](../feature-development/assets/clarify-first.md).
+**A1 Discover** — Read prior **state JSON** first, then only the files it
+lists. The signed-off requirements source is `prd.md` (PM) or `intake.md` /
+`epic-plan.md`. Also read `research.md`, `decisions.md`,
+`signoff-requirements.md`, then the repo. Restate the technical problem.
+List 2–4 structural options and why one is preferred. Greenfield: say so.
+Append extracted facts to `decisions.md`. Load [clarify-first.md](../feature-development/assets/clarify-first.md).
 
 **A2 Challenge** — Follow clarify-first. Run the **Architect** coverage
-checklist. Do **not** skip A2 because the plan “looks clear.”
+checklist. Do **not** skip A2 because the PRD “looks clear.” Requirements
+are often not fully solidified; record that instead of inventing product
+direction.
 
-- One batch, **max 15**. Format: questions asset. Set `audience: user | pm`.
-- `audience: user` → write `questions.md`, HANDOFF `BLOCKED`, **stop**.
-- `audience: pm` on `feature-development` → HANDOFF `BLOCKED_CHALLENGE_PM`.
-  Parent voids `signoff-requirements.md`, re-spawns PM, user re-signs, then
-  Architect again.
-- `audience: pm` on `jira-story` / `jira-epic` → treat as `user`. Do not
-  re-fetch Jira unless intake was incomplete.
+**Concerns (required thinking, not optional):**
+
+| Severity | When | What you do |
+|----------|------|-------------|
+| `blocking` | The design cannot be honest until the requirement changes | `audience: user` → `BLOCKED`. `audience: pm` on feature-development → `BLOCKED_CHALLENGE_PM`. |
+| `recorded` | A risk, gap, or soft requirement the design can still proceed with | Write it in `architecture.md` §9, `architect-concerns.md`, and agent state. Continue. HITL reviews it at `@signoff:architect`. |
+
+- One question batch, **max 15**. Format: questions asset. Set `audience: user | pm`.
+- `audience: pm` on `jira-story` / `jira-epic` → treat as `user`.
 - Never ask what the repo or a prior artifact already answers.
+- Never hide a blocking concern as `recorded` to keep the pipeline moving.
 
 **A3 Design** — Load the architecture and implementation-plan templates. Fill
-every section. Use **mermaid only** (no images, no Canvas). Sequence diagram
-is required when a new API or multi-step flow exists. If you revise the PM /
-intake child split for technical reasons, that split **wins** for BA. Append
-ADRs to `decisions.md`.
+every section. Use **mermaid only** (no images). Sequence diagram is required
+when a new API or multi-step flow exists. If you revise the PM / intake child
+split for technical reasons, that split **wins** for BA. Append ADRs to
+`decisions.md`. Keep `recorded` concerns visible — do not drop them because
+diagrams exist.
 
 **A4 Self-gate** — All **blockers** below must pass. Else fix or return to A2.
 Never HANDOFF `SUCCESS` on a failing design.
 
-**A5 Handoff** — Load the Architect handoff template. Write
-`HANDOFF-architect.md`. Stop. Parent next: `@signoff:architect`, then BA.
+**A5 Handoff** — Write `state/architect-agent.json` and update
+`pipeline-state.json`. Load the Architect handoff template. Write
+`HANDOFF-architect.md`. Stop. Parent next: `@signoff:architect` (present
+concerns), then BA.
 
 ---
 
@@ -108,6 +128,9 @@ Never HANDOFF `SUCCESS` on a failing design.
 
 - [ ] `features/{slug}/architecture.md` on disk
 - [ ] `features/{slug}/implementation-plan.md` on disk
+- [ ] `features/{slug}/state/architect-agent.json` on disk
+- [ ] `pipeline-state.json` updated for this step
+- [ ] Concerns section filled (`none` or listed); blocking concerns are not marked SUCCESS
 - [ ] `features/{slug}/decisions.md` updated this step
 - [ ] Context + module mermaid present; sequence present or explicitly `none`
 - [ ] At least one ADR
@@ -135,4 +158,4 @@ Never HANDOFF `SUCCESS` on a failing design.
 Chat-only architecture · skipping A2 · asking the repo · re-asking PM
 decisions · writing `specification.md` · spawning BA from Architect · Ready
 with open Must technical questions · inventing a new product direction
-instead of challenging requirements.
+instead of raising a concern · hiding blocking concerns as recorded.

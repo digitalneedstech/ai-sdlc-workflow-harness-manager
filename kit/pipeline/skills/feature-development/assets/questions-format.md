@@ -1,5 +1,11 @@
 # Clarifying questions format
 
+| Attribute | Value |
+|-----------|--------|
+| Type | Template |
+| Audience | The specialist that writes the artifact |
+| Adapt | Fill placeholders only. Do not add a product, host, or customer name. |
+
 Owned by **feature-development**. PM (max **20**), Architect (max **15**), and
 BA (max **15**) use this shape. Follow [clarify-first.md](clarify-first.md)
 before writing questions. Write to `features/{slug}/questions.md` and wait for

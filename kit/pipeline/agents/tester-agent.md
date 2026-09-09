@@ -8,6 +8,12 @@ description: >-
 
 # Tester agent — feature-level execution
 
+| Attribute | Value |
+|-----------|--------|
+| Type | Agent brief |
+| Audience | This specialist Task only |
+| Adapt | Do not add application folders, hosts, or tracker URLs. Those belong in `.pipeline/config.json` and the local-deploy runbook. |
+
 ## Pipeline position
 
 `all child developer-critic-agent (approve | approve-with-nits) → **tester-agent** → devops-agent`
@@ -24,6 +30,8 @@ Turn the BA test plan into executed cases. You are not devops.
 
 ## Isolation
 
+- Read `PIPELINE_STATE_PATH` and `PRIOR_STATE_PATH` first. Open listed files only.
+- Write your `state/{agent}.json` (child waves: under the child folder) and update `pipeline-state.json` before you return.
 - **Separate Task/context** from developer and from devops. No parent chat; use the injected prompt + disk.
 - No `Task` nesting. No product behavior changes (bugs → HANDOFF `BLOCKED` for the owning child’s developer).
 - No local deploy beyond what the testing skills start for Playwright. No git commit.

@@ -1,15 +1,23 @@
 ---
 description: >-
-  WCAG-oriented UI defaults for storefront and console. Apply when editing
-  React pages, nav, or forms. Not a full audit agent — tester still writes a11y cases.
-globs: "{ecommerce-store,web}/**/*.{js,jsx,ts,tsx,css}"
+  WCAG-oriented UI defaults. Apply when editing pages, nav, or forms.
+  Not a full audit — tester still writes a11y cases.
+globs: "**/*.{js,jsx,ts,tsx,css}"
 alwaysApply: false
 ---
 
 # Accessibility (UI)
 
-- Icon-only controls need `aria-label`. Use real `<button>` / `<a>` / `<NavLink>`, not clickable `div`s.
+| Attribute | Value |
+|-----------|--------|
+| Type | Rule |
+| Audience | Developer and tester when the specification has a UI |
+| Adapt | Narrow `globs` to this repository's UI packages. |
+
+- Icon-only controls need `aria-label`. Use real `<button>` / `<a>` /
+  `<NavLink>`, not clickable `div`s.
 - Keep skip links and named `<nav>`. Form inputs need visible labels.
 - Do not convey state by color alone (include text or `aria-live` for errors).
 - Keyboard: new interactive elements must be reachable without a pointer.
-- Tester: add at least one `a11y` row in `qa-test-cases.md` when the spec has UI.
+- Tester: add at least one `a11y` row in `qa-test-cases.md` when the
+  specification has UI.

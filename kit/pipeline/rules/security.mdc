@@ -1,18 +1,26 @@
 ---
 description: >-
-  Security defaults for this local agent platform and storefront: secrets,
-  injection, XSS, authz, tool gate. Apply when changing auth, MCP, workers,
-  APIs, or user-input handling.
+  Security defaults: secrets, injection, XSS, authorization.
+  Apply when changing auth, APIs, or user-input handling.
 alwaysApply: true
 ---
 
 # Security
 
-- Never trust client, worker, or LLM output. Validate types and paths on the server/engine.
-- Never hardcode secrets, daemon tokens, or passwords. Do not commit `.env` or MCP bearer tokens.
+| Attribute | Value |
+|-----------|--------|
+| Type | Rule |
+| Audience | Every specialist that edits product code |
+| Adapt | Do not add a product name. Keep these defaults; add project threats in AGENTS.md if needed. |
+
+- Never trust client, worker, or model output. Validate types and paths on
+  the server.
+- Never hardcode secrets or passwords. Do not commit `.env` or bearer tokens.
 - Never log PII, tokens, or full unredacted prompts in new telemetry.
-- Parameterized SQL only. No shelling out on unvalidated strings.
-- Authorization on every mutating or sensitive read. Fail closed (403/deny), not empty-success.
-- UI: no unsanitized HTML. React text nodes only for untrusted data.
-- Do not weaken the operator tool gate, sandbox, or HITL approval to “make the agent faster.”
-- New npm/PyPI deps need a one-line HANDOFF note (why existing code cannot do it). Prefer zero new deps.
+- Parameterized queries only. No shelling out on unvalidated strings.
+- Authorization on every mutating or sensitive read. Fail closed (403/deny),
+  not empty-success.
+- UI: no unsanitized HTML. Framework text nodes only for untrusted data.
+- Do not weaken an approval gate or sandbox to “make the agent faster.”
+- New dependencies need a one-line HANDOFF note (why existing code cannot do
+  it). Prefer zero new deps.

@@ -1,8 +1,14 @@
 # Architecture — {title}
 
+| Attribute | Value |
+|-----------|--------|
+| Type | Template |
+| Audience | The specialist that writes the artifact |
+| Adapt | Fill placeholders only. Do not add a product, host, or customer name. |
+
 **Status:** Draft | Ready for BA
 **Slug:** `{slug}`
-**Requirements:** `features/{slug}/plan.md` | `features/{slug}/intake.md` | `features/{slug}/epic-plan.md`
+**Requirements:** `features/{slug}/prd.md` | `features/{slug}/intake.md` | `features/{slug}/epic-plan.md`
 **Created:** {YYYY-MM-DD}
 
 ---
@@ -69,3 +75,16 @@ If this differs from the PM / intake split, this table **wins** for BA.
 ## 8. Open questions
 
 none | OQ-1: … (must be empty or cosmetic before Ready)
+
+## 9. Concerns (HITL)
+
+Record technical findings that the signed requirements did not fully settle.
+Copy blocking rows into `questions.md` and HANDOFF `BLOCKED` /
+`BLOCKED_CHALLENGE_PM`. Recorded rows stay here for `@signoff:architect`.
+
+| ID | Severity | Audience | Concern | Implied change |
+|----|----------|----------|---------|----------------|
+| none | — | — | none | — |
+
+Severity is `blocking` or `recorded`. Do not mark Ready while a blocking
+row remains.

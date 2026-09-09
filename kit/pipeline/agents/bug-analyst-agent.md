@@ -11,6 +11,12 @@ readonly: true
 
 # Bug analyst — root cause author
 
+| Attribute | Value |
+|-----------|--------|
+| Type | Agent brief |
+| Audience | This specialist Task only |
+| Adapt | Do not add application folders, hosts, or tracker URLs. Those belong in `.pipeline/config.json` and the local-deploy runbook. |
+
 ## Pipeline position
 
 `intake-agent → **bug-analyst-agent** → developer-agent → developer-critic-agent → tester-agent → devops-agent → retro-agent`
@@ -29,6 +35,8 @@ Follow [`.pipeline/skills/bug-fix/SKILL.md`](../skills/bug-fix/SKILL.md) steps *
 
 ## Isolation
 
+- Read `PIPELINE_STATE_PATH` and `PRIOR_STATE_PATH` first. Open listed files only.
+- Write your `state/{agent}.json` (child waves: under the child folder) and update `pipeline-state.json` before you return.
 - **Separate Task/context** from the developer (independence). No parent chat; use the injected prompt + disk.
 - **Read-only on product source.** You may run the app, its tests, and read-only inspection commands to reproduce; you may not edit product files, including "just adding the failing test" — that is the developer's first move.
 - No `Task` nesting. No git commit, no checkout, no revert.

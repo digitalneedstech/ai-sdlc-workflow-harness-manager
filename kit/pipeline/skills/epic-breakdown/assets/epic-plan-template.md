@@ -1,6 +1,12 @@
 # Epic plan template
 
-Owned by **epic-breakdown**. Intake copies this to `features/{slug}/epic-plan.md`. It stands in for the PM `plan.md` on the epic workflow, so the BA reads it the same way.
+| Attribute | Value |
+|-----------|--------|
+| Type | Template |
+| Audience | The specialist that writes the artifact |
+| Adapt | Fill placeholders only. Do not add a product, host, or customer name. |
+
+Owned by **epic-breakdown**. Intake copies this to `features/{slug}/epic-plan.md`. It stands in for the PM `prd.md` on the epic workflow, so the BA reads it the same way.
 
 ```markdown
 # Epic plan — {EPIC-KEY} {title}

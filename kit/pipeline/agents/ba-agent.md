@@ -2,13 +2,19 @@
 name: ba-agent
 description: >-
   Specification step of every spec-driven workflow. Split the approved plan
-  source — a PM plan, a tracker story, or an epic plan — into child
+  source — a PRD, a tracker story, or an epic plan — into child
   specification.md files, spec-order.md waves, and a categorized test plan.
   Spawned by the parent as a separate Task. Does not implement code, does not
   spawn critic or developer.
 ---
 
 # BA agent — specification author
+
+| Attribute | Value |
+|-----------|--------|
+| Type | Agent brief |
+| Audience | This specialist Task only |
+| Adapt | Do not add application folders, hosts, or tracker URLs. Those belong in `.pipeline/config.json` and the local-deploy runbook. |
 
 ## Pipeline position
 
@@ -28,6 +34,7 @@ Follow [`.pipeline/skills/spec-generation/SKILL.md`](../skills/spec-generation/S
 ## Isolation
 
 - You run in a **separate Task/context**. You have no parent chat; use the injected prompt + disk only.
+- Read `PIPELINE_STATE_PATH` and `PRIOR_STATE_PATH` first. Open listed files only.
 - No product source edits (React/Vite app, engine, etc.).
 - No `Task` nesting. No git commit.
 - Do not spawn ba-critic, developer, tester, or devops.
@@ -35,16 +42,13 @@ Follow [`.pipeline/skills/spec-generation/SKILL.md`](../skills/spec-generation/S
 ## Inputs (parent injects)
 
 - `REPO_ROOT`, `USER_REQUEST`, `FEATURE_SLUG` (parent feature slug), `WORKFLOW`
-- `PLAN_SOURCE_KIND` — `pm-plan` | `jira-story` | `jira-epic` (required)
-- `PLAN_SOURCE_PATH` — the file for that kind (required)
-- `ARCH_PATH` — `features/{slug}/architecture.md` when Architect ran
-- `IMPL_PLAN_PATH` — `features/{slug}/implementation-plan.md` when Architect ran
-- `DECISIONS_PATH` — `features/{slug}/decisions.md`
+- `PIPELINE_STATE_PATH`, `PRIOR_STATE_PATH` (Architect state when Architect ran; else PM or intake)
+- `PLAN_SOURCE_KIND` — `pm-plan` | `jira-story` | `jira-epic` (path comes from prior state)
 - Optional `JIRA_KEY`, and existing child specs to update, not fork
 
 | `PLAN_SOURCE_KIND` | `PLAN_SOURCE_PATH` | Also read |
 |--------------------|--------------------|-----------|
-| `pm-plan` | `features/{slug}/plan.md` | `research.md`, `architecture.md` if present, `decisions.md` |
+| `pm-plan` | `features/{slug}/prd.md` | `research.md`, `architecture.md` if present, `decisions.md` |
 | `jira-story` | `features/{slug}/intake.md` | — |
 | `jira-epic` | `features/{slug}/epic-plan.md` | `features/{slug}/stories/{child}.md` |
 
@@ -57,6 +61,8 @@ features/{slug}/spec-order.md
 features/{slug}/test-plan.md
 features/{slug}/decisions.md              # append
 features/{slug}/questions.md              # if S3 ran
+features/{slug}/state/ba-agent.json
+features/{slug}/pipeline-state.json
 features/{slug}/HANDOFF.md
 features/{slug}/{child}/specification.md
 features/{slug}/{child}/test-strategy.md

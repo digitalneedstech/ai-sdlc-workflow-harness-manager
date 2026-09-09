@@ -10,6 +10,12 @@ description: >-
 
 # Epic breakdown
 
+| Attribute | Value |
+|-----------|--------|
+| Type | Skill |
+| Audience | The named agent, or the parent when this file is on the allowlist |
+| Adapt | Change commands or paths only in deploy and testing skills. Planning skills stay product-neutral. |
+
 An epic is a **plan source**, not a spec. This skill produces the same artifact shape the product manager would hand the BA — problem, direction, and a stable **one child spec per story** split — sourced from the tracker instead of from research.
 
 Runs **inside the intake Task** (the tracker connection is already open). Extends [`../jira-intake/SKILL.md`](../jira-intake/SKILL.md) step I6.

@@ -1,5 +1,11 @@
 # Pipeline kit — customer guide
 
+| Attribute | Value |
+|-----------|--------|
+| Type | Handbook |
+| Audience | Developers and architects installing this pack on a customer engagement |
+| Adapt | Do not add a customer app, host, or tracker URL here. Overlay those in the project `config.json` and local-deploy files. |
+
 Audience: **developers and senior architects** who need a delivery pipeline
 they can install, adapt, and scale across many customer engagements — each
 with a different process, stack, and IDE — without forking a new agent
@@ -111,6 +117,7 @@ runbooks. That is the scaling contract.
 | `.pipeline/` | Workflows, skills, agent briefs, rules, wiki, loader |
 | `.pipeline/config.json` | **Your** chains, tracker, verify reminders, deploy targets |
 | `.pipeline/docs/CUSTOMER-GUIDE.md` | This guide (copied into the project on install) |
+| `.pipeline/docs/DOCUMENT-STANDARD.md` | How pack markdown is structured and what a project may change |
 | `.cursor/skills/run-workflow/` or `.claude/skills/run-workflow/` | The only IDE-discovered skill |
 
 Specialist briefs and skill bodies stay under `.pipeline/` so the IDE does
@@ -262,7 +269,7 @@ Empty `[]` is valid. The pipeline still runs.
 ### 4.2 `deploy.target` / `deploy.targets` — which process to start
 
 Devops receives `DEPLOY_TARGET` from the parent. Values must match **your**
-runbook and script (section 5), not the sample names in the shipped script.
+runbook and script (section 5), not leftover names from another engagement.
 
 ```json
 "deploy": {
@@ -277,9 +284,9 @@ runbook and script (section 5), not the sample names in the shipped script.
 | API-only bug | `api` |
 | New field on UI + new endpoint | `both` or `auto` |
 
-The shipped `deploy-local.sh` still contains **sample** folder and port
-logic. Until you rewrite it (section 5), `auto` will not start your apps
-correctly. Set `targets` to the names you will implement.
+The shipped `deploy-local.sh` is a **placeholder**. It writes
+`OVERALL=failed` until you implement build, serve, and health for this
+repository (section 5). Set `targets` to the names you will implement.
 
 ### 4.3 `intake.jira` — tracker or not
 
@@ -306,7 +313,7 @@ correctly. Set `targets` to the names you will implement.
 }
 ```
 
-**Use case, enabled:** “Work on SHOP-1842” → intake fetches the issue →
+**Use case, enabled:** “Work on ISSUE-1842” → intake fetches the issue →
 story, bug, or epic workflow. No one pastes the ticket by hand.
 
 **Use case, disabled:** The same sentence is treated as text
@@ -336,8 +343,8 @@ checklist items instead of silent defaults. Override Architect with
 
 ## 5. Adapt local deploy (different tech)
 
-The shipped files assume a **sample** Node frontend and a sample HTTP
-health check. They are placeholders. For any other stack, edit these three:
+The shipped runbook and script are **empty overlays**. They do not start
+an application until you fill them in. For any stack, edit these three:
 
 | File | What to change |
 |------|----------------|
@@ -345,18 +352,18 @@ health check. They are placeholders. For any other stack, edit these three:
 | `.pipeline/skills/local-deployment/assets/local-deploy-runbook.md` | How a human (and devops) starts **your** apps |
 | `.pipeline/skills/local-deployment/scripts/deploy-local.sh` | Build, start, and health-check **your** folders and ports |
 
-**Do not** leave sample folder names, sample ports, or sample process
-names in the script if those paths do not exist in the customer repo.
-Devops will report SUCCESS on the wrong stack.
+**Do not** leave another product’s folder names, ports, or process names
+in the script. Until the script matches this repository, devops must not
+report SUCCESS.
 
 ### Examples
 
 **React (Vite) + Node API**
 
 - Targets: `web`, `api`, `both`, `auto`
-- Web: `npm run build` then `npm run preview -- --host 127.0.0.1 --port 4173`
-- API: `npm start` or `node dist/server.js` on 3001
-- Health: `GET http://127.0.0.1:4173/` and `GET http://127.0.0.1:3001/health`
+- Web: `npm run build` then Vite preview bound to `127.0.0.1` on the team’s preview port
+- API: the existing start command on the team’s API port
+- Health: GET the UI origin and `GET /health` on the API
 
 **Spring Boot + Angular**
 
@@ -445,10 +452,17 @@ not commit those. Commit `features/` only if you want specs in git.
 
 ## 10. What you should not edit
 
+Follow [DOCUMENT-STANDARD.md](kit/pipeline/docs/DOCUMENT-STANDARD.md) in this
+repository. After install the same file is `.pipeline/docs/DOCUMENT-STANDARD.md`.
+
 - `.pipeline/loader/` — allowlist CLI
 - `.pipeline/workflows/*.json` — unless you add a workflow
-- `.pipeline/agents/*.md` and most skills — unless deploy/test commands are wrong
+- `.pipeline/agents/*.md` and planning skills — process, not your stack
 - Secrets, tokens, tracker site URLs — environment or IDE MCP settings only
+
+You **should** edit the local-deploy runbook, `deploy-local.sh`,
+`config.json` (`verify`, `deploy`, `intake.jira`), and testing skills if the
+default runners are wrong.
 
 ---
 
@@ -461,9 +475,10 @@ not commit those. Commit `features/` only if you want specs in git.
    - `deploy.targets` for your apps
    - `intake.jira.enabled` (`false` unless you use Jira)
 4. Rewrite the local-deploy runbook and `deploy-local.sh` for your stack (section 5).
-5. Add `features/` and `.pipeline/state/` to `.gitignore`.
-6. Open the repo root in the IDE. Confirm the `run-workflow` skill is visible.
-7. Smoke test: ask “How does X work?” (expect `ask`) and “Add a small label change” (expect `feature-development`).
+5. Skim `.pipeline/docs/DOCUMENT-STANDARD.md` before editing any other pack markdown.
+6. Add `features/` and `.pipeline/state/` to `.gitignore`.
+7. Open the repo root in the IDE. Confirm the `run-workflow` skill is visible.
+8. Smoke test: ask “How does X work?” (expect `ask`) and “Add a small label change” (expect `feature-development`).
 
 That is the full customer surface: **AGENTS.md + config.json**, then deploy
-and test files if your tech is not what the sample script starts.
+and test files if your runners are not the defaults in the testing skills.

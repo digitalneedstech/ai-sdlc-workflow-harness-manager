@@ -1,5 +1,11 @@
 # HANDOFF template (PM step)
 
+| Attribute | Value |
+|-----------|--------|
+| Type | Template |
+| Audience | The specialist that writes the artifact |
+| Adapt | Fill placeholders only. Do not add a product, host, or customer name. |
+
 Owned by **feature-development**. PM writes `features/{slug}/HANDOFF-pm.md` and pastes this body in the final message.
 
 ```markdown
@@ -7,8 +13,9 @@ Owned by **feature-development**. PM writes `features/{slug}/HANDOFF-pm.md` and 
 
 **status:** SUCCESS | BLOCKED | ASSUMPTIONS_USED
 **slug:** {slug}
-**plan_path:** features/{slug}/plan.md
+**prd_path:** features/{slug}/prd.md
 **research_path:** features/{slug}/research.md
+**state_path:** features/{slug}/state/product-manager-agent.json
 **questions_path:** features/{slug}/questions.md | none
 **decisions_path:** features/{slug}/decisions.md
 **ready_for_signoff:** true | false
@@ -34,7 +41,8 @@ Owned by **feature-development**. PM writes `features/{slug}/HANDOFF-pm.md` and 
 - What the parent should do:
 
 ## Parent next step
-Wait for @signoff:requirements. Then spawn architect-agent unless skip_architect. Do not start developer-agent.
+Wait for @signoff:requirements. Then spawn architect-agent unless skip_architect.
+Do not start developer-agent. Pass state/product-manager-agent.json — not this body.
 ```
 
 ### Status values (mandatory)

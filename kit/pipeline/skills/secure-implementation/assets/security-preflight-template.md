@@ -1,5 +1,11 @@
 # Security preflight — {slug}
 
+| Attribute | Value |
+|-----------|--------|
+| Type | Template |
+| Audience | The specialist that writes the artifact |
+| Adapt | Fill placeholders only. Do not add a product, host, or customer name. |
+
 Copy to `features/{slug}/security-preflight.md`. Check what applies; use `N/A — reason` otherwise.
 
 - [ ] Input from the client is validated on the server/engine (types, ranges, allowlists)

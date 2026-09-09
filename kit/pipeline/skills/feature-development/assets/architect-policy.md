@@ -1,7 +1,13 @@
 # Architect policy (configurable)
 
+| Attribute | Value |
+|-----------|--------|
+| Type | Policy |
+| Audience | Parent (copies values into `route.md`) |
+| Adapt | Edit the table columns only. Do not add extra classes. |
+
 Owned by **feature-development**. Parent applies this **after** requirements
-exist (`plan.md` or `intake.md` / `epic-plan.md`) and after
+exist (`prd.md` or `intake.md` / `epic-plan.md`) and after
 `@signoff:requirements`. Then write or update `skip_architect` in
 `features/{slug}/route.md`.
 

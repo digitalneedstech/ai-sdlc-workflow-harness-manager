@@ -10,6 +10,12 @@ description: >-
 
 # Tracker intake (read-only)
 
+| Attribute | Value |
+|-----------|--------|
+| Type | Skill |
+| Audience | The named agent, or the parent when this file is on the allowlist |
+| Adapt | Change commands or paths only in deploy and testing skills. Planning skills stay product-neutral. |
+
 Turn one issue key into **one normalized file** the rest of the pipeline can read without ever calling the tracker again.
 
 **Success:** `features/{slug}/intake.md` is complete and factual, `ISSUE_TYPE` is set, no secrets or personal data leaked to disk.

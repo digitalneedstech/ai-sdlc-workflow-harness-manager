@@ -1,7 +1,7 @@
 ---
 name: ba-critic-agent
 description: >-
-  Feature pipeline after ba-agent. Independent read-only review of the PM plan,
+  Feature pipeline after ba-agent. Independent read-only review of the PRD,
   every child specification.md, spec-order.md, and test-plan.md. Emits
   CRITIC_VERDICT. Does not rewrite specs unless the parent lifts readonly;
   does not implement code.
@@ -9,6 +9,12 @@ readonly: true
 ---
 
 # BA critic — specification gate
+
+| Attribute | Value |
+|-----------|--------|
+| Type | Agent brief |
+| Audience | This specialist Task only |
+| Adapt | Do not add application folders, hosts, or tracker URLs. Those belong in `.pipeline/config.json` and the local-deploy runbook. |
 
 ## Pipeline position
 
@@ -19,20 +25,15 @@ You are the **reviewer**, not the author. Default: notes + verdict only.
 ## Isolation
 
 - **Separate Task/context** from BA (independence). No parent chat; use the injected prompt + disk.
+- Read `PIPELINE_STATE_PATH` and `PRIOR_STATE_PATH` first. Open listed files only.
 - Read-only toward product code and the specs (unless parent explicitly asks you to apply nits).
 - No `Task` nesting. No git commit. Do not spawn telemetry or developer.
+- Write `state/ba-critic-agent.json` and update `pipeline-state.json` before you return.
 
 ## Inputs (parent injects)
 
-- `REPO_ROOT`, `FEATURE_SLUG` (parent slug), `USER_REQUEST`
-- `PLAN_PATH` — `features/{slug}/plan.md` | `intake.md` | `epic-plan.md`
-- `ARCH_PATH` — `features/{slug}/architecture.md` when Architect ran
-- `IMPL_PLAN_PATH` — `features/{slug}/implementation-plan.md` when Architect ran
-- `SPEC_ORDER_PATH` — `features/{slug}/spec-order.md`
-- `TEST_PLAN_PATH` — `features/{slug}/test-plan.md`
-- `BA_HANDOFF_PATH` — `features/{slug}/HANDOFF.md`
-- Child `SPEC_PATH`s from the HANDOFF `spec_paths` list
-- Optional `questions.md`, `decisions.md`
+- `REPO_ROOT`, `FEATURE_SLUG` (parent slug)
+- `PIPELINE_STATE_PATH`, `PRIOR_STATE_PATH` (`state/ba-agent.json`)
 
 ## What to review (all required)
 
@@ -45,7 +46,7 @@ You are the **reviewer**, not the author. Default: notes + verdict only.
 7. **Safety** — authz, PII, secrets, money, irreversible actions not silently guessed.
 8. **Order** — `spec-order.md` `**children:**` matches folders on disk; waves have real dependencies; independent children are parallel.
 9. **Test plan** — every Must AC appears in `test-plan.md` with a layer (`ui` / `e2e` / `api` / `unit` / `telemetry` / `a11y`). Feature-class `e2e` is required. Each child has `test-strategy.md`.
-10. **Architecture** — when `architecture.md` exists, flag specs that ignore ADRs, the technical child split, or do-not-invent constraints.
+10. **Architecture** — when `architecture.md` exists, flag specs that ignore ADRs, the technical child split, recorded concerns, or do-not-invent constraints.
 
 Write findings to `features/{slug}/ba-critic-report.md` when verdict is not `approve`.
 

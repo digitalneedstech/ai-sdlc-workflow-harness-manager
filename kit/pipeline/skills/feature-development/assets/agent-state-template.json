@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "agent": "{agent-id}",
+  "slug": "{slug}",
+  "status": "SUCCESS",
+  "updated_at": "{ISO-8601}",
+  "inputs": [
+    {
+      "path": "features/{slug}/pipeline-state.json",
+      "role": "pipeline_state"
+    },
+    {
+      "path": "features/{slug}/state/{prior-agent}.json",
+      "role": "prior_state"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "features/{slug}/{artifact}",
+      "kind": "{prd|research|architecture|specification|handoff|other}",
+      "required": true
+    }
+  ],
+  "reads": [
+    {
+      "path": "{repo or artifact path}",
+      "note": "{what this path proved}"
+    }
+  ],
+  "context": {
+    "summary": "",
+    "goals": [],
+    "concerns": [
+      {
+        "id": "C-1",
+        "severity": "blocking | recorded",
+        "audience": "user | pm | none",
+        "summary": ""
+      }
+    ],
+    "next_agent": "{agent-id | signoff-requirements | signoff-architect | signoff-ba | stop}",
+    "next_must_read": [
+      "features/{slug}/{artifact}"
+    ]
+  }
+}

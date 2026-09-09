@@ -4,7 +4,7 @@ description: >-
   Invoke this skill when the user (or parent workflow) needs a detailed
   product/feature specification markdown document produced autonomously: vague
   feature requests, “write a spec”, “BA spec”, “requirements doc”,
-  “specification.md”, or when the ba-agent must turn a plan source — a PM plan,
+  “specification.md”, or when the ba-agent must turn a plan source — a PRD,
   a tracker story, or an epic plan — into child specifications before critic
   review or implementation. Do not use for coding, test authoring, bug fixes
   (use bug-fix), or UI-only redesign (use ui-enhancement).
@@ -12,11 +12,17 @@ description: >-
 
 # Spec generation (autonomous BA loop)
 
+| Attribute | Value |
+|-----------|--------|
+| Type | Skill |
+| Audience | The named agent, or the parent when this file is on the allowlist |
+| Adapt | Change commands or paths only in deploy and testing skills. Planning skills stay product-neutral. |
+
 Turn a **plan source** into on-disk child specifications, a wave order, and a categorized test plan a critic can fail and developers can implement without inventing product decisions.
 
 | `PLAN_SOURCE_KIND` | `PLAN_SOURCE_PATH` | Produced by |
 |--------------------|--------------------|-------------|
-| `pm-plan` | `features/{slug}/plan.md` | product-manager-agent |
+| `pm-plan` | `features/{slug}/prd.md` | product-manager-agent |
 | `jira-story` | `features/{slug}/intake.md` | intake-agent |
 | `jira-epic` | `features/{slug}/epic-plan.md` + `features/{slug}/stories/{child}.md` | intake-agent via epic-breakdown |
 
@@ -37,7 +43,8 @@ Everything after S1 is identical across the three. A defect never reaches this s
 | S4 (density check) | [../feature-development/assets/example-specification.md](../feature-development/assets/example-specification.md) |
 | S4b (order) | [../feature-development/assets/spec-order-template.md](../feature-development/assets/spec-order-template.md) |
 | S4c (tests) | [../feature-development/assets/test-plan-template.md](../feature-development/assets/test-plan-template.md), [../feature-development/assets/test-strategy-template.md](../feature-development/assets/test-strategy-template.md) |
-| S6 (handoff) | [../feature-development/assets/handoff-template.md](../feature-development/assets/handoff-template.md) |
+| Every step (state) | [../feature-development/assets/pipeline-state.md](../feature-development/assets/pipeline-state.md) |
+| S6 (handoff) | [../feature-development/assets/handoff-template.md](../feature-development/assets/handoff-template.md), [../feature-development/assets/agent-state-template.json](../feature-development/assets/agent-state-template.json) |
 | Parent spawn | [../feature-development/assets/parent-task-prompt.md](../feature-development/assets/parent-task-prompt.md) |
 
 ---
@@ -52,7 +59,9 @@ Everything after S1 is identical across the three. A defect never reaches this s
 
 ```text
 features/{slug}/
-  plan.md              # plan source (pm-plan)
+  prd.md               # plan source (pm-plan)
+  state/ba-agent.json
+  pipeline-state.json
   intake.md            # plan source (jira-story)
   epic-plan.md         # plan source (jira-epic)
   stories/{child}.md   # jira-epic detail per story
@@ -76,11 +85,11 @@ Reuse `{slug}` if the folder exists. One child is valid. Disk is source of truth
 
 `S1 DISCOVER → S2 GAP → S3 CLARIFY? → S4 DRAFT → S4b ORDER → S4c TEST PLAN → S5 SELF-GATE → S6 HANDOFF`
 
-**S1 Discover** — Read the plan source first, then `decisions.md`, signed-off `architecture.md` / `implementation-plan.md` when present, then explore. Restate intent. Scan screens/routes/APIs/models. Record path + fact. Greenfield: say so. Load [clarify-first.md](../feature-development/assets/clarify-first.md). Append extracted facts to `decisions.md`.
+**S1 Discover** — Read prior state JSON first, then only listed files: the plan source (`prd.md` / `intake.md` / `epic-plan.md`), `decisions.md`, signed-off `architecture.md` / `implementation-plan.md` / `architect-concerns.md` when present, then explore. Restate intent. Scan screens/routes/APIs/models. Record path + fact. Greenfield: say so. Load [clarify-first.md](../feature-development/assets/clarify-first.md). Append extracted facts to `decisions.md`.
 
 | Kind | Read | Child-spec split |
 |------|------|------------------|
-| `pm-plan` | `plan.md`, `research.md`, architecture if present | Confirm or refine the Architect split when it exists; otherwise the PM split |
+| `pm-plan` | `prd.md`, `research.md`, architecture if present | Confirm or refine the Architect split when it exists; otherwise the PM split |
 | `jira-story` | `intake.md` — description and ACs are **verbatim requirements**, section 7 lists the gaps | Split only if the story genuinely holds several independent jobs; one child is the normal answer |
 | `jira-epic` | `epic-plan.md` child table, then each `stories/{child}.md` | **One child spec per story**, slugs taken from the plan's child table — do not merge or re-split without saying why in the HANDOFF |
 
@@ -107,7 +116,7 @@ Tracker-sourced: treat the issue text as the requirement, not as a suggestion. A
 
 **S5 Self-gate** — All **blockers** below must pass. Else fix or return to S3. Never HANDOFF `SUCCESS` on a failing pack.
 
-**S6 Handoff** — Load handoff template. Write `HANDOFF.md`. Stop. Parent next: BA critic.
+**S6 Handoff** — Write `state/ba-agent.json` and update `pipeline-state.json`. Load handoff template. Write `HANDOFF.md`. Stop. Parent next: BA critic. Pass state JSON, not this HANDOFF body.
 
 ---
 
@@ -132,7 +141,9 @@ Must FRs still in Open questions ⇒ not Ready. Do not start `developer-agent`.
 
 ## S5 blockers (all required)
 
-- [ ] The plan source for `PLAN_SOURCE_KIND` exists (`plan.md` | `intake.md` | `epic-plan.md`)
+- [ ] The plan source for `PLAN_SOURCE_KIND` exists (`prd.md` | `intake.md` | `epic-plan.md`)
+- [ ] `features/{slug}/state/ba-agent.json` on disk
+- [ ] `pipeline-state.json` updated for this step
 - [ ] `features/{slug}/decisions.md` updated this step
 - [ ] Specs do not contradict signed-off `architecture.md` when that file exists
 - [ ] `jira-epic`: one child spec per in-scope story, each carrying `**source:** {ISSUE-KEY}`

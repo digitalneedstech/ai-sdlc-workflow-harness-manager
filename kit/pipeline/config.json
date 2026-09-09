@@ -4,7 +4,7 @@
   "workflows": {
     "feature-development": {
       "source": "text",
-      "plan_source": "plan.md",
+      "plan_source": "prd.md",
       "classes": {
         "micro": [
           "developer-agent",

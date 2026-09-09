@@ -1,21 +1,33 @@
 ---
 description: >-
-  React UI conventions for ecommerce-store (JSX) and the Chorus web console (TSX).
-  Apply when editing UI components, pages, routing, or client state.
-globs: "{ecommerce-store,web}/**/*.{js,jsx,ts,tsx,css}"
+  React UI conventions. Apply when editing UI components, pages, routing,
+  or client state. Set globs to this repository's UI folders.
+globs: "**/*.{js,jsx,ts,tsx,css}"
 alwaysApply: false
 ---
 
 # React UI
 
-- Functional components only. Match the file you are in (`export default` pages in `ecommerce-store/src/pages/`).
-- Colocate feature state: existing `cartContext.jsx` / `orderContext.jsx` style. Do not add Redux/Zustand unless the spec requires it.
-- Routing: `react-router-dom` `Routes` / `NavLink`. New screens need a route **and** nav/a11y name if they are user-facing.
-- User-visible strings: keep tone of the current store/console; no hardcoded secrets in the client.
-- States: implement empty, loading, and error when the spec names them. Do not leave a blank screen on failure.
-- Accessibility: keep skip links, `aria-label` on icon-only controls, and real `<button>`/`<a>` (not clickable `div`s).
-- Do not use `dangerouslySetInnerHTML` or `bypassSecurityTrust*`. Encode dynamic text via React children.
-- Styles: reuse existing CSS classes; do not drop in a new CSS framework for one screen.
+| Attribute | Value |
+|-----------|--------|
+| Type | Rule |
+| Audience | Developer when editing UI |
+| Adapt | Narrow `globs` in the frontmatter to this repository's UI packages. |
+
+- Functional components only. Match the export style of the file you are in.
+- Colocate feature state with existing context or store patterns. Do not add
+  a new state library unless the specification requires it.
+- New user-facing screens need a route **and** an accessible name.
+- User-visible strings: keep the tone of the current application; no secrets
+  in the client.
+- States: implement empty, loading, and error when the specification names
+  them. Do not leave a blank screen on failure.
+- Accessibility: keep skip links, `aria-label` on icon-only controls, and
+  real `<button>` / `<a>` (not clickable `div`s).
+- Do not use `dangerouslySetInnerHTML` or `bypassSecurityTrust*`. Encode
+  dynamic text via React children.
+- Styles: reuse existing CSS classes; do not drop in a new CSS framework for
+  one screen.
 
 ```jsx
 // ❌ BAD

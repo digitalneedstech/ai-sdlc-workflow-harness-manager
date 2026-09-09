@@ -1,5 +1,11 @@
 # Tester policy (configurable)
 
+| Attribute | Value |
+|-----------|--------|
+| Type | Policy |
+| Audience | Parent (copies values into `route.md`) |
+| Adapt | Edit the table columns only. Do not add extra classes. |
+
 Owned by **feature-development**. Parent reads this **before** writing `features/{slug}/route.md`. Set `skip_tester` from `run_tester` for that class.
 
 Edit the `run_tester` column only. Do not invent extra classes.

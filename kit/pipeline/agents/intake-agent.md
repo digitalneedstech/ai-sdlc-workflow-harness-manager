@@ -11,6 +11,12 @@ readonly: true
 
 # Intake agent — tracker issue to disk
 
+| Attribute | Value |
+|-----------|--------|
+| Type | Agent brief |
+| Audience | This specialist Task only |
+| Adapt | Do not add application folders, hosts, or tracker URLs. Those belong in `.pipeline/config.json` and the local-deploy runbook. |
+
 ## Pipeline position
 
 `parent (orchestration) → **intake-agent** → ba-agent | bug-analyst-agent`
@@ -27,6 +33,8 @@ Follow [`.pipeline/skills/jira-intake/SKILL.md`](../skills/jira-intake/SKILL.md)
 
 ## Isolation
 
+- Read `PIPELINE_STATE_PATH` and `PRIOR_STATE_PATH` first. Open listed files only.
+- Write your `state/{agent}.json` (child waves: under the child folder) and update `pipeline-state.json` before you return.
 - **Separate Task/context**: the raw issue payload must not fill the parent chat.
 - No product source edits. No `Task` nesting. No git commit.
 - Do not spawn BA, bug analyst, developer, or any other pipeline agent.

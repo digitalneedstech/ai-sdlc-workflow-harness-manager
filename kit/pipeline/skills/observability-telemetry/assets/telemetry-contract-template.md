@@ -1,5 +1,11 @@
 # Telemetry contract template
 
+| Attribute | Value |
+|-----------|--------|
+| Type | Template |
+| Audience | The specialist that writes the artifact |
+| Adapt | Fill placeholders only. Do not add a product, host, or customer name. |
+
 Owned by **observability-telemetry**. Telemetry-agent copies this to `features/{slug}/telemetry-contract.md`.
 
 ```markdown
@@ -28,8 +34,8 @@ Forbidden properties: email, password, token, raw prompt, full street address, u
 
 ## Transport
 
-- Engine/daemon: existing JsonLogger only
-- Storefront: existing code paths only — **no new vendor SDK** unless FR-…
+- Use the logging or analytics helper already in this repository
+- **No new vendor SDK** unless a Must FR names it
 
 ## Explicitly out of scope
 

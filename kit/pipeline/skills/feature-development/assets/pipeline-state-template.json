@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "slug": "{slug}",
+  "workflow": "{feature-development|jira-story|jira-epic|jira-bug}",
+  "change_class": "{micro|minor|feature}",
+  "updated_at": "{ISO-8601}",
+  "current_step": "{agent-id or @signoff:* or @waves}",
+  "current_status": "not_started",
+  "steps": {
+    "{agent-id}": {
+      "status": "pending",
+      "handoff_status": "",
+      "state_path": "features/{slug}/state/{agent-id}.json",
+      "updated_at": ""
+    }
+  },
+  "waves": {}
+}

@@ -1,11 +1,17 @@
 # Research template
 
+| Attribute | Value |
+|-----------|--------|
+| Type | Template |
+| Audience | The specialist that writes the artifact |
+| Adapt | Fill placeholders only. Do not add a product, host, or customer name. |
+
 Owned by **feature-development**. PM copies this to `features/{slug}/research.md`.
 
 ```markdown
 # Research — {slug}
 
-**Plan:** features/{slug}/plan.md
+**PRD:** features/{slug}/prd.md
 
 ## Repo facts
 
@@ -17,7 +23,7 @@ Greenfield: write `none — no existing surface` and continue.
 
 ## Web facts
 
-| ID | URL | Claim | Used in plan? |
+| ID | URL | Claim | Used in PRD? |
 |----|-----|-------|---------------|
 | W-1 | https://… | … | yes / no |
 

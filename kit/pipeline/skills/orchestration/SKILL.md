@@ -12,6 +12,12 @@ description: >-
 
 # Orchestration (top-layer router)
 
+| Attribute | Value |
+|-----------|--------|
+| Type | Skill |
+| Audience | The named agent, or the parent when this file is on the allowlist |
+| Adapt | Change commands or paths only in deploy and testing skills. Planning skills stay product-neutral. |
+
 The parent chat is the orchestrator. It picks **which workflow runs**, not **how** a step is done — each step is a `Task` running its own agent brief and skill.
 
 **Everything tunable lives in [`.pipeline/config.json`](../../config.json).** Chains, skips, tracker settings, and retry caps come from there. Do not hardcode a repo, app, host, port, tracker site, or project key in any pipeline file.

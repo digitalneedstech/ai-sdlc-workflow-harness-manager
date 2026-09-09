@@ -1,5 +1,11 @@
 # Interrupted pipeline Task, no HANDOFF
 
+| Attribute | Value |
+|-----------|--------|
+| Type | Wiki |
+| Audience | Parent or specialist when INDEX triggers match |
+| Adapt | Add a new page after retro. Do not store secrets or customer identifiers. |
+
 - **Slug / date:** login-button-label, 2026-09-04
 - **Layer:** pipeline
 - **Load when:** user-interrupted specialist Task; missing `HANDOFF-*.md`; tester/Playwright/`ensure-e2e-toolchain` “starting”; parent told the user the agent is not running
@@ -19,7 +25,7 @@ Specialists write HANDOFF **at the end**. Interrupt during toolchain install or 
 - Spawn a second tester Task without confirming the first is gone (user interrupt / UI stop).
 - Invent a HANDOFF for an interrupted run.
 
-## Fix / convention
+## Convention
 
 1. If the user interrupts a specialist: confirm the Task is stopped in the UI, then spawn a **new** Task of the same type with a full prompt.
 2. Until HANDOFF exists, the step is incomplete. Ask the user whether to restart; do not infer idle from disk alone.
@@ -29,6 +35,6 @@ Specialists write HANDOFF **at the end**. Interrupt during toolchain install or 
 
 `features/{slug}/HANDOFF-tester.md`, `.pipeline/skills/feature-development/assets/tester-policy.md`, `.cursor/skills/testing-ui-playwright/`
 
-## How to confirm
+## Verify
 
 Interrupted run has no HANDOFF. Restarted tester writes `HANDOFF-tester.md` with `FEATURE_SIGNOFF: passed` before devops.

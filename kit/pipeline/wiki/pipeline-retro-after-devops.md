@@ -1,5 +1,11 @@
 # Pipeline retro after devops
 
+| Attribute | Value |
+|-----------|--------|
+| Type | Wiki |
+| Audience | Parent or specialist when INDEX triggers match |
+| Adapt | Add a new page after retro. Do not store secrets or customer identifiers. |
+
 - **Slug / date:** pipeline-retro, 2026-08-27
 - **Layer:** pipeline
 - **Load when:** tempted to declare PIPELINE_COMPLETE after local health, skip retro, or expect the retro Task to “remember” the parent chat
@@ -20,7 +26,7 @@ Specialists run in a **new `Task`**. Retro has no parent conversation — only `
 - Silently rewrite a skill from retro. Note the workflow bug in RETRO; a human updates the skill.
 - Add an always-on `.pipeline/rules/*.mdc` for a one-off port or error; use a **wiki page**.
 
-## Fix / convention
+## Convention
 
 Every class ends `… → devops → retro`. Parent injects `CONVERSATION_DIGEST` (≤ 30 lines, no secrets) when the run had a non-obvious miss.
 
@@ -30,6 +36,6 @@ Persist reusable lessons: `.pipeline/wiki/{slug}.md` + `INDEX.md` + the wiki tab
 
 `.pipeline/agents/retro-agent.md`, `.pipeline/skills/pipeline-retro/SKILL.md`, `features/{slug}/RETRO.md`, `HANDOFF-retro.md`
 
-## How to confirm
+## Verify
 
 `HANDOFF-retro.md` is `SUCCESS` or `NO_NEW_PAGE`. Parent then **PIPELINE_COMPLETE**. Local URLs from devops remain valid either way.

@@ -1,7 +1,13 @@
 # Feature pipeline — PM gate and multi-spec waves
 
+| Attribute | Value |
+|-----------|--------|
+| Type | Wiki |
+| Audience | Parent or specialist when INDEX triggers match |
+| Adapt | Add a new page after retro. Do not store secrets or customer identifiers. |
+
 - **Layer:** pipeline
-- **Load when:** product-manager-agent, plan.md, nested features/{slug}/{child}/, spec-order.md, waves, one feature-level tester
+- **Load when:** product-manager-agent, prd.md, nested features/{slug}/{child}/, spec-order.md, waves, one feature-level tester
 
 ## Symptom
 
@@ -21,10 +27,10 @@ Feature class is now a parent folder: PM (or intake) plans first, the user signs
 - Start devops without FEATURE_SIGNOFF: passed
 - Start waves without `signoff-ba.md`
 
-## Fix / convention
+## Convention
 
-1. Parent writes features/{slug}/route.md (change_class: feature).
-2. product-manager-agent writes plan.md, research.md, and decisions.md. Clarify-first questions (max 20).
+1. Parent writes features/{slug}/route.md and pipeline-state.json (change_class: feature).
+2. product-manager-agent analyzes as-is in the repo, writes prd.md, research.md, decisions.md, and state/product-manager-agent.json. Clarify-first questions (max 20).
 3. Parent `@signoff:requirements`. Then architect-policy; large stories run architect-agent.
 4. ba-agent writes each features/{slug}/{child}/specification.md, spec-order.md (**children:** line), test-plan.md, and per-child test-strategy.md.
 5. After BA critic approve and `@signoff:ba`, parent runs waves: per child telemetry then developer then developer-critic. Parallel children share a wave.
@@ -37,6 +43,6 @@ Micro/minor unchanged (flat folder, no PM, no Architect, no tester unless policy
 
 .pipeline/agents/product-manager-agent.md, .pipeline/skills/product-planning/SKILL.md, .pipeline/skills/spec-generation/SKILL.md, .pipeline/skills/feature-development/SKILL.md, .pipeline/wiki/feature-pipeline-architect-and-signoff.md
 
-## How to confirm
+## Verify
 
-features/{slug}/plan.md and signoff-requirements.md exist before Architect or BA. Child specs are subfolders. HANDOFF-tester.md is after every child critic. qa-signoff.md exists before devops.
+features/{slug}/prd.md and signoff-requirements.md exist before Architect or BA. Child specs are subfolders. HANDOFF-tester.md is after every child critic. qa-signoff.md exists before devops.

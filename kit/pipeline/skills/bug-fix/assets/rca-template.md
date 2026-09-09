@@ -1,5 +1,11 @@
 # Root cause analysis template
 
+| Attribute | Value |
+|-----------|--------|
+| Type | Template |
+| Audience | The specialist that writes the artifact |
+| Adapt | Fill placeholders only. Do not add a product, host, or customer name. |
+
 Owned by **bug-fix**. The analyst copies this to `features/{slug}/rca.md`. It is the developer's requirement document on the bug workflow — the equivalent of `specification.md`.
 
 Every factual claim cites `path:line`. Sections that do not apply say `N/A — reason`, never blank.

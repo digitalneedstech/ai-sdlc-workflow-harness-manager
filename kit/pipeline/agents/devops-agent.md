@@ -9,6 +9,12 @@ description: >-
 
 # Devops agent — local build, serve, validate
 
+| Attribute | Value |
+|-----------|--------|
+| Type | Agent brief |
+| Audience | This specialist Task only |
+| Adapt | Do not add application folders, hosts, or tracker URLs. Those belong in `.pipeline/config.json` and the local-deploy runbook. |
+
 ## Pipeline position
 
 `tester-agent (SUCCESS) → **devops-agent** → retro-agent` (feature)  
@@ -26,15 +32,17 @@ Follow [`.pipeline/skills/local-deployment/SKILL.md`](../skills/local-deployment
 
 ## Isolation
 
+- Read `PIPELINE_STATE_PATH` and `PRIOR_STATE_PATH` first. Open listed files only.
+- Write your `state/{agent}.json` (child waves: under the child folder) and update `pipeline-state.json` before you return.
 - **Separate Task/context** from tester (build logs stay out of the parent and out of QA). No parent chat; use the injected prompt + disk.
 - No `Task` nesting. No git commit/push. No product feature edits.
-- No Chorus daemon **register**. Do not copy bootstrap secrets into chat or HANDOFF.
+- Do not copy secrets into chat or HANDOFF.
 - Shell: the deploy script only (plus `chmod +x` on that script if needed).
 
 ## Inputs (parent injects)
 
 - `REPO_ROOT`, `FEATURE_SLUG`
-- `DEPLOY_TARGET`: `auto` | `ecommerce-store` | `chorus` | `both`
+- `DEPLOY_TARGET`: one value from `deploy.targets` in `.pipeline/config.json`
 - Tester HANDOFF path; `qa-test-cases.md` and `qa-signoff.md` must exist **unless** `route.md` has `skip_tester: true`
 
 ## Work
@@ -66,8 +74,7 @@ DEPLOY_TARGET: ...
 SCRIPT: .pipeline/skills/local-deployment/scripts/deploy-local.sh
 RESULT_PATH: features/{slug}/deploy-result.env
 OVERALL: passed | failed
-STORE_HEALTH: passed | skipped | failed
-ENGINE_HEALTH: passed | skipped | failed
+HEALTH: {surface}=passed|skipped|failed (one line per runbook surface)
 URLS: ...
 PARENT_NEXT: retro-agent | retry devops-agent | re-run developer-agent | stop for user
 ```

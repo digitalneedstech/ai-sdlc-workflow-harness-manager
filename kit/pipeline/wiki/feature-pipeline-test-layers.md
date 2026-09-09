@@ -1,7 +1,13 @@
 # Feature pipeline test layers
 
+| Attribute | Value |
+|-----------|--------|
+| Type | Wiki |
+| Audience | Parent or specialist when INDEX triggers match |
+| Adapt | Add a new page after retro. Do not store secrets or customer identifiers. |
+
 - **Layer:** pipeline
-- **Load when:** test-strategy, test-plan, Playwright project (`automation-tests/`), where specs or screenshots live, FEATURE_SIGNOFF, skip_tester minor, cases-only, dark-factory sign-off, `qa-test-cases` vs Playwright drift
+- **Load when:** test-strategy, test-plan, UI e2e project, FEATURE_SIGNOFF, skip_tester, cases-only, `qa-test-cases` vs Playwright drift
 
 ## Symptom
 
@@ -21,7 +27,7 @@ BA must plan layers early; tester must execute them once at feature level; devop
 - Let devops substitute health checks for required e2e
 - Let Playwright planner invent scenarios from Must ACs instead of implementing `qa-test-cases.md` 1:1
 
-## Fix / convention
+## Convention
 
 Which classes run tester is configured in `.pipeline/skills/feature-development/assets/tester-policy.md` (`run_tester` true/false per micro, minor, feature). Parent copies that into `route.md` `skip_tester`. One-run override: `RUN_TESTER: true|false`.
 
@@ -35,8 +41,8 @@ Target URL and optional start command live in the test-plan Target block (`base_
 
 ## Files
 
-`.pipeline/skills/feature-development/assets/test-plan-template.md`, `test-strategy-template.md`, `qa-test-cases-template.md`, `qa-signoff-template.md`, `.cursor/skills/testing-ui-playwright/SKILL.md`, `.cursor/skills/testing-*/`, `automation-tests/`, `.cursor/hooks/subagent-start.py`
+`.pipeline/skills/feature-development/assets/test-plan-template.md`, `test-strategy-template.md`, `qa-test-cases-template.md`, `qa-signoff-template.md`, `.pipeline/skills/testing-*/`, the project UI e2e directory (default `automation-tests/`)
 
-## How to confirm
+## Verify
 
 `features/{slug}/qa-signoff.md` exists with `FEATURE_SIGNOFF: passed` before devops. `automation-tests/` resolves specs and artifacts from `FEATURE_SLUG` and has no host-specific paths.

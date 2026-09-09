@@ -1,35 +1,51 @@
-# Agent memory wiki (this repo)
+# Agent memory wiki
 
-Hard-won **Chorus / feature-pipeline** patterns from past runs. **Do not load this folder by default.** `AGENTS.md` and [`INDEX.md`](INDEX.md) are the router: read a page only when a trigger matches.
+Reusable lessons from past pipeline runs. **Do not load this folder by
+default.** [`INDEX.md`](INDEX.md) is the router: read a page only when a
+trigger matches.
+
+| Attribute | Value |
+|-----------|--------|
+| Type | Wiki handbook |
+| Audience | retro-agent and the parent |
+| Adapt | Add pages after a hard-won fix. Do not record customer names, secrets, or demo brands. |
 
 ## When to read
 
-1. Scan [`INDEX.md`](INDEX.md) or the compact table in root `AGENTS.md`.
-2. If **any** trigger matches the current ask, error, port, or pipeline class, **read that one page**.
+1. Scan [`INDEX.md`](INDEX.md).
+2. If **any** trigger matches the current ask, error, or pipeline class, read
+   that one page.
 3. If nothing matches, skip.
 
-## When to write (retro-agent or a hard-won fix)
+## When to write
 
-After a successful feature pipeline, or after a non-obvious failure you actually fixed:
+After a successful feature pipeline, or after a non-obvious failure you fixed:
 
-1. Add `.pipeline/wiki/{short-slug}.md` (template below). Keep under ~120 lines. Record the **wrong** approach too.
-2. Add one row to [`INDEX.md`](INDEX.md) (triggers + link).
-3. Add the same row to the wiki table in root [`AGENTS.md`](../../AGENTS.md).
-4. Prefer a **wiki page** over a new always-on rule. Add a `.pipeline/rules/*.mdc` only if it is a durable coding standard (short, one concern). Change a **skill** only if the workflow itself was wrong.
+1. Add `.pipeline/wiki/{short-slug}.md` (template below). Keep under ~120
+   lines. Record the **wrong** approach too.
+2. Add one row to [`INDEX.md`](INDEX.md).
+3. Add the same row to the wiki table in root `AGENTS.md` if that file has one.
+4. Prefer a wiki page over a new always-on rule. Change a skill only if the
+   workflow itself was wrong.
 
 ## Page template
 
 ```markdown
 # {Title}
 
-- **Slug / date:** {feature slug}, {YYYY-MM-DD}
-- **Layer:** pipeline | engine | storefront | hooks | telemetry
+| Attribute | Value |
+|-----------|--------|
+| Type | Wiki |
+| Audience | Parent or specialist when INDEX triggers match |
+| Adapt | Add a new page after retro. Do not store secrets or customer identifiers. |
+
+- **Layer:** pipeline | delivery | hooks | telemetry | ui
 - **Load when:** {one-line trigger}
 
 ## Symptom
 ## Root cause
 ## Do not
-## Fix / convention
+## Convention
 ## Files
-## How to confirm
+## Verify
 ```

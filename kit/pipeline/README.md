@@ -1,20 +1,32 @@
 # Pipeline pack
 
-IDE-agnostic workflow pack. Skills, agents, rules, commands, wiki, and the
-loader live here so Cursor / Claude Code / GitHub do **not** auto-load every file.
+| Attribute | Value |
+|-----------|--------|
+| Type | Handbook |
+| Audience | Delivery leads adapting this pack in a customer repository |
+| Adapt | Overlay lives in `config.json`, the local-deploy runbook and script, and testing skills. Do not add product names here. |
 
-**Customers adapting this pack to another repo or stack:** start at
-[docs/CUSTOMER-GUIDE.md](docs/CUSTOMER-GUIDE.md) (same file as
-`CUSTOMER-GUIDE.md` at the kit repo root).
+This folder is the **portable operating model**: skills, agent briefs, workflow
+allowlists, wiki, and the loader. The IDE holds only `run-workflow` so it does
+not auto-load the rest.
 
-IDE folders (`.cursor`, `.claude`, `.github`) should host only:
+**Start here after install:** [docs/CUSTOMER-GUIDE.md](docs/CUSTOMER-GUIDE.md).
+When you add or edit markdown in this folder, follow
+[docs/DOCUMENT-STANDARD.md](docs/DOCUMENT-STANDARD.md).
 
-- the `run-workflow` skill
-- hooks (still under `.cursor/hooks` in this repo; move them later)
+## What a new project changes
 
-## Install
+| Change this | Leave this |
+|-------------|------------|
+| `config.json` — tracker, deploy target names, verify rules | `loader/` |
+| `skills/local-deployment/assets/local-deploy-runbook.md` | `agents/*.md` (process, not stack) |
+| `skills/local-deployment/scripts/deploy-local.sh` | `workflows/*.json` unless you add a workflow |
+| Testing skills, only if runners or paths differ | Planning skill bodies |
+| Root `AGENTS.md` (installer does not write it) | Secrets — those stay in the environment |
 
-From a clone of this repository (zero extra dependencies):
+## Install (kit repository)
+
+From a clone of the pipeline-kit repository:
 
 ```bash
 pipeline-kit init                         # creates ./.pipeline
@@ -24,7 +36,6 @@ pipeline-kit setup                        # creates ~/.pipeline
 pipeline-kit doctor --ide cursor
 pipeline-kit workflows
 pipeline-kit uninstall
-pipeline-kit uninstall --user
 ```
 
 | Scope | Pack location | IDE skill |
@@ -40,14 +51,8 @@ Resolution when a workflow runs:
 4. `features/{slug}/` is always written in the **current project**, never in `$HOME`.
 5. Active allowlist state is `{pack}/state/active-context.json`.
 
-`--ide none` installs the pack only (no Cursor / Claude Code / GitHub). Hooks stay
-project-local (`.cursor/hooks.json`); a user-level install does not add hooks.
-
-The installer copies from `kit/pipeline/` in this repository, so it can
-create `.pipeline` in an empty project. Maintainers refresh that bundle with
-`python3 install.py --sync-kit` if they keep a live `.pipeline` working copy.
-That command is maintainer-only; customer installs use the `pipeline-kit`
-system command.
+`--ide none` installs the pack only. Hooks are optional and project-local
+(`.cursor/hooks.json`); a user-level install does not add them.
 
 ## What to add to AGENTS.md
 
@@ -89,40 +94,25 @@ Optional: if the team installed `--agent-stubs`, Cursor Task types such as
 python3 .pipeline/loader/load_workflow.py --workflow {name} --step parent --slug try-{name}
 ```
 
-Confirm `allowed_reads` is the smallest set that step needs. Do not add every
-skill in the pack.
+Confirm `allowed_reads` is the smallest set that step needs.
 
-Existing workflows: `ask`, `feature-development`, `jira-story`, `jira-epic`,
+Shipped workflows: `ask`, `feature-development`, `jira-story`, `jira-epic`,
 `jira-bug`. Feature-class work can run `architect-agent` after signed-off
 requirements (see `architect-policy.md` and `@signoff:*` in `config.json`).
 
 ## What you do not edit
 
-- Hook scripts under `.cursor/hooks/` (optional; policy stays in
-  `.pipeline/config.json`).
-- Product source in the host repository, unless the user’s ask is about it.
+- Product source, unless the user’s ask is about it.
 - `AGENTS.md` from the installer. Teams edit it using the snippet above
   or the customer guide.
-- Secrets, tracker site URLs, and project keys — those belong in this project’s
-  `config.json` or the environment, never in a shared skill.
+- Secrets, tracker site URLs, and project keys — environment or IDE MCP
+  settings only.
 
-## Enterprise (guidance only — not implemented)
+## Enterprise layering (guidance)
 
-When several teams should share one pack, layer overrides. Do not bake org
-URLs into the shared tree.
+When several teams share one pack, layer overrides. Do not bake org URLs
+into the shared tree.
 
 ```text
 org template repo  →  team defaults  →  ~/.pipeline (user)  →  <repo>/.pipeline (project wins)
 ```
-
-Practical options later:
-
-- **Golden template** (git clone or copier): every new service gets `.pipeline`
-  plus a thin `run-workflow` adapter.
-- **Internal package** (`pipx install company-pipeline-kit` from Artifactory).
-  Same `install.py`, different distribution.
-- **Dotfiles / MDM** for `--user` so laptops share one pack. Projects still
-  override via local `.pipeline/config.json`.
-- **Cursor Cloud / GitHub org**: check in only the thin adapter; keep the pack
-  user- or org-hosted.
-- Never put Jira site URLs, project keys, or secrets in the shared pack.

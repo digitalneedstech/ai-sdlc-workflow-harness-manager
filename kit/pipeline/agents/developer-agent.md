@@ -9,6 +9,12 @@ description: >-
 
 # Developer agent — implementer
 
+| Attribute | Value |
+|-----------|--------|
+| Type | Agent brief |
+| Audience | This specialist Task only |
+| Adapt | Do not add application folders, hosts, or tracker URLs. Those belong in `.pipeline/config.json` and the local-deploy runbook. |
+
 ## Pipeline position
 
 `@signoff:ba` + telemetry SUCCESS → **developer-agent** (feature; `FEATURE_SLUG` may be `{parent}/{child}`)  
@@ -36,6 +42,8 @@ parent can reclassify as **feature**.
 
 ## Isolation
 
+- Read `PIPELINE_STATE_PATH` and `PRIOR_STATE_PATH` first. Open listed files only.
+- Write your `state/{agent}.json` (child waves: under the child folder) and update `pipeline-state.json` before you return.
 - **Separate Task/context** (highest complexity). No parent chat; use the injected prompt + disk.
 - No `Task` nesting. Do not spawn critic, tester, or devops.
 - No git commit unless the user explicitly asked in this session.

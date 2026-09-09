@@ -9,6 +9,12 @@ description: >-
 
 # Pipeline retro (learnings)
 
+| Attribute | Value |
+|-----------|--------|
+| Type | Skill |
+| Audience | The named agent, or the parent when this file is on the allowlist |
+| Adapt | Change commands or paths only in deploy and testing skills. Planning skills stay product-neutral. |
+
 Run **only** after `HANDOFF-devops.md` is `SUCCESS` and `deploy-result.env` has `OVERALL=passed`. Last specialist before parent declares **PIPELINE_COMPLETE**.
 
 **Progressive load:** this file, then [assets/retro-template.md](assets/retro-template.md).

@@ -9,6 +9,12 @@ description: >-
 
 # Observability (business-correct telemetry)
 
+| Attribute | Value |
+|-----------|--------|
+| Type | Skill |
+| Audience | The named agent, or the parent when this file is on the allowlist |
+| Adapt | Change commands or paths only in deploy and testing skills. Planning skills stay product-neutral. |
+
 **Goal:** emit **few** events that a product or operator decision can use. Wrong or PII-laden events are worse than none.
 
 **Progressive load:** this file first, then [assets/telemetry-contract-template.md](assets/telemetry-contract-template.md) when drafting the contract.
@@ -53,7 +59,7 @@ Run **in order**. First failure drops the candidate. Record the drop reason in *
 | G3 | **Countable** | Can be counted or rate-limited without NLP (ints, bools, enums) | Needs parsing free text or screenshots |
 | G4 | **PII** | No email, name, address, tokens, prompts, user-typed titles | Any of those as a property |
 | G5 | **Cardinality** | Property domain is small/closed **or** omitted | User id / session id as a *metric label* |
-| G6 | **Transport** | Fits JsonLogger (engine) or existing storefront code | Needs new GA/Segment/`gtag` unless Must FR names it |
+| G6 | **Transport** | Fits the logging or analytics API already in this repository | Needs a new vendor SDK unless a Must FR names it |
 | G7 | **Idempotent When** | Same user action will not spam unbounded duplicates *unless* the FR is “count attempts” | `mousemove`, `page_view` every route |
 
 **Reliable enough** = G1–G7 all pass **and** a second person (developer critic) can replay: *action in AC → event name → properties ⊆ allowlist*.
@@ -78,8 +84,8 @@ Use the template. Every kept event has BQ-id + FR/AC. Dropped candidates appear 
 
 - **Allowlist over dump.** If a property is not in the contract, do not send it.
 - **No PII:** email, name, address, cart line titles that are user-typed, tokens, passwords, raw prompts, full URLs with secrets.
-- **No high-cardinality labels** as metric tags (user id, session id as Prometheus labels). IDs may be in structured logs only if hashed/truncated per existing `logging_util` caps.
-- **Reuse** `canvas_engine.logging_util.JsonLogger` in engine/daemon. Storefront: no new Segment/GA/Mixpanel/fbq/`gtag` unless the spec Must FR says so.
+- **No high-cardinality labels** as metric tags (user id, session id as metric labels). IDs may be in structured logs only if hashed or truncated per existing logging rules.
+- **Reuse** the repository’s current logger or analytics helper. Do not add a new vendor SDK unless a Must FR names it.
 - **Failures:** log `error_code` enums, not exception messages that leak internals.
 - **N/A is valid.** If this increment has no operator or product question that telemetry answers, the contract is explicit `EVENTS: none` — still write the file.
 

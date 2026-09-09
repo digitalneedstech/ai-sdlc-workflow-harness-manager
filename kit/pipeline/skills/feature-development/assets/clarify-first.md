@@ -1,5 +1,11 @@
 # Clarify-first (planning agents)
 
+| Attribute | Value |
+|-----------|--------|
+| Type | Policy |
+| Audience | Parent (copies values into `route.md`) |
+| Adapt | Edit the table columns only. Do not add extra classes. |
+
 Owned by **feature-development**. PM (P3), Architect (A2), and BA (S3) follow this
 file. Do not invent product or technical decisions. Mine prior artifacts first,
 then ask the user every remaining decision on the coverage checklist.
@@ -19,7 +25,7 @@ READ ARTIFACTS → APPEND decisions.md → LIST GAPS → ASK USER (if any) → D
    in `questions.md` is **not** a question.
 4. Remaining Unknowns that change scope, actors, success, journeys, data,
    APIs, authz, child split, or testability: write `questions.md`, HANDOFF
-   `BLOCKED`, **stop**. Do not draft a fake-complete plan, architecture, or spec.
+   `BLOCKED`, **stop**. Do not draft a fake-complete PRD, architecture, or spec.
 5. Draft only when the checklist is answered on disk, the leftover is
    cosmetic (copy, density), or the user said “proceed” / “use defaults”.
 
@@ -30,18 +36,22 @@ recorded in `decisions.md` or `questions.md`.
 
 | Agent | Must read before asking |
 |-------|-------------------------|
-| PM | `USER_REQUEST`, `route.md`, existing `plan.md` / `research.md` / `questions.md` / `decisions.md` on a re-run, `intake.md` if present, repo facts from P2 |
-| Architect | Signed-off `plan.md` or `intake.md` / `epic-plan.md`, `research.md`, `HANDOFF-pm.md`, `questions.md`, `decisions.md`, `signoff-requirements.md`, repo |
-| BA | All of the above plus `architecture.md`, `implementation-plan.md`, `HANDOFF-architect.md`, architect questions, `signoff-architect.md` (when Architect ran) |
+| PM | Prior state (if any), `USER_REQUEST`, `route.md`, existing `prd.md` / `research.md` / `questions.md` / `decisions.md` on a re-run, `intake.md` if present, repo facts from P2 |
+| Architect | Prior PM or intake state, then listed files: signed-off `prd.md` or `intake.md` / `epic-plan.md`, `research.md`, `decisions.md`, `signoff-requirements.md`, repo |
+| BA | Prior Architect (or PM / intake) state, then listed files: PRD/intake, `architecture.md`, `implementation-plan.md`, `architect-concerns.md`, `decisions.md`, `signoff-architect.md` (when Architect ran) |
 
 ## Coverage checklists (ask if not already decided)
 
 **PM**
 
+- Business / customer goals and why now
+- Timeline or release constraint
 - Actors and who may act
 - Success criteria
 - In / out of scope
-- Primary journeys
+- As-is flow (how the product works today) vs to-be
+- Primary journeys and approvals
+- External systems / integrations
 - MVP vs later
 - Authz / PII / money / irreversible actions
 - Child-spec split
@@ -58,6 +68,7 @@ recorded in `decisions.md` or `questions.md`.
 - NFRs that change design (latency, volume, offline)
 - Technical child-spec split
 - Failure modes
+- Requirements gaps (blocking vs recorded concerns)
 
 **BA**
 
@@ -81,5 +92,5 @@ Unknowns. Format: [questions-format.md](questions-format.md).
 ## When to use ASSUMPTIONS_USED
 
 Only when the user said “proceed” / “use defaults”, or every leftover is
-non-blocking (copy, density, cosmetic). Label each default in the plan, spec
+non-blocking (copy, density, cosmetic). Label each default in the PRD, spec
 §11, or architecture ADRs. Otherwise HANDOFF `BLOCKED`.

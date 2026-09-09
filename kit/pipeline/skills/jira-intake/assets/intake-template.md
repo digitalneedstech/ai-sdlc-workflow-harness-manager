@@ -1,5 +1,11 @@
 # Intake — {KEY}
 
+| Attribute | Value |
+|-----------|--------|
+| Type | Template |
+| Audience | The specialist that writes the artifact |
+| Adapt | Fill placeholders only. Do not add a product, host, or customer name. |
+
 **issue_type:** {raw tracker type} → {mapped: story | bug | epic}
 **status:** {status} · **priority:** {priority} · **fetched:** {date}
 **summary:** {issue summary, one line}

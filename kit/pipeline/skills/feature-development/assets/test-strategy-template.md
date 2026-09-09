@@ -1,5 +1,11 @@
 # Test strategy template
 
+| Attribute | Value |
+|-----------|--------|
+| Type | Template |
+| Audience | The specialist that writes the artifact |
+| Adapt | Fill placeholders only. Do not add a product, host, or customer name. |
+
 Owned by **feature-development**. BA copies this to `features/{feature-slug}/{child-slug}/test-strategy.md` during S4c. The feature-level rollup is `test-plan.md`. Tester and BA critic use both.
 
 ```markdown

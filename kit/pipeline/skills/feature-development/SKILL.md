@@ -12,9 +12,15 @@ description: >-
 
 # Feature development (parent workflow)
 
+| Attribute | Value |
+|-----------|--------|
+| Type | Skill |
+| Audience | The named agent, or the parent when this file is on the allowlist |
+| Adapt | Change commands or paths only in deploy and testing skills. Planning skills stay product-neutral. |
+
 **Entry point:** [orchestration/SKILL.md](../orchestration/SKILL.md) picks the workflow first. This file is the **text-sourced** one. A tracker key routes to `jira-story`, `jira-epic` (both reuse the ladder below with intake in front of Architect/BA and PM skipped) or `jira-bug` ([bug-fix/SKILL.md](../bug-fix/SKILL.md)). Chains and skips live in [`.pipeline/config.json`](../../config.json).
 
-Spawn **one agent per step in a new `Task` (separate context window)**. Classify **first** ([assets/change-routing.md](assets/change-routing.md)): **micro** / **minor** skip PM–BA–telemetry; **tester** follows [assets/tester-policy.md](assets/tester-policy.md). **feature** runs the planning ladder with sequential user sign-off. The subagent does **not** see this parent chat. Inject a **self-contained** prompt ([assets/parent-task-prompt.md](assets/parent-task-prompt.md)). Do **not** auto-continue after PM, Architect, or BA SUCCESS — wait for `@signoff:*`.
+Spawn **one agent per step in a new `Task` (separate context window)**. Classify **first** ([assets/change-routing.md](assets/change-routing.md)): **micro** / **minor** skip PM–BA–telemetry; **tester** follows [assets/tester-policy.md](assets/tester-policy.md). **feature** runs the planning ladder with sequential user sign-off. The subagent does **not** see this parent chat. Inject a **slim** prompt ([assets/parent-task-prompt.md](assets/parent-task-prompt.md)): `PIPELINE_STATE_PATH` + `PRIOR_STATE_PATH` + a short job. Do **not** paste prior HANDOFF bodies. Do **not** auto-continue after PM, Architect, or BA SUCCESS — wait for `@signoff:*`.
 
 **PIPELINE_COMPLETE** only after **devops** `OVERALL=passed` **and** **retro-agent** has run (`SUCCESS` or `NO_NEW_PAGE`).
 
@@ -53,7 +59,7 @@ A `Task` subagent is a **fresh context**. Required for every specialist below. D
 
 **Also a new Task:** retries (`changes-required`, devops `FAILED`). Do not resume the previous subagent thread to “just fix it.”
 
-**Parent-only (no Task):** classify change_class, write `route.md` / `patch.md` / telemetry stubs for micro|minor, paste HANDOFFs, wait for PM / Architect / BA questions, run `@signoff:*` (write sign-off files from [assets/planning-signoff-template.md](assets/planning-signoff-template.md)), apply architect-policy after requirements sign-off, read `spec-order.md` and fan out wave Tasks, set `DEPLOY_TARGET`, choose next `subagent_type`.
+**Parent-only (no Task):** classify change_class, write `route.md` / `patch.md` / `pipeline-state.json` / telemetry stubs for micro|minor, wait for PM / Architect / BA questions, run `@signoff:*` (write sign-off files from [assets/planning-signoff-template.md](assets/planning-signoff-template.md) and update pipeline state), apply architect-policy after requirements sign-off, read `spec-order.md` and fan out wave Tasks, set `DEPLOY_TARGET`, choose next `subagent_type`. Do not paste HANDOFF bodies into the next Task.
 
 **Forbidden:** PM+Architect, Architect+BA, PM+BA, BA+critic, developer+critic, tester+devops, telemetry+developer, implement-then-review in one context, or spawning developer before planning sign-offs.
 
@@ -62,11 +68,12 @@ A `Task` subagent is a **fresh context**. Required for every specialist below. D
 | When | Asset |
 |------|--------|
 | Parent classifies | [assets/change-routing.md](assets/change-routing.md), [assets/tester-policy.md](assets/tester-policy.md), [assets/architect-policy.md](assets/architect-policy.md) |
+| Parent + every specialist | [assets/pipeline-state.md](assets/pipeline-state.md), [assets/pipeline-state-template.json](assets/pipeline-state-template.json), [assets/agent-state-template.json](assets/agent-state-template.json) |
 | Parent sign-off | [assets/planning-signoff-template.md](assets/planning-signoff-template.md) |
 | Parent spawns any step | [assets/parent-task-prompt.md](assets/parent-task-prompt.md) |
 | Micro/minor patch | [assets/patch-template.md](assets/patch-template.md) |
 | Clarify-first (PM / Architect / BA) | [assets/clarify-first.md](assets/clarify-first.md), [assets/decisions-template.md](assets/decisions-template.md), [assets/questions-format.md](assets/questions-format.md) |
-| PM P2–P6 | [assets/research-template.md](assets/research-template.md), [assets/plan-template.md](assets/plan-template.md), [assets/handoff-pm-template.md](assets/handoff-pm-template.md) |
+| PM P2–P6 | [assets/research-template.md](assets/research-template.md), [assets/prd-template.md](assets/prd-template.md), [assets/handoff-pm-template.md](assets/handoff-pm-template.md) |
 | Architect A2–A5 | [../architecture-design/SKILL.md](../architecture-design/SKILL.md), [assets/architecture-template.md](assets/architecture-template.md), [assets/implementation-plan-template.md](assets/implementation-plan-template.md), [assets/handoff-architect-template.md](assets/handoff-architect-template.md) |
 | BA S3 questions | [assets/questions-format.md](assets/questions-format.md) |
 | BA S4 draft | [assets/specification-template.md](assets/specification-template.md) |
@@ -85,19 +92,20 @@ PM loop: [product-planning/SKILL.md](../product-planning/SKILL.md). Architect lo
 ## Setup
 
 1. Create `features/{slug}/`. Reuse if it exists. Feature class: child specs live in `features/{slug}/{child}/` even when there is only one child.
-2. Keep artifacts there: `route.md`, `plan.md` (feature), `decisions.md`, `architecture.md` / `implementation-plan.md` when Architect ran, `signoff-*.md`, `spec-order.md`, `test-plan.md`, child specs, telemetry contracts, HANDOFFs, `security-preflight.md`, `qa-test-cases.md`, `qa-signoff.md`, `deploy-result.env`, `RETRO.md`. Micro/minor stay flat (`patch.md`).
+2. Keep artifacts there: `route.md`, `pipeline-state.json`, `prd.md` (feature), `state/{agent}.json`, `decisions.md`, `architecture.md` / `implementation-plan.md` / `architect-concerns.md` when Architect ran, `signoff-*.md`, `spec-order.md`, `test-plan.md`, child specs, telemetry contracts, HANDOFFs, `security-preflight.md`, `qa-test-cases.md`, `qa-signoff.md`, `deploy-result.env`, `RETRO.md`. Micro/minor stay flat (`patch.md`).
 
 ---
 
 ## Workflow when `change_class` is **feature**
 
-Each step is a **new `Task` with a full prompt**. Wait for HANDOFF before the next step, except same-wave children which run in **parallel Tasks**.
+Each step is a **new `Task` with a slim state prompt**. Wait for HANDOFF before the next step, except same-wave children which run in **parallel Tasks**.
 
-1. **PM** — `product-manager-agent` (first gate). Stop if `BLOCKED` with questions.
-2. **`@signoff:requirements`** — present `plan.md`. Stop until the user approves or revises. Write `signoff-requirements.md`.
+0. **State** — write `pipeline-state.json`. Every later Task gets that path plus `PRIOR_STATE_PATH` only.
+1. **PM** — `product-manager-agent` (first gate). Writes `prd.md`. Stop if `BLOCKED` with questions.
+2. **`@signoff:requirements`** — present `prd.md`. Stop until the user approves or revises. Write `signoff-requirements.md`. Update pipeline state.
 3. **Architect policy** — load [assets/architect-policy.md](assets/architect-policy.md). Update `skip_architect` in `route.md`. If skip, drop Architect and `@signoff:architect`.
-4. **Architect** — when `skip_architect` is false. Stop if `BLOCKED` (user questions) or `BLOCKED_CHALLENGE_PM` (void requirements sign-off, re-spawn PM).
-5. **`@signoff:architect`** — present `architecture.md` + `implementation-plan.md`. Stop until the user approves.
+4. **Architect** — when `skip_architect` is false. Stop if `BLOCKED` (user questions) or `BLOCKED_CHALLENGE_PM` (void requirements sign-off, re-spawn PM). Recorded concerns stay on the artifact for HITL.
+5. **`@signoff:architect`** — present `architecture.md` + `implementation-plan.md` + recorded concerns. Stop until the user approves.
 6. **BA** — after requirements sign-off and (if Architect ran) architect sign-off.
 7. **BA critic** — reviews plan + architecture (if any) + all child specs + order + test plan. `changes-required` voids any draft BA sign-off and re-spawns BA.
 8. **`@signoff:ba`** — present child specs after critic approve. Stop until the user approves. Do not start waves without `signoff-ba.md`.
@@ -114,7 +122,7 @@ Each step is a **new `Task` with a full prompt**. Wait for HANDOFF before the ne
 
 Stop on `BLOCKED`, `FAILED`, or `changes-required` until that gate is cleared. If a micro/minor diff grows into a new flow, reset `route.md` to `feature` and start **PM**.
 
-Set `DEPLOY_TARGET` from developer files (`auto` | `ecommerce-store` | `chorus` | `both`) in the devops prompt.
+Set `DEPLOY_TARGET` from `deploy.target` / `deploy.targets` in `.pipeline/config.json` (and developer notes if they name one of those targets).
 
 ---
 
@@ -148,7 +156,7 @@ Set `DEPLOY_TARGET` from developer files (`auto` | `ecommerce-store` | `chorus` 
 
 ## Anti-patterns
 
-Two pipeline steps in one context · specialist work inline in the parent · running the full PM/Architect/BA ladder for a label change · classifying **micro** when a hard-upgrade trigger applies · critic in the same Task as the author · auto-continuing after PM/Architect/BA SUCCESS without `@signoff:*` · starting developer before planning sign-offs · treating tester or devops SUCCESS as done (retro is last) · spawning tester between waves · `TESTS: cases-only` on feature class · inventing kubectl/cloud deploy · logging bootstrap secrets · vanity analytics.
+Two pipeline steps in one context · specialist work inline in the parent · pasting a prior HANDOFF into the next prompt · running the full PM/Architect/BA ladder for a label change · classifying **micro** when a hard-upgrade trigger applies · critic in the same Task as the author · auto-continuing after PM, Architect, or BA SUCCESS without `@signoff:*` · starting developer before planning sign-offs · treating tester or devops SUCCESS as done (retro is last) · spawning tester between waves · `TESTS: cases-only` on feature class · inventing kubectl/cloud deploy · logging secrets · vanity analytics.
 
 ---
 
@@ -156,7 +164,7 @@ Two pipeline steps in one context · specialist work inline in the parent · run
 
 Config chains may include `@signoff:requirements`, `@signoff:architect`, and `@signoff:ba` next to `@waves`. These are **not** Tasks.
 
-1. Summarize the artifact and its path.
+1. Summarize the artifact path and any recorded concerns (from agent state).
 2. **Stop.** Do not spawn the next specialist.
 3. Wait for the user to approve / sign off, or send revision comments.
 4. On approve: write `features/{slug}/signoff-{role}.md` from [assets/planning-signoff-template.md](assets/planning-signoff-template.md).

@@ -1,5 +1,11 @@
 # Spec order template
 
+| Attribute | Value |
+|-----------|--------|
+| Type | Template |
+| Audience | The specialist that writes the artifact |
+| Adapt | Fill placeholders only. Do not add a product, host, or customer name. |
+
 Owned by **feature-development**. BA copies this to `features/{slug}/spec-order.md` after drafting child specs.
 
 The `**children:**` line is machine-read by pipeline hooks. Keep kebab slugs, comma-separated, no extra text.

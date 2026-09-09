@@ -11,7 +11,10 @@
         ".pipeline/skills/feature-development/assets/planning-signoff-template.md",
         ".pipeline/skills/feature-development/assets/parent-task-prompt.md",
         ".pipeline/config.json",
-        ".pipeline/workflows/feature-development.json"
+        ".pipeline/workflows/feature-development.json",
+        ".pipeline/skills/feature-development/assets/pipeline-state.md",
+        ".pipeline/skills/feature-development/assets/pipeline-state-template.json",
+        ".pipeline/skills/feature-development/assets/agent-state-template.json"
       ]
     },
     "steps": {
@@ -24,7 +27,11 @@
           ".pipeline/skills/feature-development/assets/handoff-pm-template.md",
           ".pipeline/skills/feature-development/assets/questions-format.md",
           ".pipeline/skills/feature-development/assets/clarify-first.md",
-          ".pipeline/skills/feature-development/assets/decisions-template.md"
+          ".pipeline/skills/feature-development/assets/decisions-template.md",
+          ".pipeline/skills/feature-development/assets/pipeline-state.md",
+          ".pipeline/skills/feature-development/assets/pipeline-state-template.json",
+          ".pipeline/skills/feature-development/assets/agent-state-template.json",
+          ".pipeline/skills/feature-development/assets/prd-template.md"
         ]
       },
       "architect-agent": {
@@ -37,7 +44,10 @@
           ".pipeline/skills/feature-development/assets/questions-format.md",
           ".pipeline/skills/feature-development/assets/clarify-first.md",
           ".pipeline/skills/feature-development/assets/decisions-template.md",
-          ".pipeline/skills/feature-development/assets/architect-policy.md"
+          ".pipeline/skills/feature-development/assets/architect-policy.md",
+          ".pipeline/skills/feature-development/assets/pipeline-state.md",
+          ".pipeline/skills/feature-development/assets/pipeline-state-template.json",
+          ".pipeline/skills/feature-development/assets/agent-state-template.json"
         ]
       },
       "ba-agent": {
@@ -52,31 +62,46 @@
           ".pipeline/skills/feature-development/assets/questions-format.md",
           ".pipeline/skills/feature-development/assets/handoff-template.md",
           ".pipeline/skills/feature-development/assets/clarify-first.md",
-          ".pipeline/skills/feature-development/assets/decisions-template.md"
+          ".pipeline/skills/feature-development/assets/decisions-template.md",
+          ".pipeline/skills/feature-development/assets/pipeline-state.md",
+          ".pipeline/skills/feature-development/assets/pipeline-state-template.json",
+          ".pipeline/skills/feature-development/assets/agent-state-template.json"
         ]
       },
       "ba-critic-agent": {
         "files": [
-          ".pipeline/agents/ba-critic-agent.md"
+          ".pipeline/agents/ba-critic-agent.md",
+          ".pipeline/skills/feature-development/assets/pipeline-state.md",
+          ".pipeline/skills/feature-development/assets/pipeline-state-template.json",
+          ".pipeline/skills/feature-development/assets/agent-state-template.json"
         ]
       },
       "telemetry-agent": {
         "files": [
           ".pipeline/agents/telemetry-agent.md",
           ".pipeline/skills/observability-telemetry/SKILL.md",
-          ".pipeline/skills/observability-telemetry/assets/telemetry-contract-template.md"
+          ".pipeline/skills/observability-telemetry/assets/telemetry-contract-template.md",
+          ".pipeline/skills/feature-development/assets/pipeline-state.md",
+          ".pipeline/skills/feature-development/assets/pipeline-state-template.json",
+          ".pipeline/skills/feature-development/assets/agent-state-template.json"
         ]
       },
       "developer-agent": {
         "files": [
           ".pipeline/agents/developer-agent.md",
           ".pipeline/skills/secure-implementation/SKILL.md",
-          ".pipeline/skills/secure-implementation/assets/security-preflight-template.md"
+          ".pipeline/skills/secure-implementation/assets/security-preflight-template.md",
+          ".pipeline/skills/feature-development/assets/pipeline-state.md",
+          ".pipeline/skills/feature-development/assets/pipeline-state-template.json",
+          ".pipeline/skills/feature-development/assets/agent-state-template.json"
         ]
       },
       "developer-critic-agent": {
         "files": [
-          ".pipeline/agents/developer-critic-agent.md"
+          ".pipeline/agents/developer-critic-agent.md",
+          ".pipeline/skills/feature-development/assets/pipeline-state.md",
+          ".pipeline/skills/feature-development/assets/pipeline-state-template.json",
+          ".pipeline/skills/feature-development/assets/agent-state-template.json"
         ]
       },
       "tester-agent": {
@@ -87,14 +112,20 @@
           ".pipeline/skills/testing-api/SKILL.md",
           ".pipeline/skills/testing-unit/SKILL.md",
           ".pipeline/skills/feature-development/assets/qa-test-cases-template.md",
-          ".pipeline/skills/feature-development/assets/qa-signoff-template.md"
+          ".pipeline/skills/feature-development/assets/qa-signoff-template.md",
+          ".pipeline/skills/feature-development/assets/pipeline-state.md",
+          ".pipeline/skills/feature-development/assets/pipeline-state-template.json",
+          ".pipeline/skills/feature-development/assets/agent-state-template.json"
         ]
       },
       "devops-agent": {
         "files": [
           ".pipeline/agents/devops-agent.md",
           ".pipeline/skills/local-deployment/SKILL.md",
-          ".pipeline/skills/local-deployment/assets/local-deploy-runbook.md"
+          ".pipeline/skills/local-deployment/assets/local-deploy-runbook.md",
+          ".pipeline/skills/feature-development/assets/pipeline-state.md",
+          ".pipeline/skills/feature-development/assets/pipeline-state-template.json",
+          ".pipeline/skills/feature-development/assets/agent-state-template.json"
         ]
       },
       "retro-agent": {
@@ -103,7 +134,10 @@
           ".pipeline/skills/pipeline-retro/SKILL.md",
           ".pipeline/skills/pipeline-retro/assets/retro-template.md",
           ".pipeline/wiki/README.md",
-          ".pipeline/wiki/INDEX.md"
+          ".pipeline/wiki/INDEX.md",
+          ".pipeline/skills/feature-development/assets/pipeline-state.md",
+          ".pipeline/skills/feature-development/assets/pipeline-state-template.json",
+          ".pipeline/skills/feature-development/assets/agent-state-template.json"
         ]
       }
     }

@@ -1,5 +1,11 @@
 # Feature pipeline change class
 
+| Attribute | Value |
+|-----------|--------|
+| Type | Wiki |
+| Audience | Parent or specialist when INDEX triggers match |
+| Adapt | Add a new page after retro. Do not store secrets or customer identifiers. |
+
 - **Layer:** pipeline
 - **Load when:** classifying micro / minor / feature, or tempted to run the full PM/BA ladder for a small UI tweak
 
@@ -19,7 +25,7 @@ One ladder does not fit all. Parent must classify **before** any `Task`.
 - Start BA on feature class before `signoff-requirements.md`.
 - Start Architect before requirements sign-off, or on micro/minor.
 
-## Fix / convention
+## Convention
 
 Table in `.pipeline/skills/feature-development/assets/change-routing.md`. Write `features/{slug}/route.md`.
 
@@ -35,6 +41,6 @@ Unsure → **feature**. Mid-flight growth → rewrite `route.md` to `feature` an
 
 `.pipeline/skills/feature-development/assets/change-routing.md`, `SKILL.md`, `hooks/subagent-start.py`
 
-## How to confirm
+## Verify
 
 `features/{slug}/route.md` exists before the first specialist. Hard-upgrade triggers force `feature`. Feature class has `skip_pm: false`. `skip_architect` is set from architect-policy after requirements exist.

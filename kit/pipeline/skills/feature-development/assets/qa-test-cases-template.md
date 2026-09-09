@@ -1,5 +1,11 @@
 # QA test cases template
 
+| Attribute | Value |
+|-----------|--------|
+| Type | Template |
+| Audience | The specialist that writes the artifact |
+| Adapt | Fill placeholders only. Do not add a product, host, or customer name. |
+
 Owned by **feature-development**. Tester copies this to `features/{slug}/qa-test-cases.md`. Every child Must AC must appear. Feature class must execute automated layers — not cases-only.
 
 Browser rows (`ui` / browser `e2e` / `a11y`) become one Playwright `test('TC-N')` each. **Steps** and **Expected** in this file are binding; locators are chosen later. Number the steps; do not leave a one-line slogan.
