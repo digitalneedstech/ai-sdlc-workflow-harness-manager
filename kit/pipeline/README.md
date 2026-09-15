@@ -100,7 +100,9 @@ Shipped workflows: `ask`, `feature-development`, `jira-story`, `jira-epic`,
 `jira-bug`, `test-knowledge-bootstrap`. Feature-class work can run
 `architect-agent` after signed-off requirements (see `architect-policy.md`
 and `@signoff:*` in `config.json`). `test-designer-agent` is opt-in via
-`pipeline-kit knowledge init` (`test_design.enabled`).
+`pipeline-kit knowledge init` (`test_design.enabled`). Enhanced Architect
+diagrams are opt-in via `pipeline-kit plugins install archify`
+(`architecture_diagrams.enabled`); mermaid in `architecture.md` stays required.
 
 ## What you do not edit
 

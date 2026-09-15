@@ -12,7 +12,7 @@ State contract: [pipeline-state.md](pipeline-state.md). Do **not** paste a prior
 
 **Always include:** `REPO_ROOT` (absolute), `FEATURE_SLUG`, `WORKFLOW`, `CHANGE_CLASS: micro|minor|feature`, the two state paths.
 
-Feature class: parent slug for PM, Architect, BA, BA critic, test-designer, tester, devops, retro. Child work uses `FEATURE_SLUG: {parent}/{child}`. When `test_design.enabled`, add `TEST_DESIGN_ENABLED: true` to Architect, BA, BA critic, test-designer, and tester.
+Feature class: parent slug for PM, Architect, BA, BA critic, test-designer, tester, devops, retro. Child work uses `FEATURE_SLUG: {parent}/{child}`. When `test_design.enabled`, add `TEST_DESIGN_ENABLED: true` to Architect, BA, BA critic, test-designer, and tester. When `architecture_diagrams.enabled`, add `ARCHIFY_ENABLED: true` to Architect.
 
 `@signoff:requirements`, `@signoff:architect`, and `@signoff:ba` are parent-only. Do not spawn a Task. Present the artifact **and recorded concerns**, wait for the user, write `signoff-*.md` from [planning-signoff-template.md](planning-signoff-template.md), update `pipeline-state.json`.
 
@@ -163,6 +163,7 @@ PLAN_SOURCE_KIND: pm-plan | jira-story | jira-epic
 Run A1–A5. Open files from the prior state only. Raise blocking or recorded concerns.
 Write architecture.md, implementation-plan.md, state/architect-agent.json.
 If TEST_DESIGN_ENABLED is true, also write features/{slug}/test-design/model-delta.json or set no_test_model_change.
+If ARCHIFY_ENABLED is true, follow .pipeline/skills/architecture-visualization/SKILL.md: keep mermaid, write features/{slug}/diagrams/manifest.json (delivered or mermaid-fallback). Do not BLOCK only because Archify is missing.
 Do not call BA or developer. Do not write specification.md.
 ```
 

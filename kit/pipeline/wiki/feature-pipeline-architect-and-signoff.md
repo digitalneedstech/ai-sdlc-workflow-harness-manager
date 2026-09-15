@@ -36,7 +36,7 @@ and developers from starting early.
 
 1. PM or intake writes the requirements artifact. Parent stops for `@signoff:requirements`.
 2. Parent applies `architect-policy.md` (or `RUN_ARCHITECT`). Large stories run Architect.
-3. Architect reads prior state + requirements, challenges, records or raises concerns, then writes mermaid architecture + implementation plan + state/architect-agent.json.
+3. Architect reads prior state + requirements, challenges, records or raises concerns, then writes mermaid architecture + implementation plan + state/architect-agent.json. When `architecture_diagrams.enabled`, Archify JSON/HTML is an optional extra under `features/{slug}/diagrams/` with mermaid-fallback.
 4. Parent stops for `@signoff:architect` and presents recorded concerns (skipped when `skip_architect`).
 5. BA reads architecture when present, asks leftover BA items, writes child specs.
 6. BA critic runs, then parent stops for `@signoff:ba`.

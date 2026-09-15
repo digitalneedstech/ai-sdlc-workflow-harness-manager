@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "provider": "archify-skill",
+  "pinned_version": "v2.16.0",
+  "status": "delivered | mermaid-fallback | skipped",
+  "fallback": "mermaid",
+  "reason": "none | missing-plugin | unpinned | validate-failed | deliver-failed | visual-check-skipped | chrome-unavailable",
+  "diagrams": [
+    {
+      "id": "context",
+      "type": "architecture",
+      "title": "Context",
+      "json": "features/{slug}/diagrams/context.architecture.json",
+      "html": "features/{slug}/diagrams/context.architecture.html",
+      "validation": "9/9 showcase, 0 errors, 0 warnings | none",
+      "visual_review": "passed | skipped | failed | pending",
+      "specification_sha256": "none",
+      "artifact_sha256": "none"
+    }
+  ]
+}

@@ -176,6 +176,14 @@
     "graph_path": "graphify-out/graph.json",
     "design_only": true
   },
+  "architecture_diagrams": {
+    "_note": "Opt-in. pipeline-kit plugins install archify sets enabled true. Absent or false keeps mermaid-only architecture. Do not add a diagram agent to class chains.",
+    "enabled": false,
+    "provider": "archify-skill",
+    "version": "v2.16.0",
+    "fallback": "mermaid",
+    "visual_check": "when-available"
+  },
   "verify": {
     "_note": "Add path-substring reminders for this repo after install.",
     "rules": []

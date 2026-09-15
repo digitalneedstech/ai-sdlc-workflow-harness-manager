@@ -69,14 +69,14 @@ A `Task` subagent is a **fresh context**. Required for every specialist below. D
 
 | When | Asset |
 |------|--------|
-| Parent classifies | [assets/change-routing.md](assets/change-routing.md), [assets/tester-policy.md](assets/tester-policy.md), [assets/test-design-policy.md](assets/test-design-policy.md), [assets/architect-policy.md](assets/architect-policy.md) |
+| Parent classifies | [assets/change-routing.md](assets/change-routing.md), [assets/tester-policy.md](assets/tester-policy.md), [assets/test-design-policy.md](assets/test-design-policy.md), [assets/architecture-diagrams-policy.md](assets/architecture-diagrams-policy.md), [assets/architect-policy.md](assets/architect-policy.md) |
 | Parent + every specialist | [assets/pipeline-state.md](assets/pipeline-state.md), [assets/pipeline-state-template.json](assets/pipeline-state-template.json), [assets/agent-state-template.json](assets/agent-state-template.json) |
 | Parent sign-off | [assets/planning-signoff-template.md](assets/planning-signoff-template.md) |
 | Parent spawns any step | [assets/parent-task-prompt.md](assets/parent-task-prompt.md) |
 | Micro/minor patch | [assets/patch-template.md](assets/patch-template.md) |
 | Clarify-first (PM / Architect / BA) | [assets/clarify-first.md](assets/clarify-first.md), [assets/decisions-template.md](assets/decisions-template.md), [assets/questions-format.md](assets/questions-format.md) |
 | PM P2–P6 | [assets/research-template.md](assets/research-template.md), [assets/prd-template.md](assets/prd-template.md), [assets/handoff-pm-template.md](assets/handoff-pm-template.md) |
-| Architect A2–A5 | [../architecture-design/SKILL.md](../architecture-design/SKILL.md), [assets/architecture-template.md](assets/architecture-template.md), [assets/implementation-plan-template.md](assets/implementation-plan-template.md), [assets/handoff-architect-template.md](assets/handoff-architect-template.md) |
+| Architect A2–A5 | [../architecture-design/SKILL.md](../architecture-design/SKILL.md), [assets/architecture-template.md](assets/architecture-template.md), [assets/implementation-plan-template.md](assets/implementation-plan-template.md), [assets/handoff-architect-template.md](assets/handoff-architect-template.md), [../architecture-visualization/SKILL.md](../architecture-visualization/SKILL.md) (when `architecture_diagrams.enabled`) |
 | BA S3 questions | [assets/questions-format.md](assets/questions-format.md) |
 | BA S4 draft | [assets/specification-template.md](assets/specification-template.md) |
 | BA S4 density | [assets/example-specification.md](assets/example-specification.md) |

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import runpy
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -147,7 +148,8 @@ def test_cli_init_doctor_workflows_and_uninstall(
     assert _run_cli(["init", str(app), "--ide", "cursor"]) == 0
     assert _run_cli(["doctor", str(app), "--ide", "cursor"]) == 0
     doctor_output = capsys.readouterr().out
-    assert "pipeline-kit 1.1.0 is ready" in doctor_output
+    version = (REPO / "VERSION").read_text(encoding="utf-8").strip()
+    assert f"pipeline-kit {version} is ready" in doctor_output
     assert "ok  cursor adapter" in doctor_output
 
     assert _run_cli(["workflows", str(app)]) == 0
@@ -196,8 +198,45 @@ def test_architect_step_allowlist_installs(tmp_path: Path):
     assert pack["step"] == "architect-agent"
     assert ".pipeline/agents/architect-agent.md" in pack["allowed_reads"]
     assert ".pipeline/skills/architecture-design/SKILL.md" in pack["allowed_reads"]
+    assert ".pipeline/skills/architecture-visualization/SKILL.md" in pack["allowed_reads"]
+    assert (
+        ".pipeline/skills/architecture-visualization/assets/diagram-manifest-template.json"
+        in pack["allowed_reads"]
+    )
     assert ".pipeline/skills/feature-development/assets/pipeline-state.md" in pack["allowed_reads"]
     assert result.returncode == 0
+
+
+def test_architect_allowlist_covers_jira_workflows(tmp_path: Path):
+    app = tmp_path / "app"
+    app.mkdir()
+    assert _run(["--project", str(app), "--ide", "none"]) == 0
+    loader = app / ".pipeline" / "loader" / "load_workflow.py"
+    for workflow in ("jira-story", "jira-epic"):
+        subprocess.run(
+            [
+                "python3",
+                str(loader),
+                "--workflow",
+                workflow,
+                "--step",
+                "architect-agent",
+                "--slug",
+                f"try-{workflow}",
+            ],
+            cwd=app,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        pack = json.loads(
+            (app / "features" / f"try-{workflow}" / "context-pack.json").read_text()
+        )
+        assert ".pipeline/skills/architecture-visualization/SKILL.md" in pack["allowed_reads"]
+        assert (
+            ".pipeline/skills/feature-development/assets/architecture-diagrams-policy.md"
+            in pack["allowed_reads"]
+        )
 
 
 def test_prd_and_pipeline_state_are_installed(tmp_path: Path):
@@ -214,9 +253,25 @@ def test_prd_and_pipeline_state_are_installed(tmp_path: Path):
     assert "To-be" in prd
     arch = (assets / "architecture-template.md").read_text(encoding="utf-8")
     assert "Concerns" in arch
+    assert "```mermaid" in arch
+    assert "Enhanced diagram artifacts" in arch
+    assert (assets / "handoff-architect-template.md").read_text(encoding="utf-8").count(
+        "archify_status"
+    )
+    viz = app / ".pipeline" / "skills" / "architecture-visualization"
+    assert (viz / "SKILL.md").is_file()
+    assert (viz / "assets" / "diagram-manifest-template.json").is_file()
+    policy = (
+        app / ".pipeline" / "skills" / "feature-development" / "assets" / "architecture-diagrams-policy.md"
+    )
+    assert policy.is_file()
+    cfg = json.loads((app / ".pipeline" / "config.json").read_text(encoding="utf-8"))
+    assert cfg["architecture_diagrams"]["enabled"] is False
+    assert cfg["architecture_diagrams"]["fallback"] == "mermaid"
     prompt = (assets / "parent-task-prompt.md").read_text(encoding="utf-8")
     assert "PIPELINE_STATE_PATH" in prompt
     assert "PRIOR_STATE_PATH" in prompt
+    assert "ARCHIFY_ENABLED" in prompt
     cfg = json.loads((app / ".pipeline" / "config.json").read_text(encoding="utf-8"))
     assert cfg["workflows"]["feature-development"]["plan_source"] == "prd.md"
     pm = (app / ".pipeline" / "agents" / "product-manager-agent.md").read_text(encoding="utf-8")

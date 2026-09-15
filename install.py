@@ -347,10 +347,14 @@ def resolved_pack(*, target: Path, user: bool, home: Path | None = None) -> Path
     return project_pack if project_pack.is_dir() else home_dir / ".pipeline"
 
 
-def _knowledge_commands():
+def _ensure_pkg_path() -> None:
     root = str(HERE)
     if root not in sys.path:
         sys.path.insert(0, root)
+
+
+def _knowledge_commands():
+    _ensure_pkg_path()
     from knowledge.commands import (  # noqa: WPS433
         cmd_extract,
         cmd_init,
@@ -361,6 +365,18 @@ def _knowledge_commands():
     )
 
     return cmd_extract, cmd_init, cmd_promote, cmd_render, cmd_status, cmd_validate
+
+
+def _plugin_commands():
+    _ensure_pkg_path()
+    from pipeline_plugins.commands import (  # noqa: WPS433
+        cmd_install,
+        cmd_list,
+        cmd_status,
+        cmd_uninstall,
+    )
+
+    return cmd_install, cmd_list, cmd_status, cmd_uninstall
 
 
 def doctor(
@@ -390,8 +406,12 @@ def doctor(
     if root not in sys.path:
         sys.path.insert(0, root)
     from knowledge.doctor import graphify_doctor_checks
+    from pipeline_plugins.archify import archify_doctor_checks
 
     info_lines, required = graphify_doctor_checks(target)
+    arch_info, arch_required = archify_doctor_checks(target)
+    info_lines.extend(arch_info)
+    required.update(arch_required)
     for line in info_lines:
         print(f"info  {line}")
     checks.update(required)
@@ -513,6 +533,57 @@ def cli_main(argv: list[str] | None = None) -> int:
     k_render.add_argument("project", nargs="?", default=".")
     k_render.add_argument("--slug", required=True)
 
+    plugins_parser = commands.add_parser(
+        "plugins",
+        help="list, install, status, or uninstall optional Graphify/Archify plugins",
+    )
+    plugins_commands = plugins_parser.add_subparsers(dest="plugins_command", required=True)
+    plugins_commands.add_parser("list", help="list optional plugins")
+    p_install = plugins_commands.add_parser(
+        "install",
+        help="register an optional plugin (does not vendor Graphify or Archify)",
+    )
+    p_install.add_argument("name", choices=("graphify", "archify"))
+    p_install.add_argument("project", nargs="?", default=".")
+    p_install.add_argument(
+        "--ide",
+        choices=("cursor", "claude-code", "github", "none"),
+        default="cursor",
+    )
+    p_install.add_argument("--scope", choices=("project", "user"), default="project")
+    p_install.add_argument("--home", default="", help=argparse.SUPPRESS)
+    p_status = plugins_commands.add_parser(
+        "status",
+        help="Graphify CLI / Archify skill status",
+    )
+    p_status.add_argument("project", nargs="?", default=".")
+    p_status.add_argument("--plugin", choices=("graphify", "archify"))
+    p_status.add_argument(
+        "--ide",
+        choices=("cursor", "claude-code", "github", "none"),
+        default="cursor",
+    )
+    p_status.add_argument("--scope", choices=("project", "user"), default="project")
+    p_status.add_argument("--home", default="", help=argparse.SUPPRESS)
+    p_uninstall = plugins_commands.add_parser(
+        "uninstall",
+        help="remove a plugin skill; generated graphs/diagrams stay unless --purge",
+    )
+    p_uninstall.add_argument("name", choices=("graphify", "archify"))
+    p_uninstall.add_argument("project", nargs="?", default=".")
+    p_uninstall.add_argument(
+        "--ide",
+        choices=("cursor", "claude-code", "github", "none"),
+        default="cursor",
+    )
+    p_uninstall.add_argument("--scope", choices=("project", "user"), default="project")
+    p_uninstall.add_argument(
+        "--purge",
+        action="store_true",
+        help="Graphify only: also delete graphify-out/. Archify never deletes diagrams.",
+    )
+    p_uninstall.add_argument("--home", default="", help=argparse.SUPPRESS)
+
     args = parser.parse_args(argv)
     home = Path(args.home).expanduser().resolve() if getattr(args, "home", "") else None
     project = Path(getattr(args, "project", ".")).expanduser().resolve()
@@ -578,6 +649,42 @@ def cli_main(argv: list[str] | None = None) -> int:
         if args.knowledge_command == "render":
             return cmd_render(project, slug=args.slug)
         parser.error("unknown knowledge command")
+        return 2
+    if args.command == "plugins":
+        cmd_install, cmd_list, cmd_status, cmd_uninstall = _plugin_commands()
+        if args.plugins_command == "list":
+            return cmd_list()
+        if not project.is_dir():
+            print(f"not a directory: {project}", file=sys.stderr)
+            return 64
+        scope = getattr(args, "scope", "project")
+        ide = getattr(args, "ide", "cursor")
+        if args.plugins_command == "install":
+            return cmd_install(
+                project,
+                args.name,
+                ide=ide,
+                scope=scope,
+                home=home,
+            )
+        if args.plugins_command == "status":
+            return cmd_status(
+                project,
+                getattr(args, "plugin", None),
+                ide=ide,
+                scope=scope,
+                home=home,
+            )
+        if args.plugins_command == "uninstall":
+            return cmd_uninstall(
+                project,
+                args.name,
+                ide=ide,
+                scope=scope,
+                purge=bool(getattr(args, "purge", False)),
+                home=home,
+            )
+        parser.error("unknown plugins command")
         return 2
     parser.error(f"unknown command: {args.command}")
     return 2

@@ -97,3 +97,15 @@ template, or set `no_test_model_change: true` here and in that file.
 | Planned node | Kind | Why |
 |--------------|------|-----|
 | none | — | overlay already covers this change |
+
+## 11. Enhanced diagram artifacts (only when `ARCHIFY_ENABLED`)
+
+Keep the mermaid blocks above. Link Archify JSON/HTML here, or record
+`mermaid-fallback` when the plugin is missing or deliver failed.
+
+Write `features/{slug}/diagrams/manifest.json` from the diagram-manifest
+template.
+
+| Diagram | Type | JSON | HTML | Status | Visual review |
+|---------|------|------|------|--------|---------------|
+| none | — | — | — | mermaid-fallback | — |

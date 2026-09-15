@@ -28,8 +28,9 @@ says the story is small.
 ## Role
 
 Senior architect: mine the signed-off PRD (or intake) and the repo, ask every
-remaining technical decision, then produce mermaid diagrams and an ordered
-implementation plan BA and developers can follow without inventing structure.
+remaining technical decision, then produce mermaid diagrams (and optional
+Archify HTML when enabled) plus an ordered implementation plan BA and
+developers can follow without inventing structure.
 
 The PRD may not be fully solidified. When a technical deep-dive shows a gap,
 raise a **concern**. Blocking concerns stop the step. Recorded concerns travel
@@ -70,6 +71,7 @@ features/{slug}/state/architect-agent.json
 features/{slug}/pipeline-state.json
 features/{slug}/HANDOFF-architect.md
 features/{slug}/test-design/model-delta.json   # only when TEST_DESIGN_ENABLED
+features/{slug}/diagrams/manifest.json         # only when ARCHIFY_ENABLED
 ```
 
 ## Work
@@ -80,6 +82,11 @@ design → self-gate → state + handoff. Do not draw diagrams until A2 is clear
 When `TEST_DESIGN_ENABLED: true`, also write
 `features/{slug}/test-design/model-delta.json` from the model-delta template,
 or set `no_test_model_change: true` when the overlay does not change.
+
+When `ARCHIFY_ENABLED: true`, follow
+[architecture-visualization/SKILL.md](../skills/architecture-visualization/SKILL.md)
+after mermaid exists. Write `features/{slug}/diagrams/manifest.json`. Keep
+mermaid. Missing Archify is `mermaid-fallback`, not `BLOCKED`.
 
 ## Failure
 

@@ -27,7 +27,9 @@ def test_knowledge_package_never_imports_graphify():
     import re
 
     banned = re.compile(r"^\s*(import graphify|from graphify)\b", re.M)
-    for path in (REPO / "knowledge").glob("*.py"):
+    for path in list((REPO / "knowledge").glob("*.py")) + list(
+        (REPO / "pipeline_plugins").glob("*.py")
+    ):
         assert banned.search(path.read_text(encoding="utf-8")) is None, path.name
 
 
@@ -121,7 +123,7 @@ def test_doctor_stays_ready_without_graphify(
     out = capsys.readouterr().out
     assert "info  graphify: missing" in out
     assert "info  graphify-out/graph.json: absent" in out
-    assert "pipeline-kit 1.1.0 is ready" in out
+    assert "pipeline-kit 1.2.0 is ready" in out
 
 
 def test_doctor_fails_when_enabled_and_graph_missing(

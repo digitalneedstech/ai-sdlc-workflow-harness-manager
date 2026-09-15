@@ -170,6 +170,12 @@ pipeline-kit workflows
 | `pipeline-kit knowledge init [project]` | Opt-in: create `test-knowledge/` and set `test_design.enabled` |
 | `pipeline-kit knowledge extract [project]` | Run official `graphify extract . --code-only` (no homemade graph) |
 | `pipeline-kit knowledge status [project]` | Graphify CLI and `graphify-out/graph.json` |
+| `pipeline-kit plugins list` | List optional Graphify / Archify plugins |
+| `pipeline-kit plugins install graphify [project]` | Register the official Graphify IDE skill |
+| `pipeline-kit plugins install archify [project]` | Pin Archify `v2.16.0` and set `architecture_diagrams.enabled` |
+| `pipeline-kit plugins status [project]` | Graphify CLI and Archify skill status |
+| `pipeline-kit plugins uninstall graphify [project]` | Remove the Graphify IDE skill (`--purge` deletes `graphify-out/`) |
+| `pipeline-kit plugins uninstall archify [project]` | Remove the managed Archify skill; keep `features/*/diagrams/` |
 
 Install/update commands accept `--ide cursor`, `claude-code`, `github`, or
 `none`. Add `--agent-stubs` to create thin `.cursor/agents/*.md` files.
@@ -211,6 +217,60 @@ true (open → sign-in from env names → navigate → click → assert).
 
 `graphify-out/` is Graphify-owned. The team chooses whether to commit it or
 ignore it. Do not create a second graph store.
+
+### 2.2 Optional plugins
+
+Graphify (QA graph) and Archify (Architect diagrams) are optional. Neither
+is installed by `pipeline-kit init`. Pipeline-kit never vendors them.
+
+```bash
+pipeline-kit plugins list
+pipeline-kit plugins status
+```
+
+**Graphify** — official CLI. Compatibility path:
+`pipeline-kit knowledge init --register-skill` still registers the Graphify
+skill. Equivalent: `pipeline-kit plugins install graphify --ide cursor`.
+
+```bash
+uv tool install graphifyy
+pipeline-kit plugins install graphify --ide cursor
+pipeline-kit knowledge extract
+pipeline-kit plugins uninstall graphify --ide cursor
+pipeline-kit plugins uninstall graphify --ide cursor --purge   # also deletes graphify-out/
+```
+
+**Archify** — pinned Agent Skill `tt-a1i/archify` `v2.16.0`. Needs GitHub CLI
+v2.90+ (`gh skill`) and Node.js 18+. Chrome is optional for `visual-check`.
+Cursor project scope installs to `.agents/skills/archify/`. `--scope user`
+installs under the home directory instead.
+
+```bash
+pipeline-kit plugins install archify --ide cursor --scope project
+pipeline-kit plugins status --plugin archify
+pipeline-kit plugins uninstall archify --ide cursor
+```
+
+The kit runs:
+
+```text
+gh skill install tt-a1i/archify archify --pin v2.16.0 --agent cursor --scope project
+```
+
+It never tracks the default branch. Uninstall deletes only a managed Archify
+skill directory after verifying the source and path. Generated
+`features/{slug}/diagrams/` files stay. `gh skill` has no remove command.
+
+Architect mermaid in `architecture.md` remains required. When
+`architecture_diagrams.enabled` is true, Architect also writes
+`features/{slug}/diagrams/manifest.json` (`delivered` or `mermaid-fallback`).
+Missing GitHub CLI, Node, Chrome, or a failed `deliver` must not block a
+valid mermaid architecture.
+
+Delivered HTML is self-contained interactive HTML (inline JavaScript). Treat
+it as active content when publishing. Unattended runs should set
+`ARCHIFY_UPDATE_CHECK_DISABLED=1` so Archify does not fetch an update
+manifest. Archify does not send repository contents on that check.
 
 ---
 
@@ -470,6 +530,11 @@ features/
 structural graph; ignore it if each checkout re-runs
 `pipeline-kit knowledge extract`. `test-knowledge/` (reviewed catalogs) is
 usually committed after a bootstrap promote.
+
+Project-scope Archify lives in `.agents/skills/archify/` (Cursor / GitHub) or
+`.claude/skills/archify/` (Claude Code). Teams often commit the pinned skill.
+`features/{slug}/diagrams/` follows the same policy as other `features/`
+artifacts. Uninstalling Archify never deletes those diagrams.
 
 `features/` holds plans, specs, HANDOFFs, and deploy logs for one run.
 `.pipeline/state/active-context.json` is the live allowlist. Most teams do

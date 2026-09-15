@@ -37,7 +37,7 @@ or raised as blocking.
 | Every step (state) | [../feature-development/assets/pipeline-state.md](../feature-development/assets/pipeline-state.md) |
 | A1 (decisions) | [../feature-development/assets/decisions-template.md](../feature-development/assets/decisions-template.md), [../feature-development/assets/clarify-first.md](../feature-development/assets/clarify-first.md) |
 | A2 (questions) | [../feature-development/assets/questions-format.md](../feature-development/assets/questions-format.md) |
-| A3 (design) | [../feature-development/assets/architecture-template.md](../feature-development/assets/architecture-template.md), [../feature-development/assets/implementation-plan-template.md](../feature-development/assets/implementation-plan-template.md) |
+| A3 (design) | [../feature-development/assets/architecture-template.md](../feature-development/assets/architecture-template.md), [../feature-development/assets/implementation-plan-template.md](../feature-development/assets/implementation-plan-template.md), [../architecture-visualization/SKILL.md](../architecture-visualization/SKILL.md) (when `ARCHIFY_ENABLED`) |
 | A5 (handoff) | [../feature-development/assets/handoff-architect-template.md](../feature-development/assets/handoff-architect-template.md), [../feature-development/assets/agent-state-template.json](../feature-development/assets/agent-state-template.json) |
 
 ---
@@ -60,6 +60,7 @@ features/{slug}/
   state/architect-agent.json
   pipeline-state.json
   HANDOFF-architect.md
+  diagrams/manifest.json    # when ARCHIFY_ENABLED
 ```
 
 Reuse `{slug}` if the folder exists; update the architecture, do not fork.
@@ -95,13 +96,18 @@ direction.
 - Never hide a blocking concern as `recorded` to keep the pipeline moving.
 
 **A3 Design** — Load the architecture and implementation-plan templates. Fill
-every section. Use **mermaid only** (no images). Sequence diagram is required
-when a new API or multi-step flow exists. If you revise the PM / intake child
-split for technical reasons, that split **wins** for BA. Append ADRs to
+every section. Use **mermaid** for the portable diagrams in `architecture.md`
+(no ad-hoc images). Sequence diagram is required when a new API or
+multi-step flow exists. If you revise the PM / intake child split for
+technical reasons, that split **wins** for BA. Append ADRs to
 `decisions.md`. Keep `recorded` concerns visible — do not drop them because
 diagrams exist. When `TEST_DESIGN_ENABLED: true`, write
 `features/{slug}/test-design/model-delta.json` (`planned` nodes) or set
-`no_test_model_change: true`.
+`no_test_model_change: true`. When `ARCHIFY_ENABLED: true`, follow
+[architecture-visualization/SKILL.md](../architecture-visualization/SKILL.md)
+after mermaid is drafted: deliver JSON/HTML under
+`features/{slug}/diagrams/` or record `mermaid-fallback`. Never remove the
+mermaid blocks. Missing Archify is not `BLOCKED`.
 
 **A4 Self-gate** — All **blockers** below must pass. Else fix or return to A2.
 Never HANDOFF `SUCCESS` on a failing design.
@@ -140,6 +146,7 @@ concerns), then BA.
 - [ ] Constraints and do-not-invent non-empty
 - [ ] Assumptions labeled; no silent auth, persistence, or vendor invention
 - [ ] When `TEST_DESIGN_ENABLED`: `test-design/model-delta.json` exists or `no_test_model_change` is true
+- [ ] When `ARCHIFY_ENABLED`: `diagrams/manifest.json` exists with `delivered` or `mermaid-fallback`
 - [ ] As-is is factual (paths or explicit greenfield)
 - [ ] No product file edits outside `features/{slug}/`
 

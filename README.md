@@ -109,6 +109,8 @@ Must-configure overview:
 |------|------|
 | `pyproject.toml` / `install.sh` | Install the `pipeline-kit` command with `uv` or `pipx` |
 | `install.py` | CLI implementation and backward-compatible Python installer |
+| `knowledge/` | Optional QA overlay commands (consumes Graphify) |
+| `pipeline_plugins/` | Optional Graphify and Archify plugin lifecycle |
 | `kit/pipeline/` | Bundled pack copied to `<app>/.pipeline` |
 | [CUSTOMER-GUIDE.md](../ai-agents-registry/packages/pipeline-kit/CUSTOMER-GUIDE.md) | Architect / developer handbook (canonical copy in `ai-agents-registry`) |
 | `tests/` | Installer tests (`pytest`) |
@@ -134,9 +136,79 @@ pipeline-kit workflows [project]  # list available workflows
 pipeline-kit knowledge init       # opt-in QA overlay (does not run Graphify)
 pipeline-kit knowledge extract    # official graphify extract --code-only
 pipeline-kit knowledge status     # Graphify CLI and graphify-out
+pipeline-kit plugins list         # optional Graphify / Archify plugins
+pipeline-kit plugins install graphify
+pipeline-kit plugins install archify
+pipeline-kit plugins status
+pipeline-kit plugins uninstall graphify
+pipeline-kit plugins uninstall archify
 pipeline-kit uninstall [project]  # remove files managed by the kit
 pipeline-kit --version
 ```
+
+---
+
+## Optional plugins
+
+Graphify and Archify are **optional**. `pipeline-kit init` does not install
+them. The kit never vendors their renderers and never `import`s Graphify.
+
+| Plugin | What it does | Default |
+|--------|----------------|---------|
+| **Graphify** | Official CLI writes `graphify-out/graph.json` for QA test design | Off until `knowledge init` / `plugins install graphify` |
+| **Archify** | Pinned Agent Skill (`tt-a1i/archify` `v2.16.0`) for Architect HTML diagrams | Off until `plugins install archify`. Mermaid in `architecture.md` stays required |
+
+### Graphify
+
+Prerequisites: Graphify CLI (`uv tool install graphifyy`).
+
+```bash
+pipeline-kit knowledge init --register-skill --ide cursor
+# same skill registration:
+pipeline-kit plugins install graphify --ide cursor
+pipeline-kit knowledge extract
+pipeline-kit plugins status --plugin graphify
+pipeline-kit plugins uninstall graphify --ide cursor
+# also delete graphify-out/:
+pipeline-kit plugins uninstall graphify --ide cursor --purge
+```
+
+Cursor project install writes `.cursor/rules/graphify.mdc` via Graphify's
+own `graphify cursor install`. Uninstall calls `graphify cursor uninstall`.
+`--purge` is the only way the kit deletes `graphify-out/`.
+
+### Archify
+
+Prerequisites: GitHub CLI **v2.90+** (`gh skill`), **Node.js 18+**. Chrome
+is optional (visual-check). Project-scope Cursor install lands in
+`.agents/skills/archify/`.
+
+```bash
+pipeline-kit plugins install archify --ide cursor --scope project
+pipeline-kit plugins status --plugin archify
+pipeline-kit plugins uninstall archify --ide cursor
+```
+
+Install runs the pinned command (never `main`):
+
+```bash
+gh skill install tt-a1i/archify archify --pin v2.16.0 --agent cursor --scope project
+```
+
+Uninstall removes only that managed skill directory. It does **not** delete
+`features/*/diagrams/`. `gh skill` has no remove command; the kit verifies
+source (`tt-a1i/archify`) and path before deleting.
+
+Delivered HTML is interactive (inline JavaScript). Treat it as active
+content. Unattended Architect runs set `ARCHIFY_UPDATE_CHECK_DISABLED=1`.
+If Archify is missing or deliver fails, Architect keeps mermaid and records
+`mermaid-fallback`.
+
+Troubleshooting: `pipeline-kit plugins status --plugin archify` prints
+recovery. Typical causes are missing `gh skill`, Node below 18, or an
+unpinned skill.
+
+Details: [CUSTOMER-GUIDE.md](./CUSTOMER-GUIDE.md#22-optional-plugins).
 
 ---
 
