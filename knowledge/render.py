@@ -83,7 +83,7 @@ def _test_plan_markdown(slug: str, cases: list[Any]) -> str:
         f"{layer_rows}\n\n"
         "## Cases\n\n"
         f"{case_list}\n\n"
-        "Full click-paths live in `features/{slug}/qa-test-cases.md`.\n"
+        f"Full click-paths live in `features/{slug}/qa-test-cases.md`.\n"
     )
 
 

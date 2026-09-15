@@ -7,7 +7,7 @@ description: >-
   or a long prompt. Parent classifies micro | minor | feature, then
   orchestrates the matching Task chain. Feature ladder: PM → user sign-off →
   Architect (when large) → user sign-off → BA → BA critic → user sign-off →
-  waved telemetry/developer/critic → one tester → devops → retro.
+  waved developer/critic (telemetry only if RUN_TELEMETRY) → tester wave → devops → retro.
   When test_design.enabled, insert test-designer-agent after BA critic.
 ---
 
@@ -35,9 +35,9 @@ Spawn **one agent per step in a new `Task` (separate context window)**. Classify
 
 | Class | Task chain |
 |-------|------------|
-| **micro** | `developer-agent` → (`tester-agent` if policy on) → `devops-agent` → `retro-agent` |
-| **minor** | `developer-agent` → `developer-critic-agent` → (`tester-agent` if policy on) → `devops-agent` → `retro-agent` |
-| **feature** | `product-manager-agent` → `@signoff:requirements` → `architect-agent`? → `@signoff:architect` → `ba-agent` → `ba-critic-agent` → (`test-designer-agent` if `test_design.enabled`) → `@signoff:ba` → **waves** (`telemetry-agent` → `developer-agent` → `developer-critic-agent` per child) → `tester-agent` (unless policy off) → `devops-agent` → `retro-agent` |
+| **micro** | `developer-agent` → tester wave → `devops-agent` → `retro-agent` |
+| **minor** | `developer-agent` → `developer-critic-agent` → tester wave → `devops-agent` → `retro-agent` |
+| **feature** | `product-manager-agent` → `@signoff:requirements` → `architect-agent`? → `@signoff:architect` → `ba-agent` → `ba-critic-agent` → (`test-designer-agent` if `test_design.enabled`) → `@signoff:ba` → **waves** (`developer-agent` → `developer-critic-agent` per child; `telemetry-agent` only if `RUN_TELEMETRY`) → tester wave → `devops-agent` → `retro-agent` |
 
 ## Context isolation (mandatory — by complexity)
 
@@ -53,7 +53,7 @@ A `Task` subagent is a **fresh context**. Required for every specialist below. D
 | `telemetry-agent` | **Medium** | Allowlist must not inherit BA extras or later code dumps | **No** — never same Task as BA or developer |
 | `developer-agent` | **Highest** (feature) / **Low–medium** (micro) | Still product edits | **No** — never inline |
 | `developer-critic-agent` | **High (independence)** | Fresh read of diff vs spec | **No** — never same Task as developer |
-| `tester-agent` | **High** | Feature-level Playwright + layers | **No** — never same Task as devops |
+| `tester-agent` | **High** | One Task per required layer (`TEST_LAYER`) | **No** — never same Task as devops |
 | `devops-agent` | **Medium–high** | Build/preview logs would drown the parent | **No** |
 | `retro-agent` | **Medium** | Learning must not mix with deploy logs | **No** — after devops only |
 | `intake-agent` | **Medium** | Raw issue payload + MCP discovery | **No** — parent never calls tracker MCP |
@@ -61,7 +61,7 @@ A `Task` subagent is a **fresh context**. Required for every specialist below. D
 
 **Also a new Task:** retries (`changes-required`, devops `FAILED`). Do not resume the previous subagent thread to “just fix it.”
 
-**Parent-only (no Task):** classify change_class, write `route.md` / `patch.md` / `pipeline-state.json` / telemetry stubs for micro|minor, wait for PM / Architect / BA questions, run `@signoff:*` (write sign-off files from [assets/planning-signoff-template.md](assets/planning-signoff-template.md) and update pipeline state), apply architect-policy after requirements sign-off, read `spec-order.md` and fan out wave Tasks, set `DEPLOY_TARGET`, choose next `subagent_type`. Do not paste HANDOFF bodies into the next Task.
+**Parent-only (no Task):** classify change_class, write `route.md` / `patch.md` / `pipeline-state.json` / telemetry stubs when `skip_telemetry`, wait for PM / Architect / BA / product-RCA questions, run `@signoff:*` (write sign-off files from [assets/planning-signoff-template.md](assets/planning-signoff-template.md) and update pipeline state), apply architect-policy after requirements sign-off, read `spec-order.md` and fan out wave Tasks, fan out tester layer Tasks and join `FEATURE_SIGNOFF`, set `DEPLOY_TARGET`, choose next `subagent_type`. Do not paste HANDOFF bodies into the next Task.
 
 **Forbidden:** PM+Architect, Architect+BA, PM+BA, BA+critic, developer+critic, tester+devops, telemetry+developer, implement-then-review in one context, or spawning developer before planning sign-offs.
 
@@ -113,11 +113,12 @@ Each step is a **new `Task` with a slim state prompt**. Wait for HANDOFF before 
 8. **Test designer** — when `test_design.enabled` only. After critic approve, spawn `test-designer-agent`. Then `@signoff:ba`.
 9. **`@signoff:ba`** — present child specs after critic approve (and the short inventory/case table when test design ran). Stop until the user approves. Do not start waves without `signoff-ba.md`.
 10. **Waves** — read `spec-order.md`. For each wave, for each child in that wave:
-   - `telemetry-agent` → `developer-agent` → `developer-critic-agent`
+   - `developer-agent` → `developer-critic-agent` (insert `telemetry-agent` first only if `route.md` has `skip_telemetry: false`)
+   - When telemetry is skipped, write the `EVENTS: none` stub before developer
    - Inject `FEATURE_SLUG: {parent}/{child}` and that child’s `SPEC_PATH`
    - `parallel` wave: spawn one chain per child; wait for every child’s developer-critic `approve` | `approve-with-nits` before the next wave
    - `sequential` wave: finish one child chain before the next child
-11. **Tester** — **once**, parent slug, after **all** children have approved developer-critics. Not per spec. Not between waves.
+11. **Tester wave** — after **all** children have approved developer-critics. If `qa-test-cases.md` / `cases.json` is missing, one tester Task writes the case list only. Then spawn **parallel** `tester-agent` Tasks with `TEST_LAYER: unit|api|ui` for each required layer. Join HANDOFFs. Write `qa-signoff.md`. Product RCA (`NEEDS_APPROVAL`) → wait for the user; do not spawn developer until they approve. After a product fix, re-run **all** required layers.
 12. **Devops** — only if `FEATURE_SIGNOFF: passed`
 13. **Retro** — then **PIPELINE_COMPLETE**
 

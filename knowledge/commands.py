@@ -18,9 +18,11 @@ from knowledge.overlay import (
     init_overlay,
     overlay_status,
     promote_candidates,
+    promote_feature_nodes,
     refresh_manifest_graph,
     validate_candidates,
 )
+from knowledge.playwright import PlaywrightError, generate_playwright
 from knowledge.render import RenderError, render_case_views
 
 
@@ -100,6 +102,32 @@ def cmd_promote(project: Path, *, run_id: str) -> int:
         print(str(exc), file=sys.stderr)
         return 1
     print(f"promoted {len(promoted)} file(s) from {run_id}")
+    for name in promoted:
+        print(name)
+    return 0
+
+
+def cmd_playwright(project: Path, *, slug: str) -> int:
+    try:
+        written = generate_playwright(project, slug)
+    except PlaywrightError as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
+    if not written:
+        print("no browser cases")
+        return 0
+    for path in written:
+        print(path.relative_to(project))
+    return 0
+
+
+def cmd_promote_feature(project: Path, *, slug: str) -> int:
+    try:
+        promoted = promote_feature_nodes(project, slug)
+    except OverlayError as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
+    print(f"promoted {len(promoted)} catalog(s) from {slug}")
     for name in promoted:
         print(name)
     return 0

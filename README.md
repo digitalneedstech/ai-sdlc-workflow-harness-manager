@@ -136,14 +136,58 @@ pipeline-kit workflows [project]  # list available workflows
 pipeline-kit knowledge init       # opt-in QA overlay (does not run Graphify)
 pipeline-kit knowledge extract    # official graphify extract --code-only
 pipeline-kit knowledge status     # Graphify CLI and graphify-out
+pipeline-kit knowledge render --slug {slug}
+pipeline-kit knowledge playwright --slug {slug}
+pipeline-kit knowledge promote-feature --slug {slug}
 pipeline-kit plugins list         # optional Graphify / Archify plugins
 pipeline-kit plugins install graphify
 pipeline-kit plugins install archify
 pipeline-kit plugins status
 pipeline-kit plugins uninstall graphify
 pipeline-kit plugins uninstall archify
+pipeline-kit features list        # named on/off capabilities
+pipeline-kit features status
+pipeline-kit features enable telemetry
+pipeline-kit features disable telemetry
 pipeline-kit uninstall [project]  # remove files managed by the kit
 pipeline-kit --version
+```
+
+---
+
+## QA knowledge flow (opt-in)
+
+`pipeline-kit init` does **not** enable this. Absent `test_design.enabled`,
+the feature ladder is unchanged.
+
+**One-time**
+
+1. `pipeline-kit knowledge init [--register-skill]` — `test-knowledge/` + flag on.
+2. `pipeline-kit knowledge extract` — official Graphify → `graphify-out/graph.json`.
+3. In the IDE: **Bootstrap QA knowledge for this repo**. Approve one Markdown report, then promote.
+
+**Each feature** (only if the flag is on)
+
+1. Architect writes `test-design/model-delta.json` or `no_test_model_change`.
+2. BA binds Must ACs to overlay nodes and a lowest test level.
+3. `test-designer-agent` writes `cases.json` and `qa-test-cases.md`.
+4. You sign off BA. Waves run developer → critic (telemetry only if `RUN_TELEMETRY`).
+5. Tester wave: parallel unit / api / ui Tasks. UI codegen is
+   `pipeline-kit knowledge playwright` (a projector of `cases.json`, not Graphify).
+
+Graphify and Archify stay under Optional plugins. Do not `import graphify`.
+
+## Project features (opt-in flags)
+
+Same keys as `.pipeline/config.json`. Does not replace `knowledge init` or
+`plugins install`. Chat overrides (`RUN_TESTER`, `RUN_TELEMETRY`) still win
+for a single run.
+
+```bash
+pipeline-kit features list
+pipeline-kit features status
+pipeline-kit features enable test-design
+pipeline-kit features disable telemetry
 ```
 
 ---

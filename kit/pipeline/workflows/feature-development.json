@@ -135,6 +135,7 @@
           ".pipeline/skills/test-design/SKILL.md",
           ".pipeline/skills/feature-development/assets/qa-test-cases-template.md",
           ".pipeline/skills/feature-development/assets/qa-signoff-template.md",
+          ".pipeline/skills/feature-development/assets/tester-rca-template.md",
           ".pipeline/skills/feature-development/assets/pipeline-state.md",
           ".pipeline/skills/feature-development/assets/pipeline-state-template.json",
           ".pipeline/skills/feature-development/assets/agent-state-template.json"

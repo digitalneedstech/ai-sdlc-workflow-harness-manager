@@ -98,9 +98,51 @@ def enable_test_design(project: Path) -> None:
     block["enabled"] = True
     block.setdefault("graph_provider", GRAPH_PROVIDER)
     block.setdefault("graph_path", f"{GRAPH_DIR}/{GRAPH_JSON}")
-    block.setdefault("design_only", True)
+    block["design_only"] = False
+    block["playwright"] = True
+    block.setdefault("playwright_dir", "automation-tests")
     data["test_design"] = block
     _replace_json(path, data)
+
+
+def promote_feature_nodes(project: Path, slug: str) -> list[str]:
+    """Merge planned overlay nodes from a feature into test-knowledge as inferred."""
+    design = project / "features" / slug / "test-design"
+    if not design.is_dir():
+        raise OverlayError(f"missing {design}")
+    root = init_overlay(project)
+    promoted: list[str] = []
+    for catalog in ITEM_CATALOGS:
+        incoming = design / f"new-{catalog}"
+        if catalog == "actions.json":
+            incoming = design / "new-actions.json"
+        if not incoming.is_file():
+            continue
+        payload = _read_json(incoming)
+        items = payload.get("items") if isinstance(payload, dict) else None
+        if not isinstance(items, list):
+            raise OverlayError(f"{incoming.name}: expected {{version, items[]}}")
+        dest = root / catalog
+        current = _read_json(dest) if dest.is_file() else {"version": 1, "items": []}
+        existing = current.get("items")
+        if not isinstance(existing, list):
+            existing = []
+        by_id = {
+            item.get("id"): item
+            for item in existing
+            if isinstance(item, dict) and isinstance(item.get("id"), str)
+        }
+        for item in items:
+            if not isinstance(item, dict) or not isinstance(item.get("id"), str):
+                continue
+            merged = dict(item)
+            merged["evidence"] = "inferred"
+            by_id[merged["id"]] = merged
+        current["items"] = list(by_id.values())
+        _replace_json(dest, current)
+        promoted.append(catalog)
+    refresh_manifest_graph(project)
+    return promoted
 
 
 def refresh_manifest_graph(project: Path) -> None:

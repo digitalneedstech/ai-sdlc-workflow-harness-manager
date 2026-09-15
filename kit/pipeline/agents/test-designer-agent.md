@@ -64,7 +64,7 @@ features/{slug}/HANDOFF-test-designer.md
 | Graph or overlay missing | `BLOCKED` `INPUT_MISSING` — parent runs extract / bootstrap |
 | Must AC with no case | not SUCCESS |
 | E2E without a reason | not SUCCESS |
-| `ui` / browser `e2e` case has no numbered `steps[].do` | not SUCCESS |
+| `ui` / browser `e2e` case has no numbered `steps[].do` or missing `verb`/`control` | not SUCCESS |
 | You wrote product tests or real passwords | Forbidden — not SUCCESS |
 
 ## HANDOFF

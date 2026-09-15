@@ -33,7 +33,7 @@ Feature class is now a parent folder: PM (or intake) plans first, the user signs
 2. product-manager-agent analyzes as-is in the repo, writes prd.md, research.md, decisions.md, and state/product-manager-agent.json. Clarify-first questions (max 20).
 3. Parent `@signoff:requirements`. Then architect-policy; large stories run architect-agent.
 4. ba-agent writes each features/{slug}/{child}/specification.md, spec-order.md (**children:** line), test-plan.md, and per-child test-strategy.md.
-5. After BA critic approve and `@signoff:ba`, parent runs waves: per child telemetry then developer then developer-critic. Parallel children share a wave.
+5. After BA critic approve and `@signoff:ba`, parent runs waves: per child developer then developer-critic (telemetry only if `RUN_TELEMETRY`). Parallel children share a wave.
 6. One tester-agent at the parent slug runs Playwright/api/unit from the test plan.
 7. Devops only after qa-signoff.md has FEATURE_SIGNOFF: passed.
 

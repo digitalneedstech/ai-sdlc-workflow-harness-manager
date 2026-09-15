@@ -31,6 +31,6 @@ The `**children:**` line is machine-read by pipeline hooks. Keep kebab slugs, co
 
 ## Parent orchestration
 
-Waves apply to **implementation only**: per child `telemetry → developer → developer-critic`.
+Waves apply to **implementation only**: per child `developer → developer-critic` (insert telemetry first only if `RUN_TELEMETRY`).
 Do not spawn tester until every child in **children** has an approved developer-critic HANDOFF.
 ```

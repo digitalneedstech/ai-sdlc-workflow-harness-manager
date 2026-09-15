@@ -36,9 +36,12 @@ Parent checked [test-design-policy.md](../feature-development/assets/test-design
    open URL → sign in (env names, never secret values) → land on page →
    click the named nav/button → see the named heading or form.
    Vague slogans or ID-only steps (`ACT-submit` with no `do`) are not SUCCESS
-   for `ui` / browser `e2e`. Name the control (role + accessible name) and
-   the page. Login is usually a precondition (`FIX-session`) unless login
-   itself is under test; when you write login steps, use env placeholders.
+   for `ui` / browser `e2e`. Every `ui` / browser `e2e` step must also set
+   `verb` (allowlist: `goto`, `fill`, `click`, `expect_visible`, `expect_text`,
+   `expect_disabled`, `expect_count`) and `control: { role, name }` except
+   `goto`. `fill` uses `value_from_env` (env name only). Prefer
+   `FIX-*-SIGNED-IN*` / `kind: auth` instead of repeating login. Name the
+   control and the page. Never write a real password.
 4. Write `traceability.json` (FR → AC → level → inventory → case →
    action/fixture/oracle → graph/source node). No executable test link.
 5. Record new overlay nodes in `new-actions.json` as `planned` — do not promote them yourself.

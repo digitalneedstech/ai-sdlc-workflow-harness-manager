@@ -215,6 +215,15 @@ one Markdown report. After that, “work on …” writes stepwise click-path
 cases in `features/{slug}/qa-test-cases.md` when `test_design.enabled` is
 true (open → sign-in from env names → navigate → click → assert).
 
+Per feature when the flag is on: Architect writes a model delta (or
+`no_test_model_change`) → BA binds ACs to overlay nodes → test-designer
+writes `cases.json` and `qa-test-cases.md` → you sign off BA → developers
+→ tester wave (unit / api / ui in parallel).
+
+`pipeline-kit knowledge playwright --slug {slug}` is a projector of
+`cases.json` + `locators.json` into the existing `automation-tests/` tree.
+It is not Graphify and not `pipeline-kit plugins`.
+
 `graphify-out/` is Graphify-owned. The team chooses whether to commit it or
 ignore it. Do not create a second graph store.
 
@@ -425,7 +434,7 @@ uses different names. Do not put the Jira site URL or API token in this file.
 | `product.artifact_dir` | `features/` — analysis agents write here only. |
 | `gates.retry_cap` | Critic `changes-required` retries (default 2). |
 | `gates.require_planning_signoff_before_build` | User must approve PM / Architect / BA artifacts before waves (default true). |
-| `waves.child_chain` | Per-child telemetry → developer → critic. |
+| `waves.child_chain` | Per-child developer → critic. Telemetry only if `RUN_TELEMETRY`. |
 
 PM, Architect, and BA follow **clarify-first**: they read prior `features/{slug}/`
 artifacts (`decisions.md`, plan, architecture) before asking, then ask remaining

@@ -3,7 +3,9 @@
 from knowledge.commands import (
     cmd_extract,
     cmd_init,
+    cmd_playwright,
     cmd_promote,
+    cmd_promote_feature,
     cmd_render,
     cmd_status,
     cmd_validate,
@@ -12,7 +14,9 @@ from knowledge.commands import (
 __all__ = [
     "cmd_extract",
     "cmd_init",
+    "cmd_playwright",
     "cmd_promote",
+    "cmd_promote_feature",
     "cmd_render",
     "cmd_status",
     "cmd_validate",

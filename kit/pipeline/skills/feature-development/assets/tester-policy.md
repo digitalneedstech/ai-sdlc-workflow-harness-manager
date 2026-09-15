@@ -12,11 +12,11 @@ Edit the `run_tester` column only. Do not invent extra classes.
 
 | Class | run_tester | What runs when true |
 |-------|------------|---------------------|
-| micro | false | `tester-agent` after developer, before devops. Cases from `patch.md`. Playwright only if a case is tagged `ui`. |
-| minor | false | `tester-agent` after developer-critic, before devops. Cases from `patch.md`. Playwright only if a case is tagged `ui`. |
-| feature | true | `tester-agent` once after all child developer-critics. Full BA `test-plan.md`. Playwright for `ui` / browser `e2e`. |
+| micro | true | `tester-agent` after developer, before devops. Cases from `patch.md`. Playwright only if a case is tagged `ui`. |
+| minor | true | `tester-agent` after developer-critic, before devops. Cases from `patch.md`. Playwright only if a case is tagged `ui`. |
+| feature | true | Tester wave after all child developer-critics. Full BA `test-plan.md`. Playwright for `ui` / browser `e2e`. |
 
-Defaults above: testing is **off** for micro and minor, **on** for feature.
+Defaults above: testing is **on** for every class.
 
 ## One-run override
 
@@ -24,7 +24,7 @@ If the user types `RUN_TESTER: true` or `RUN_TESTER: false`, that wins for this 
 
 ## Parent mapping
 
-- `run_tester: true` → `skip_tester: false` and insert `tester-agent` before devops
+- `run_tester: true` → `skip_tester: false` and run the tester wave before devops
 - `run_tester: false` → `skip_tester: true` and skip tester
 
 Devops requires `FEATURE_SIGNOFF: passed` whenever `skip_tester` is false.

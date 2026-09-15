@@ -27,8 +27,10 @@ def test_knowledge_package_never_imports_graphify():
     import re
 
     banned = re.compile(r"^\s*(import graphify|from graphify)\b", re.M)
-    for path in list((REPO / "knowledge").glob("*.py")) + list(
-        (REPO / "pipeline_plugins").glob("*.py")
+    for path in (
+        list((REPO / "knowledge").glob("*.py"))
+        + list((REPO / "pipeline_plugins").glob("*.py"))
+        + list((REPO / "pipeline_features").glob("*.py"))
     ):
         assert banned.search(path.read_text(encoding="utf-8")) is None, path.name
 
@@ -220,7 +222,9 @@ def test_render_writes_feature_views_only(tmp_path: Path):
     assert "Click Run in the left-hand navigation" in cases
     assert "The Run page shows the start-run form" in cases
     assert "**Steps**" in cases
-    assert (app / "features" / "demo-slug" / "test-design" / "test-plan-view.md").is_file()
+    plan_view = (app / "features" / "demo-slug" / "test-design" / "test-plan-view.md").read_text()
+    assert "features/demo-slug/qa-test-cases.md" in plan_view
+    assert "features/{slug}/qa-test-cases.md" not in plan_view
     assert not (app / "automation-tests").exists()
 
 
@@ -278,3 +282,111 @@ def test_bootstrap_workflow_installs(tmp_path: Path):
     )
     assert pack["step"] == "knowledge-curator-agent"
     assert ".pipeline/agents/knowledge-curator-agent.md" in pack["allowed_reads"]
+
+
+def _write_cases(app: Path, slug: str, *, auth: bool = True) -> None:
+    design = app / "features" / slug / "test-design"
+    design.mkdir(parents=True)
+    fixtures = (
+        [{"id": "FIX-OPERATOR-SIGNED-IN", "kind": "auth", "text": "signed in"}]
+        if auth
+        else [{"id": "FIX-session", "text": "browser"}]
+    )
+    (design / "cases.json").write_text(
+        json.dumps(
+            {
+                "version": 1,
+                "cases": [
+                    {
+                        "id": "TC-1",
+                        "title": "Open Run",
+                        "level": "ui",
+                        "fixtures": fixtures,
+                        "steps": [
+                            {
+                                "do": "Open the console",
+                                "action_id": "ACT-open-console",
+                                "verb": "goto",
+                            },
+                            {
+                                "do": "Sign in with env names",
+                                "action_id": "ACT-login",
+                                "verb": "fill",
+                                "value_from_env": "E2E_PRODUCER_USERNAME",
+                                "control": {"role": "textbox", "name": "Email"},
+                            },
+                            {
+                                "do": "Click Run in the left-hand navigation",
+                                "action_id": "ACT-nav-run",
+                                "verb": "click",
+                                "control": {"role": "link", "name": "Run"},
+                            },
+                        ],
+                        "expected": [{"see": "Start run"}],
+                    }
+                ],
+            },
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+
+def test_playwright_codegen_writes_spec_and_skips_login_when_auth(tmp_path: Path):
+    app = tmp_path / "app"
+    app.mkdir()
+    _init_pack(app)
+    _write_cases(app, "demo-slug", auth=True)
+    locators = {
+        "version": 1,
+        "cases": {
+            "TC-1": {
+                "steps": [
+                    {"index": 3, "role": "link", "name": "Run"},
+                ]
+            }
+        },
+    }
+    (app / "features" / "demo-slug" / "test-design" / "locators.json").write_text(
+        json.dumps(locators, indent=2) + "\n", encoding="utf-8"
+    )
+    assert _run_cli(["knowledge", "playwright", str(app), "--slug", "demo-slug"]) == 0
+    spec = (app / "automation-tests" / "specs" / "demo-slug" / "TC-1.spec.ts").read_text()
+    assert "test('TC-1 Open Run'" in spec
+    assert "storageState" in spec
+    assert "ACT-login" not in spec
+    assert "getByRole(\"link\", { name: \"Run\" })" in spec
+    assert (app / "automation-tests" / "specs" / "demo-slug" / "auth.setup.ts").is_file()
+
+
+def test_playwright_missing_locators_writes_no_spec(tmp_path: Path):
+    app = tmp_path / "app"
+    app.mkdir()
+    _init_pack(app)
+    _write_cases(app, "demo-slug", auth=False)
+    assert _run_cli(["knowledge", "playwright", str(app), "--slug", "demo-slug"]) == 1
+    assert not (app / "automation-tests").exists()
+
+
+def test_init_pack_skips_telemetry_and_runs_tester_on_micro(tmp_path: Path):
+    app = tmp_path / "app"
+    app.mkdir()
+    _init_pack(app)
+    cfg = json.loads((app / ".pipeline" / "config.json").read_text(encoding="utf-8"))
+    assert cfg["workflows"]["feature-development"]["skips"]["skip_telemetry"] is True
+    assert "telemetry-agent" not in cfg["waves"]["child_chain"]
+    assert cfg["workflows"]["feature-development"]["classes"]["micro"][1] == "tester-agent"
+    assert cfg["test_design"]["enabled"] is not True
+    policy = (app / ".pipeline" / "skills" / "feature-development" / "assets" / "tester-policy.md").read_text()
+    assert "| micro | true |" in policy
+
+
+def test_knowledge_init_enables_playwright_flag(tmp_path: Path):
+    app = tmp_path / "app"
+    app.mkdir()
+    _init_pack(app)
+    assert _run_cli(["knowledge", "init", str(app)]) == 0
+    cfg = json.loads((app / ".pipeline" / "config.json").read_text(encoding="utf-8"))
+    assert cfg["test_design"]["playwright"] is True
+    assert cfg["test_design"]["design_only"] is False

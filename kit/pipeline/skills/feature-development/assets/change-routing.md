@@ -32,7 +32,7 @@ User override: if they type `CHANGE_CLASS: feature` (or micro/minor), honor it u
 
 ## Tester by class
 
-Load [tester-policy.md](tester-policy.md). Set `skip_tester` from that file’s `run_tester` column (or `RUN_TESTER: true|false` in the user ask). Feature default is on; micro/minor default is off. Changing the policy is how you turn testing on for selected classes.
+Load [tester-policy.md](tester-policy.md). Set `skip_tester` from that file’s `run_tester` column (or `RUN_TESTER: true|false` in the user ask). Default is **on** for micro, minor, and feature. `RUN_TESTER: false` is the one-run opt-out.
 
 After requirements exist, load [architect-policy.md](architect-policy.md). Set `skip_architect` from that file (or `RUN_ARCHITECT: true|false`). Micro/minor/jira-bug are always skip. Feature-class work runs Architect only when a run trigger matches.
 
@@ -81,15 +81,13 @@ Chains below are the **text-sourced** workflow. Tracker workflows use the chain 
 
 **feature** (default)
 
-`pm → @signoff:requirements → architect? → @signoff:architect → ba → ba-critic → @signoff:ba → waves (telemetry → developer → developer-critic per child) → tester → devops → retro`
+`pm → @signoff:requirements → architect? → @signoff:architect → ba → ba-critic → @signoff:ba → waves (developer → developer-critic per child; telemetry only if RUN_TELEMETRY) → tester wave → devops → retro`
 
-Set `skip_pm`, `skip_ba`, `skip_ba_critic`, `skip_telemetry` to `false`. Set `skip_architect` from [architect-policy.md](architect-policy.md) after requirements exist. Child specs live under `features/{slug}/{child}/`. One tester at the parent after all waves. Parent must not start waves without `signoff-ba.md`.
+Set `skip_pm`, `skip_ba`, `skip_ba_critic` to `false`. Set `skip_telemetry: true` unless the user typed `RUN_TELEMETRY: true`. Set `skip_architect` from [architect-policy.md](architect-policy.md) after requirements exist. Child specs live under `features/{slug}/{child}/`. One tester **wave** at the parent after all waves. Parent must not start waves without `signoff-ba.md`. When `skip_telemetry` is true, write `telemetry-contract.md` with `EVENTS: none` and `HANDOFF-telemetry.md` `STATUS: SUCCESS` (no telemetry Task). When `RUN_TELEMETRY: true`, insert `telemetry-agent` before each child’s developer.
 
 **minor**
 
-`developer → developer-critic → devops → retro`
-
-If tester-policy `run_tester` is true for minor (or `RUN_TESTER: true`): insert `tester-agent` before devops.
+`developer → developer-critic → tester wave → devops → retro`
 
 Parent **before** developer: write `patch.md` (problem, 1–3 ACs, out of scope), `telemetry-contract.md` with `EVENTS: none`, and `HANDOFF-telemetry.md` `STATUS: SUCCESS` (no telemetry Task). Skip PM, Architect, BA, BA critic.
 
@@ -97,9 +95,9 @@ Parent **before** developer: write `patch.md` (problem, 1–3 ACs, out of scope)
 
 **micro**
 
-`developer → devops → retro`
+`developer → tester wave → devops → retro`
 
-If tester-policy `run_tester` is true for micro: insert `tester-agent` before devops.
+If tester-policy `run_tester` is true for micro: run the tester wave before devops.
 
 Parent **before** developer: same stubs as minor (`patch.md` can be 10 lines). Skip critic. Still a **separate Task** for developer (parent does not edit product code).
 

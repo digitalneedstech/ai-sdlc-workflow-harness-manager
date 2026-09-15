@@ -42,4 +42,6 @@ framework. Use the layout already in this repository.
 
 ## Failure
 
-Return layer status `failed` with command and stderr summary. Product logic bugs → tester `BLOCKED`, not layer heal.
+On failure write `tester-rca-unit.md` (`cause: test | product | unclear`).
+Test-side: fix or add tests in the existing unit tree only, max 2 heals.
+Product-side: HANDOFF `NEEDS_APPROVAL`. Do not edit product modules.

@@ -63,7 +63,7 @@ Write findings to `features/{slug}/ba-critic-report.md` when verdict is not `app
 
 - **changes-required:** parent re-runs ba-agent with `CRITIC_REPORT_PATH` and `HUMAN_DIRECTIVE: address critic findings`. Cap retries (suggested: 2). After cap, stop for the user.
 - **approve-with-nits:** `@signoff:ba`, then waves; developers may fix nits if cheap.
-- **approve:** `@signoff:ba`, then read `spec-order.md` and spawn telemetry per child in wave 1.
+- **approve:** `@signoff:ba`, then read `spec-order.md` and spawn wave-1 developer (telemetry only if `RUN_TELEMETRY`).
 
 Critic must give **file + section + what to change**. No vague “make it better.”
 
@@ -86,7 +86,7 @@ SPEC_ORDER_PATH: features/{slug}/spec-order.md
 SPEC_PATHS: features/{slug}/{child}/specification.md
 REPORT_PATH: features/{slug}/ba-critic-report.md | N/A
 GAPS_SUMMARY: NONE | {one paragraph}
-PARENT_NEXT: @signoff:ba then wave-1 telemetry-agent | re-run ba-agent | stop for user
+PARENT_NEXT: @signoff:ba then wave-1 developer-agent | re-run ba-agent | stop for user
 ```
 
 On `changes-required`, include numbered `FIXES:` with spec section IDs (child slug, FR-x, AC-x, §n).

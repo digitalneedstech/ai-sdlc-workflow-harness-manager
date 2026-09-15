@@ -21,7 +21,7 @@ description: >-
 `patch.md + skip_telemetry → **developer-agent** → critic? → devops` (minor / micro)  
 `bug-analyst-agent (SUCCESS) → **developer-agent** → developer-critic-agent` (bug workflow)
 
-Do not run if telemetry HANDOFF is not SUCCESS **unless** parent `route.md` has `skip_telemetry: true` (micro/minor) or `workflow` is the bug one, where the gate is `HANDOFF-bug-analyst.md` `STATUS: SUCCESS` instead. Write child artifacts under `features/{parent}/{child}/` when the slug is nested.
+Do not run if telemetry HANDOFF is not SUCCESS **unless** parent `route.md` has `skip_telemetry: true` (the default, including feature class) or `workflow` is the bug one, where the gate is `HANDOFF-bug-analyst.md` `STATUS: SUCCESS` instead. Write child artifacts under `features/{parent}/{child}/` when the slug is nested.
 
 ## Modes
 

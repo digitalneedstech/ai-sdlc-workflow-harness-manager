@@ -40,7 +40,7 @@ and developers from starting early.
 4. Parent stops for `@signoff:architect` and presents recorded concerns (skipped when `skip_architect`).
 5. BA reads architecture when present, asks leftover BA items, writes child specs.
 6. BA critic runs, then parent stops for `@signoff:ba`.
-7. Only then waves (telemetry → developer → critic).
+7. Only then waves (developer → critic; telemetry only if `RUN_TELEMETRY`).
 
 Hook contract for customer repos that ship `subagent-start.py`: parse
 `skip_architect`; require `signoff-requirements.md` before Architect; require

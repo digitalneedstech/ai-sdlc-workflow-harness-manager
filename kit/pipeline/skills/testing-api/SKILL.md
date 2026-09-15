@@ -41,4 +41,6 @@ below are defaults, not a required stack.
 
 ## Failure
 
-Return layer status `failed`. Contract violations in product code → tester `BLOCKED`.
+On failure write `tester-rca-api.md` (`cause: test | product | unclear`).
+Test-side: fix or add tests in the existing API tree only, max 2 heals. Localhost only.
+Product-side: HANDOFF `NEEDS_APPROVAL`. Do not edit product handlers.

@@ -358,13 +358,24 @@ def _knowledge_commands():
     from knowledge.commands import (  # noqa: WPS433
         cmd_extract,
         cmd_init,
+        cmd_playwright,
         cmd_promote,
+        cmd_promote_feature,
         cmd_render,
         cmd_status,
         cmd_validate,
     )
 
-    return cmd_extract, cmd_init, cmd_promote, cmd_render, cmd_status, cmd_validate
+    return (
+        cmd_extract,
+        cmd_init,
+        cmd_playwright,
+        cmd_promote,
+        cmd_promote_feature,
+        cmd_render,
+        cmd_status,
+        cmd_validate,
+    )
 
 
 def _plugin_commands():
@@ -377,6 +388,18 @@ def _plugin_commands():
     )
 
     return cmd_install, cmd_list, cmd_status, cmd_uninstall
+
+
+def _feature_commands():
+    _ensure_pkg_path()
+    from pipeline_features.commands import (  # noqa: WPS433
+        cmd_disable,
+        cmd_enable,
+        cmd_list,
+        cmd_status,
+    )
+
+    return cmd_disable, cmd_enable, cmd_list, cmd_status
 
 
 def doctor(
@@ -532,6 +555,18 @@ def cli_main(argv: list[str] | None = None) -> int:
     )
     k_render.add_argument("project", nargs="?", default=".")
     k_render.add_argument("--slug", required=True)
+    k_playwright = knowledge_commands.add_parser(
+        "playwright",
+        help="write automation-tests specs from cases.json + locators.json",
+    )
+    k_playwright.add_argument("project", nargs="?", default=".")
+    k_playwright.add_argument("--slug", required=True)
+    k_promote_feature = knowledge_commands.add_parser(
+        "promote-feature",
+        help="merge planned feature overlay nodes into test-knowledge as inferred",
+    )
+    k_promote_feature.add_argument("project", nargs="?", default=".")
+    k_promote_feature.add_argument("--slug", required=True)
 
     plugins_parser = commands.add_parser(
         "plugins",
@@ -584,6 +619,41 @@ def cli_main(argv: list[str] | None = None) -> int:
     )
     p_uninstall.add_argument("--home", default="", help=argparse.SUPPRESS)
 
+    features_parser = commands.add_parser(
+        "features",
+        help="list or toggle kit capabilities (same keys as config.json)",
+    )
+    features_commands = features_parser.add_subparsers(dest="features_command", required=True)
+    features_commands.add_parser("list", help="named capabilities")
+    f_status = features_commands.add_parser("status", help="on/off for this project")
+    f_status.add_argument("project", nargs="?", default=".")
+    f_enable = features_commands.add_parser("enable", help="turn a capability on")
+    f_enable.add_argument(
+        "name",
+        choices=(
+            "test-design",
+            "playwright",
+            "telemetry",
+            "tester",
+            "archify",
+            "jira-intake",
+        ),
+    )
+    f_enable.add_argument("project", nargs="?", default=".")
+    f_disable = features_commands.add_parser("disable", help="turn a capability off")
+    f_disable.add_argument(
+        "name",
+        choices=(
+            "test-design",
+            "playwright",
+            "telemetry",
+            "tester",
+            "archify",
+            "jira-intake",
+        ),
+    )
+    f_disable.add_argument("project", nargs="?", default=".")
+
     args = parser.parse_args(argv)
     home = Path(args.home).expanduser().resolve() if getattr(args, "home", "") else None
     project = Path(getattr(args, "project", ".")).expanduser().resolve()
@@ -624,7 +694,9 @@ def cli_main(argv: list[str] | None = None) -> int:
         (
             cmd_extract,
             cmd_init,
+            cmd_playwright,
             cmd_promote,
+            cmd_promote_feature,
             cmd_render,
             cmd_status,
             cmd_validate,
@@ -648,6 +720,10 @@ def cli_main(argv: list[str] | None = None) -> int:
             return cmd_promote(project, run_id=args.run_id)
         if args.knowledge_command == "render":
             return cmd_render(project, slug=args.slug)
+        if args.knowledge_command == "playwright":
+            return cmd_playwright(project, slug=args.slug)
+        if args.knowledge_command == "promote-feature":
+            return cmd_promote_feature(project, slug=args.slug)
         parser.error("unknown knowledge command")
         return 2
     if args.command == "plugins":
@@ -685,6 +761,21 @@ def cli_main(argv: list[str] | None = None) -> int:
                 home=home,
             )
         parser.error("unknown plugins command")
+        return 2
+    if args.command == "features":
+        cmd_disable, cmd_enable, cmd_list, cmd_status = _feature_commands()
+        if args.features_command == "list":
+            return cmd_list()
+        if not project.is_dir():
+            print(f"not a directory: {project}", file=sys.stderr)
+            return 64
+        if args.features_command == "status":
+            return cmd_status(project)
+        if args.features_command == "enable":
+            return cmd_enable(project, args.name)
+        if args.features_command == "disable":
+            return cmd_disable(project, args.name)
+        parser.error("unknown features command")
         return 2
     parser.error(f"unknown command: {args.command}")
     return 2

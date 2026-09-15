@@ -27,7 +27,7 @@ Events were brainstormed instead of **extracted from the spec** and **gated**.
 
 `.pipeline/skills/observability-telemetry/SKILL.md`: candidates only from goals, journey endings, named errors, Must FRs, ACs, §9 with a consumer. Then G1–G7. Cap ≤ 5 events. Zero passing gates → `EVENTS: none` (SUCCESS).
 
-`telemetry-agent` runs **after BA critic, before developer** (feature class). Micro/minor: stub `EVENTS: none`.
+`telemetry-agent` is **opt-in** (`RUN_TELEMETRY: true`). Default feature waves skip it and stub `EVENTS: none`. Micro/minor always stub.
 
 ## Files
 

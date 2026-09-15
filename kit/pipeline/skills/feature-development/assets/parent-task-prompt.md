@@ -274,16 +274,23 @@ Write features/{parent-slug}/{child-slug}/state/developer-critic-agent.json. Do 
 
 Spawn only when `route.md` has `skip_tester: false` (from [tester-policy.md](tester-policy.md) or `RUN_TESTER`). Feature: after all child critics. Minor: after developer-critic. Micro: after developer. **Bug workflow:** after developer-critic approves.
 
+If `qa-test-cases.md` and `test-design/cases.json` are both missing, spawn **one** Task with `TESTER_MODE: cases-only` first. Then fan out.
+
+For each required layer (`unit` / `api` / `ui` from the test plan or tagged cases), spawn a **parallel** Task. Skip `n/a`. Join all HANDOFFs before devops.
+
+On `NEEDS_APPROVAL`: present `tester-rca-{layer}.md` and wait. After the user approves, re-spawn the owning child’s developer with the RCA path. After critic approve, re-run **all** required layer Tasks. Do not write product code in the parent.
+
+Parent writes `qa-signoff.md` and `HANDOFF-tester.md`. `FEATURE_SIGNOFF: passed` only if every required layer is SUCCESS.
+
 ```text
 subagent_type: generalPurpose
 {isolation preamble}
+TEST_LAYER: unit | api | ui
+TESTER_MODE: cases-only   # only on the optional planner Task
 PRIOR_STATE_PATH: features/{slug}/state/ba-agent.json | features/{slug}/state/developer-critic-agent.json
-You are the tester agent. Follow .pipeline/agents/tester-agent.md.
-Feature class cannot finish as TESTS: cases-only.
-
-Write qa-test-cases.md, run required layers, write qa-signoff.md and state/tester-agent.json.
-If TEST_DESIGN_ENABLED is true and features/{slug}/test-design/cases.json exists, use the rendered qa-test-cases.md. Do not re-plan from Must ACs.
-PARENT_NEXT must be devops-agent if STATUS is SUCCESS.
+You are the tester agent for TEST_LAYER only. Follow .pipeline/agents/tester-agent.md.
+If TEST_DESIGN_ENABLED is true and features/{slug}/test-design/cases.json exists, use it. Do not re-plan from Must ACs.
+Do not edit product source. Product cause → NEEDS_APPROVAL.
 ```
 
 ---

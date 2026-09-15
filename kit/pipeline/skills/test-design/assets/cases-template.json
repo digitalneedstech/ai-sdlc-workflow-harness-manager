@@ -13,7 +13,8 @@
       "actor": "operator",
       "fixtures": [
         {
-          "id": "FIX-session",
+          "id": "FIX-OPERATOR-SIGNED-IN",
+          "kind": "auth",
           "text": "Browser at the local operator-console base URL. Use project test-env names for sign-in. Never write a real password."
         }
       ],
@@ -22,19 +23,27 @@
       "steps": [
         {
           "do": "Open the local operator console in the browser",
-          "action_id": "ACT-open-console"
+          "action_id": "ACT-open-console",
+          "verb": "goto"
         },
         {
-          "do": "If a sign-in screen is shown, fill the operator email and password from the project test env (names only, no secret values) and submit",
-          "action_id": "ACT-login"
+          "do": "If a sign-in screen is shown, fill the operator email from the project test env (name only) and submit",
+          "action_id": "ACT-login",
+          "verb": "fill",
+          "value_from_env": "E2E_PRODUCER_USERNAME",
+          "control": { "role": "textbox", "name": "Email" }
         },
         {
           "do": "Confirm you landed on the dashboard (main heading visible)",
-          "action_id": "ACT-see-dashboard"
+          "action_id": "ACT-see-dashboard",
+          "verb": "expect_visible",
+          "control": { "role": "heading", "name": "Dashboard" }
         },
         {
           "do": "Click Run in the left-hand navigation",
-          "action_id": "ACT-nav-run"
+          "action_id": "ACT-nav-run",
+          "verb": "click",
+          "control": { "role": "link", "name": "Run" }
         }
       ],
       "expected": [
