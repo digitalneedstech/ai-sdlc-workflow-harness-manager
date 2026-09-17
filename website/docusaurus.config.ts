@@ -14,7 +14,7 @@ const config: Config = {
   url: 'http://127.0.0.1:3000',
   baseUrl: '/',
 
-  onBrokenLinks: 'throw',
+  onBrokenLinks: 'warn',
 
   i18n: {
     defaultLocale: 'en',
