@@ -23,6 +23,7 @@ FEATURE_IDS = (
     "tester",
     "archify",
     "jira-intake",
+    "agent-observability",
 )
 
 TELEMETRY_WORKFLOWS = ("feature-development", "jira-story", "jira-epic")
@@ -42,6 +43,7 @@ def cmd_list() -> int:
         ("tester", "tester wave on micro / minor / feature"),
         ("archify", "Architect HTML diagrams (flag only; plugins install the skill)"),
         ("jira-intake", "Tracker intake from issue keys"),
+        ("agent-observability", "Agent-run traces/scores (not telemetry-agent)"),
     )
     for ident, note in rows:
         print(f"{ident}\t{note}")
@@ -83,6 +85,7 @@ def _toggle(project: Path, name: str, *, on: bool) -> int:
         "tester": _set_tester,
         "archify": _set_archify,
         "jira-intake": _set_jira,
+        "agent-observability": _set_obs,
     }
     try:
         handlers[name](project, on)
@@ -119,6 +122,10 @@ def _snapshot(project: Path) -> dict[str, tuple[str, str]]:
         "jira-intake": (
             "on" if jira.get("enabled") is True else "off",
             "intake.jira.enabled",
+        ),
+        "agent-observability": (
+            "on" if _obs_on(cfg) else "off",
+            "agent_observability.enabled",
         ),
     }
 
@@ -190,6 +197,29 @@ def _set_archify(project: Path, on: bool) -> None:
         enable_architecture_diagrams(project)
         return
     disable_architecture_diagrams(project)
+
+
+def _obs_on(cfg: dict[str, Any]) -> bool:
+    block = cfg.get("agent_observability")
+    return isinstance(block, dict) and block.get("enabled") is True
+
+
+def _set_obs(project: Path, on: bool) -> None:
+    data = _load_config(project)
+    block = data.get("agent_observability")
+    if not isinstance(block, dict):
+        block = {
+            "enabled": False,
+            "adapter": "langfuse",
+            "sample_rate": 1.0,
+            "redact": [".env", "*secret*", "*credential*"],
+            "max_field_chars": 8000,
+            "flush_on": ["subagentStop", "sessionEnd"],
+            "retention_days": 14,
+        }
+    block["enabled"] = on
+    data["agent_observability"] = block
+    _write_config(project, data)
 
 
 def _set_jira(project: Path, on: bool) -> None:

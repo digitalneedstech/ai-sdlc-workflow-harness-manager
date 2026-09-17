@@ -6,11 +6,22 @@ Clone this repository, then install `.pipeline` into any customer project
 (or into `~/.pipeline`). Process lives in the pack. The IDE is a thin adapter
 (`run-workflow` only). The pack is not tied to a product, language, or IDE.
 
-**Handbook (architects and developers):** read
-[CUSTOMER-GUIDE.md](./CUSTOMER-GUIDE.md)
-first — problem statement, architecture, install, `AGENTS.md`, config, deploy,
-and tests. This README is the project landing page; that file is the
-adaptation contract.
+**Documentation site (local):** [website/](./website/) — what the kit is,
+install, capabilities, plugins, knowledge, observability, and CLI.
+
+```bash
+cd website
+npm install
+npm start
+```
+
+Opens `http://127.0.0.1:3000`. The in-repo adaptation contract remains
+[CUSTOMER-GUIDE.md](./CUSTOMER-GUIDE.md) (copied to `.pipeline/docs/` on
+`init`). This README is the project landing page.
+
+**Agent-run observability (Langfuse, hooks, scores):**
+[OBSERVABILITY.md](./OBSERVABILITY.md) — install without running the full
+pipeline ladder, trace identity, token usage, score meanings, and ideal values.
 
 Requires **Python 3.11+**. No other runtime dependencies.
 
@@ -72,12 +83,12 @@ After install, the same handbook is copied to
 | `.pipeline/` | Workflows, skills, agent briefs, rules, wiki, loader |
 | `.pipeline/config.json` | This engagement: chains, tracker, verify, deploy |
 | `.pipeline/docs/CUSTOMER-GUIDE.md` | Copied handbook |
+| `.pipeline/docs/OBSERVABILITY.md` | Agent-run observability (after `init`; see repo [OBSERVABILITY.md](./OBSERVABILITY.md)) |
 | `.cursor/skills/run-workflow/` or `.claude/skills/run-workflow/` | The only IDE-discovered skill |
 
 Shipped workflows: `ask`, `feature-development`, `jira-story` / `jira-epic` /
 `jira-bug`, `test-knowledge-bootstrap`. Structured test design is opt-in
-(`pipeline-kit knowledge init`). Details:
-[What you get](../ai-agents-registry/packages/pipeline-kit/CUSTOMER-GUIDE.md#1-what-you-get).
+(`pipeline-kit knowledge init`). Details: [What you get](./CUSTOMER-GUIDE.md#1-what-you-get).
 
 ---
 
@@ -88,18 +99,18 @@ and test runbooks if the sample script does not match the stack.
 
 | Step | Where |
 |------|--------|
-| Routing table + product blurb | [AGENTS.md](../ai-agents-registry/packages/pipeline-kit/CUSTOMER-GUIDE.md#31-agentsmd-create-or-edit) |
-| Verify, deploy targets, Jira on/off | [`config.json`](../ai-agents-registry/packages/pipeline-kit/CUSTOMER-GUIDE.md#4-configjson--what-each-area-is-for) |
-| Local start / health checks | [Adapt local deploy](../ai-agents-registry/packages/pipeline-kit/CUSTOMER-GUIDE.md#5-adapt-local-deploy-different-tech) |
-| Test runners | [Adapt tests](../ai-agents-registry/packages/pipeline-kit/CUSTOMER-GUIDE.md#6-adapt-tests-different-runners) |
-| Cursor / Claude Code / GitHub / none | [IDE and editor differences](../ai-agents-registry/packages/pipeline-kit/CUSTOMER-GUIDE.md#7-ide-and-editor-differences) |
-| Ignore run artifacts | [Git ignore](../ai-agents-registry/packages/pipeline-kit/CUSTOMER-GUIDE.md#8-git-ignore-recommended) |
-| Tracker MCP, wiki, hooks, new workflow | [Optional later](../ai-agents-registry/packages/pipeline-kit/CUSTOMER-GUIDE.md#9-optional-later) |
-| Loader, workflow JSON, secrets | [What you should not edit](../ai-agents-registry/packages/pipeline-kit/CUSTOMER-GUIDE.md#10-what-you-should-not-edit) |
-| End-to-end checklist | [New-project checklist](../ai-agents-registry/packages/pipeline-kit/CUSTOMER-GUIDE.md#11-new-project-checklist) |
+| Routing table + product blurb | [AGENTS.md](./CUSTOMER-GUIDE.md#31-agentsmd-create-or-edit) |
+| Verify, deploy targets, Jira on/off | [`config.json`](./CUSTOMER-GUIDE.md#4-configjson--what-each-area-is-for) |
+| Local start / health checks | [Adapt local deploy](./CUSTOMER-GUIDE.md#5-adapt-local-deploy-different-tech) |
+| Test runners | [Adapt tests](./CUSTOMER-GUIDE.md#6-adapt-tests-different-runners) |
+| Cursor / Claude Code / GitHub / none | [IDE and editor differences](./CUSTOMER-GUIDE.md#7-ide-and-editor-differences) |
+| Ignore run artifacts | [Git ignore](./CUSTOMER-GUIDE.md#8-git-ignore-recommended) |
+| Tracker MCP, wiki, hooks, new workflow | [Optional later](./CUSTOMER-GUIDE.md#9-optional-later) |
+| Loader, workflow JSON, secrets | [What you should not edit](./CUSTOMER-GUIDE.md#10-what-you-should-not-edit) |
+| End-to-end checklist | [New-project checklist](./CUSTOMER-GUIDE.md#11-new-project-checklist) |
 
 Must-configure overview:
-[What you must configure](../ai-agents-registry/packages/pipeline-kit/CUSTOMER-GUIDE.md#3-what-you-must-configure-every-new-project).
+[What you must configure](./CUSTOMER-GUIDE.md#3-what-you-must-configure-every-new-project).
 
 ---
 
@@ -112,7 +123,8 @@ Must-configure overview:
 | `knowledge/` | Optional QA overlay commands (consumes Graphify) |
 | `pipeline_plugins/` | Optional Graphify and Archify plugin lifecycle |
 | `kit/pipeline/` | Bundled pack copied to `<app>/.pipeline` |
-| [CUSTOMER-GUIDE.md](../ai-agents-registry/packages/pipeline-kit/CUSTOMER-GUIDE.md) | Architect / developer handbook (canonical copy in `ai-agents-registry`) |
+| [CUSTOMER-GUIDE.md](./CUSTOMER-GUIDE.md) | Architect / developer handbook |
+| `website/` | Local Docusaurus documentation (`npm start` in that folder) |
 | `tests/` | Installer tests (`pytest`) |
 
 Maintainers who edit a live `.pipeline` in this repo can refresh the bundle
@@ -149,6 +161,11 @@ pipeline-kit features list        # named on/off capabilities
 pipeline-kit features status
 pipeline-kit features enable telemetry
 pipeline-kit features disable telemetry
+pipeline-kit obs install          # merge agent-run hooks (does not replace existing)
+pipeline-kit obs status
+pipeline-kit obs report
+pipeline-kit obs flush
+# Full guide: OBSERVABILITY.md
 pipeline-kit uninstall [project]  # remove files managed by the kit
 pipeline-kit --version
 ```
@@ -253,6 +270,25 @@ recovery. Typical causes are missing `gh skill`, Node below 18, or an
 unpinned skill.
 
 Details: [CUSTOMER-GUIDE.md](./CUSTOMER-GUIDE.md#22-optional-plugins).
+
+---
+
+## Agent-run observability (opt-in)
+
+Traces and deterministic scores for **coding-agent** tool runs (Cursor / Claude /
+Copilot hooks → local ledger → Langfuse). Distinct from customer-app
+`telemetry-agent`.
+
+```bash
+pipeline-kit init --ide cursor
+pipeline-kit obs install --ide cursor --adapter langfuse
+# LANGFUSE_* in .env, then use the IDE in that project root
+pipeline-kit obs report
+pipeline-kit obs flush
+```
+
+Install, identity model, Langfuse usage/cost, every score, ideal targets, and
+troubleshooting: **[OBSERVABILITY.md](./OBSERVABILITY.md)**.
 
 ---
 

@@ -10,3 +10,5 @@ dist/
 .DS_Store
 .pipeline/state/
 features/
+website/node_modules/
+website/.docusaurus/

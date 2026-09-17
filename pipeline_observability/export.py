@@ -1,0 +1,714 @@
+"""Incremental ledger export. Offset commits only after a successful ship."""
+
+from __future__ import annotations
+
+import hashlib
+import json
+import os
+import re
+from collections import defaultdict
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any
+
+from pipeline_observability.adapters.base import AdapterConfig
+from pipeline_observability.adapters.datadog import DatadogAdapter
+from pipeline_observability.adapters.langfuse import LangfuseAdapter, otel_attributes
+from pipeline_observability.adapters.otlp import OtlpAdapter
+from pipeline_observability.normalize import load_ledger, parse_transcript
+from pipeline_observability.scoring import TOOL_EVENTS, score_events
+
+SCORE_NAMES = (
+    "tool_calls_total",
+    "tool_calls_legitimate",
+    "waste_ratio",
+    "wrong_tool_count",
+    "out_of_contract_count",
+    "read_amplification",
+    "search_thrash",
+    "edit_churn",
+    "discovery_ratio",
+    "retry_ratio",
+    "denied_count",
+    "verify_coverage",
+    "integrity_pass",
+    "allowlist_unused_count",
+    "context_peak_percent",
+)
+
+UUID_RE = re.compile(
+    r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+)
+EVENT_TYPES = {
+    "sessionStart",
+    "sessionEnd",
+    "beforeSubmitPrompt",
+    "preCompact",
+    "stop",
+    "SessionStart",
+    "SessionEnd",
+    "Stop",
+}
+MAX_IO = 4000
+
+
+def load_dotenv(repo: Path) -> None:
+    path = repo / ".env"
+    if not path.is_file():
+        return
+    try:
+        for raw in path.read_text(encoding="utf-8").splitlines():
+            line = raw.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, value = line.split("=", 1)
+            key = key.strip()
+            value = value.strip().strip("'").strip('"')
+            if key and not os.environ.get(key):
+                os.environ[key] = value
+    except OSError:
+        return
+
+
+def load_obs_config(repo: Path) -> dict[str, Any]:
+    path = repo / ".pipeline" / "config.json"
+    if not path.is_file():
+        return {}
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    block = data.get("agent_observability") if isinstance(data, dict) else {}
+    return block if isinstance(block, dict) else {}
+
+
+def _parse_ts(value: Any) -> int:
+    if not isinstance(value, str) or not value:
+        return int(datetime.now(timezone.utc).timestamp() * 1_000_000_000)
+    try:
+        stamp = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        return int(stamp.timestamp() * 1_000_000_000)
+    except ValueError:
+        return int(datetime.now(timezone.utc).timestamp() * 1_000_000_000)
+
+
+def _iso(value: Any) -> str | None:
+    if not isinstance(value, str) or not value:
+        return None
+    return value.replace("Z", "+00:00") if value.endswith("Z") else value
+
+
+def otel32(value: str | None) -> str:
+    raw = (value or "unknown").strip()
+    hexed = re.sub(r"[^0-9a-fA-F]", "", raw).lower()
+    if len(hexed) >= 32:
+        return hexed[:32]
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:32]
+
+
+def otel16(key: str) -> str:
+    return hashlib.sha256(key.encode("utf-8")).hexdigest()[:16]
+
+
+def session_id(conversation: str | None) -> str:
+    raw = (conversation or "unknown").strip()
+    return raw if UUID_RE.match(raw) else raw
+
+
+def distinct_generation(conversation: str | None, generation: str | None) -> bool:
+    if not generation:
+        return False
+    return otel32(generation) != otel32(conversation)
+
+
+def _clip(value: Any, limit: int = MAX_IO) -> str | None:
+    if value is None:
+        return None
+    text = value if isinstance(value, str) else json.dumps(value, default=str)
+    if len(text) > limit:
+        return text[:limit] + f"...[truncated {len(text) - limit} chars]"
+    return text
+
+
+def _span(
+    *,
+    trace_id: str,
+    span_id: str,
+    name: str,
+    start: int,
+    end: int,
+    parent: str | None,
+    attrs: dict[str, Any],
+) -> dict[str, Any]:
+    if end < start:
+        end = start + 1_000_000
+    body: dict[str, Any] = {
+        "traceId": trace_id,
+        "spanId": span_id,
+        "name": name,
+        "kind": 1,
+        "startTimeUnixNano": str(start),
+        "endTimeUnixNano": str(end),
+        "attributes": otel_attributes(attrs),
+    }
+    if parent:
+        body["parentSpanId"] = parent
+    return body
+
+
+def _common(
+    *,
+    session: str,
+    user: str | None,
+    name: str,
+    tags: list[str],
+    slug: str | None,
+    workflow: str | None,
+    extra: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    attrs: dict[str, Any] = {
+        "langfuse.session.id": session,
+        "langfuse.trace.name": name,
+        "langfuse.trace.tags": tags,
+        "langfuse.trace.metadata.slug": slug,
+        "langfuse.trace.metadata.workflow": workflow,
+    }
+    if user:
+        attrs["langfuse.user.id"] = user
+        attrs["user.id"] = user
+    if extra:
+        attrs.update(extra)
+    return attrs
+
+
+def _first(events: list[dict[str, Any]], key: str) -> Any:
+    for item in events:
+        value = item.get(key)
+        if value not in (None, "", []):
+            return value
+    return None
+
+
+def _last(events: list[dict[str, Any]], key: str) -> Any:
+    for item in reversed(events):
+        value = item.get(key)
+        if value not in (None, "", []):
+            return value
+    return None
+
+
+PLACEHOLDER_MODELS = frozenset(
+    {"auto-smart", "auto", "default", "composer", "inherit", "unknown"}
+)
+USAGE_EVENTS = frozenset(
+    {"afterAgentResponse", "AfterAgentResponse", "stop", "Stop", "agentStop"}
+)
+
+
+def _placeholder_model(name: Any) -> bool:
+    if not isinstance(name, str):
+        return True
+    stripped = name.strip()
+    return not stripped or stripped.lower() in PLACEHOLDER_MODELS
+
+
+def _generation_model(group: list[dict[str, Any]]) -> str | None:
+    last_any: str | None = None
+    last_real: str | None = None
+    for item in group:
+        pair: list[str] = []
+        for key in ("model_id", "model"):
+            value = item.get(key)
+            if isinstance(value, str) and value.strip():
+                pair.append(value.strip())
+        if not pair:
+            continue
+        last_any = pair[0]
+        for stripped in pair:
+            if not _placeholder_model(stripped):
+                last_real = stripped
+                break
+    return last_real or last_any
+
+
+def _token_int(tokens: Any, key: str) -> int:
+    if not isinstance(tokens, dict):
+        return 0
+    value = tokens.get(key)
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return 0
+    return max(0, int(value))
+
+
+def _generation_usage(group: list[dict[str, Any]]) -> dict[str, Any]:
+    """Langfuse usage header reads langfuse.observation.usage_details (exclusive buckets)."""
+    input_tokens = 0
+    output_tokens = 0
+    cache_read = 0
+    cache_write = 0
+    found = False
+    for item in group:
+        if item.get("event") not in USAGE_EVENTS:
+            continue
+        tokens = item.get("tokens")
+        if not isinstance(tokens, dict) or not tokens:
+            continue
+        found = True
+        input_tokens = max(input_tokens, _token_int(tokens, "input_tokens"))
+        output_tokens = max(output_tokens, _token_int(tokens, "output_tokens"))
+        cache_read = max(cache_read, _token_int(tokens, "cache_read_tokens"))
+        cache_write = max(cache_write, _token_int(tokens, "cache_write_tokens"))
+    if not found or (input_tokens == 0 and output_tokens == 0 and cache_read == 0 and cache_write == 0):
+        return {}
+    exclusive_input = max(0, input_tokens - cache_read - cache_write)
+    details: dict[str, int] = {"input": exclusive_input, "output": output_tokens}
+    if cache_read:
+        details["input_cached_tokens"] = cache_read
+    if cache_write:
+        details["input_cache_creation"] = cache_write
+    attrs: dict[str, Any] = {
+        "langfuse.observation.usage_details": json.dumps(details, separators=(",", ":")),
+        "gen_ai.usage.input_tokens": input_tokens or None,
+        "gen_ai.usage.output_tokens": output_tokens or None,
+    }
+    if cache_read:
+        attrs["gen_ai.usage.cache_read_tokens"] = cache_read
+    if cache_write:
+        attrs["gen_ai.usage.cache_write_tokens"] = cache_write
+    return attrs
+
+
+def _tool_obs_type(event: dict[str, Any]) -> str:
+    if event.get("tool_kind") in {"read", "search"}:
+        return "retriever"
+    return "tool"
+
+
+def _tool_io(event: dict[str, Any]) -> tuple[str | None, str | None]:
+    incoming = event.get("tool_input") or event.get("command") or event.get("target_path") or event.get("pattern")
+    outgoing = event.get("tool_output")
+    return _clip(incoming), _clip(outgoing)
+
+
+def _user_prompt(events: list[dict[str, Any]]) -> str | None:
+    for item in events:
+        if item.get("event") == "beforeSubmitPrompt":
+            text = item.get("prompt") or item.get("text")
+            if isinstance(text, str) and text.strip():
+                return text.strip()
+    path = _last(events, "transcript_path")
+    user, _assistant = parse_transcript(path if isinstance(path, str) else None)
+    return user
+
+
+def _assistant_output(events: list[dict[str, Any]]) -> str | None:
+    for item in reversed(events):
+        if item.get("event") == "afterAgentResponse":
+            text = item.get("text") or item.get("prompt")
+            if isinstance(text, str) and text.strip():
+                return text.strip()
+    for item in reversed(events):
+        if item.get("event") in {"stop", "Stop"} and item.get("status"):
+            return str(item.get("status"))
+    path = _last(events, "transcript_path")
+    _user, assistant = parse_transcript(path if isinstance(path, str) else None)
+    return assistant
+
+
+def _parent_for_tool(event: dict[str, Any], *, root: str, gens: dict[str, str], agents: dict[str, str], conv: str) -> str:
+    sid = event.get("subagent_id")
+    if isinstance(sid, str) and sid in agents:
+        return agents[sid]
+    gid = event.get("generation_id")
+    if distinct_generation(conv, gid if isinstance(gid, str) else None) and gid in gens:
+        return gens[str(gid)]
+    return root
+
+
+def build_conversation_spans(
+    events: list[dict[str, Any]],
+    steps: list[dict[str, Any]],
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, Any]]:
+    spans: list[dict[str, Any]] = []
+    scores: list[dict[str, Any]] = []
+    meta: dict[str, Any] = {}
+    if not events:
+        return spans, scores, meta
+    conv = str(_first(events, "conversation_id") or _first(events, "session_id") or "unknown")
+    trace_id = otel32(conv)
+    session = session_id(conv)
+    root = otel16(f"root:{conv}")
+    user = _first(events, "user_email")
+    slug = _last(events, "slug")
+    workflow = _first(events, "workflow") or _last(events, "workflow")
+    harness = str(_first(events, "harness") or "cursor")
+    change = None
+    for step in steps:
+        if step.get("slug") == slug and step.get("change_class"):
+            change = step.get("change_class")
+            break
+    tags = [harness]
+    if workflow:
+        tags.append(str(workflow))
+    if change:
+        tags.append(str(change))
+    mode = _first(events, "composer_mode")
+    if mode:
+        tags.append(str(mode))
+    tags.append("agent")
+    name = f"{workflow}:{slug}" if workflow and slug else (str(slug) if slug else conv[:12])
+    prompt = _user_prompt(events)
+    output = _assistant_output(events)
+    start = _parse_ts(events[0].get("ts"))
+    end = _parse_ts(events[-1].get("ts"))
+    root_extra = {
+        "langfuse.observation.type": "agent",
+        "langfuse.observation.input": prompt,
+        "langfuse.observation.output": output,
+        "langfuse.trace.input": prompt,
+        "langfuse.trace.output": output,
+        "pipeline.slug": slug,
+        "pipeline.workflow": workflow,
+    }
+    spans.append(
+        _span(
+            trace_id=trace_id,
+            span_id=root,
+            name=name,
+            start=start,
+            end=end,
+            parent=None,
+            attrs=_common(session=session, user=user, name=name, tags=tags, slug=slug, workflow=workflow, extra=root_extra),
+        )
+    )
+    gens: dict[str, str] = {}
+    by_gen: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for item in events:
+        gid = item.get("generation_id")
+        if distinct_generation(conv, gid if isinstance(gid, str) else None):
+            by_gen[str(gid)].append(item)
+    for gid, group in by_gen.items():
+        span_id = otel16(f"gen:{gid}")
+        gens[gid] = span_id
+        g_start = _parse_ts(group[0].get("ts"))
+        g_end = _parse_ts(group[-1].get("ts"))
+        first_tool = next((row for row in group if row.get("event") in TOOL_EVENTS), None)
+        model = _generation_model(group)
+        params = _last(group, "model_params")
+        extra = {
+            "langfuse.observation.type": "generation",
+            "langfuse.observation.metadata.cursor_generation_id": gid,
+            "langfuse.observation.model.name": model,
+            "gen_ai.request.model": model,
+            "langfuse.observation.input": prompt,
+            "langfuse.observation.output": output if not any(g.get("subagent_id") for g in group) else None,
+            "langfuse.observation.completion_start_time": _iso(first_tool.get("ts") if first_tool else None),
+            "langfuse.observation.model.parameters": json.dumps(params) if params else None,
+            "pipeline.slug": slug,
+        }
+        extra.update(_generation_usage(group))
+        if first_tool and first_tool.get("ts") and group[0].get("ts"):
+            extra["pipeline.score.time_to_first_tool_ms"] = max(
+                0, int((_parse_ts(first_tool.get("ts")) - g_start) / 1_000_000)
+            )
+        spans.append(
+            _span(
+                trace_id=trace_id,
+                span_id=span_id,
+                name=f"generation {model or gid[:8]}",
+                start=g_start,
+                end=g_end,
+                parent=root,
+                attrs=_common(session=session, user=user, name=name, tags=tags, slug=slug, workflow=workflow, extra=extra),
+            )
+        )
+    agents: dict[str, str] = {}
+    by_agent: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for item in events:
+        sid = item.get("subagent_id")
+        if isinstance(sid, str) and sid:
+            by_agent[sid].append(item)
+    for sid, group in by_agent.items():
+        span_id = otel16(f"agent:{sid}")
+        agents[sid] = span_id
+        a_start = _parse_ts(group[0].get("ts"))
+        a_end = _parse_ts(group[-1].get("ts"))
+        step_name = str(_first(group, "step") or _first(group, "subagent_type") or "subagent")
+        extra = {
+            "langfuse.observation.type": "agent",
+            "langfuse.observation.input": _clip(_first(group, "task"), 4000),
+            "langfuse.observation.output": _last(group, "status"),
+            "pipeline.step": step_name,
+            "pipeline.slug": _first(group, "slug") or slug,
+            "langfuse.observation.metadata.subagent_id": sid,
+        }
+        spans.append(
+            _span(
+                trace_id=trace_id,
+                span_id=span_id,
+                name=f"pipeline.step {step_name}",
+                start=a_start,
+                end=a_end,
+                parent=root,
+                attrs=_common(session=session, user=user, name=name, tags=tags, slug=slug, workflow=workflow, extra=extra),
+            )
+        )
+    for index, event in enumerate(events):
+        ev_name = str(event.get("event") or "hook")
+        start_ns = _parse_ts(event.get("ts"))
+        duration = int(event.get("duration_ms") or 1) * 1_000_000
+        end_ns = start_ns + max(duration, 1_000_000)
+        shared = _common(
+            session=session,
+            user=user,
+            name=name,
+            tags=tags,
+            slug=event.get("slug") or slug,
+            workflow=event.get("workflow") or workflow,
+            extra={"pipeline.step": event.get("step"), "pipeline.slug": event.get("slug") or slug},
+        )
+        if ev_name in TOOL_EVENTS:
+            tool_id = str(event.get("tool_use_id") or f"{conv}:{index}")
+            incoming, outgoing = _tool_io(event)
+            obs_type = _tool_obs_type(event)
+            extra = {
+                **shared,
+                "langfuse.observation.type": obs_type,
+                "langfuse.observation.input": incoming,
+                "langfuse.observation.output": outgoing,
+                "tool.name": event.get("tool_name"),
+                "tool.kind": event.get("tool_kind"),
+                "tool.verdict": event.get("verdict"),
+                "tool.confidence": event.get("confidence"),
+                "tool.path": event.get("target_path"),
+            }
+            if event.get("ok") is False:
+                extra["langfuse.observation.level"] = "ERROR"
+            spans.append(
+                _span(
+                    trace_id=trace_id,
+                    span_id=otel16(f"tool:{tool_id}"),
+                    name=f"{obs_type}: {event.get('tool_name') or ev_name}",
+                    start=start_ns,
+                    end=end_ns,
+                    parent=_parent_for_tool(event, root=root, gens=gens, agents=agents, conv=conv),
+                    attrs=extra,
+                )
+            )
+            continue
+        if ev_name in EVENT_TYPES:
+            extra = {
+                **shared,
+                "langfuse.observation.type": "event",
+                "langfuse.observation.input": _clip(event.get("prompt") or event.get("task")),
+                "langfuse.observation.output": event.get("status") or _clip(event.get("text")),
+            }
+            if event.get("context_usage_percent") is not None:
+                extra["langfuse.observation.metadata.context_peak_percent"] = event.get("context_usage_percent")
+            if ev_name in {"stop", "Stop"} and event.get("status") == "aborted":
+                extra["langfuse.observation.level"] = "WARNING"
+            spans.append(
+                _span(
+                    trace_id=trace_id,
+                    span_id=otel16(f"event:{conv}:{ev_name}:{event.get('ts')}"),
+                    name=f"event {ev_name}",
+                    start=start_ns,
+                    end=end_ns,
+                    parent=root,
+                    attrs=extra,
+                )
+            )
+    step_spans = {span["name"].replace("pipeline.step ", ""): span["spanId"] for span in spans if span["name"].startswith("pipeline.step ")}
+    for step in steps:
+        step_name = str(step.get("step") or "unattributed")
+        obs_id = step_spans.get(step_name) or root
+        for score_name in SCORE_NAMES:
+            value = step.get(score_name)
+            if value is None:
+                continue
+            scores.append(
+                {
+                    "id": otel32(f"{trace_id}:{step_name}:{score_name}"),
+                    "traceId": trace_id,
+                    "observationId": obs_id,
+                    "name": score_name,
+                    "value": float(value) if isinstance(value, (int, float)) else 0.0,
+                    "dataType": "NUMERIC",
+                    "comment": f"step={step_name} slug={step.get('slug')}",
+                }
+            )
+    meta = {
+        "trace_id": trace_id,
+        "session_id": session,
+        "slug": slug,
+        "workflow": workflow,
+        "change_class": change,
+        "prompt": prompt,
+        "output": output,
+        "user": user,
+        "name": name,
+    }
+    return spans, scores, meta
+
+
+def build_otlp(report: dict[str, Any], adapter: LangfuseAdapter) -> tuple[dict[str, Any], list[dict[str, Any]], list[dict[str, Any]]]:
+    del adapter
+    events = list(report.get("events") or [])
+    steps = list(report.get("steps") or [])
+    if not events:
+        for step in steps:
+            events.extend(step.get("events") or [])
+    by_conv: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for item in events:
+        key = str(item.get("conversation_id") or item.get("session_id") or "unknown")
+        by_conv[key].append(item)
+    spans: list[dict[str, Any]] = []
+    scores: list[dict[str, Any]] = []
+    datasets: list[dict[str, Any]] = []
+    for conv, group in by_conv.items():
+        conv_steps = [step for step in steps if any(ev.get("conversation_id") == conv or (not ev.get("conversation_id") and conv == "unknown") for ev in (step.get("events") or [step]))]
+        if not conv_steps:
+            conv_steps = [
+                step
+                for step in steps
+                if any(item.get("step") == step.get("step") for item in group)
+            ] or steps
+        part_spans, part_scores, meta = build_conversation_spans(group, conv_steps)
+        spans.extend(part_spans)
+        scores.extend(part_scores)
+        if meta:
+            datasets.append(meta)
+    payload = {
+        "resourceSpans": [
+            {
+                "resource": {"attributes": otel_attributes({"service.name": "pipeline-kit-obs"})},
+                "scopeSpans": [{"scope": {"name": "pipeline-kit-obs"}, "spans": spans}],
+            }
+        ]
+    }
+    return payload, scores, datasets
+
+
+def make_adapter(repo: Path, cfg: dict[str, Any]) -> Any:
+    load_dotenv(repo)
+    name = str(cfg.get("adapter") or "langfuse")
+    host = (
+        os.environ.get("LANGFUSE_BASE_URL")
+        or os.environ.get("OTEL_EXPORTER_OTLP_ENDPOINT")
+        or "https://cloud.langfuse.com"
+    )
+    config = AdapterConfig(
+        name=name,
+        host=host,
+        public_key=os.environ.get("LANGFUSE_PUBLIC_KEY", ""),
+        secret_key=os.environ.get("LANGFUSE_SECRET_KEY", ""),
+        api_key=os.environ.get("DD_API_KEY") or "",
+    )
+    if name == "datadog":
+        return DatadogAdapter(config)
+    if name == "otlp":
+        return OtlpAdapter(config)
+    return LangfuseAdapter(config)
+
+
+def _offset_path(repo: Path) -> Path:
+    return repo / ".pipeline" / "state" / "obs" / "offset.json"
+
+
+def read_offset(repo: Path) -> int:
+    path = _offset_path(repo)
+    if not path.is_file():
+        return 0
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return 0
+    value = data.get("offset") if isinstance(data, dict) else 0
+    return int(value) if isinstance(value, int) else 0
+
+
+def write_offset(repo: Path, offset: int) -> None:
+    path = _offset_path(repo)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps({"offset": offset}, indent=2) + "\n", encoding="utf-8")
+    os.chmod(path, 0o600)
+
+
+def _ship_dataset(adapter: LangfuseAdapter, items: list[dict[str, Any]], cfg: dict[str, Any]) -> tuple[int, str | None]:
+    name = str(cfg.get("dataset") or "pipeline-kit-agent-runs")
+    ok, detail = adapter.ensure_dataset(name)
+    if not ok:
+        return 0, detail
+    shipped = 0
+    for meta in items:
+        prompt = meta.get("prompt") or meta.get("slug") or "unknown"
+        item_key = f"{meta.get('change_class') or 'na'}:{prompt}"
+        item_id = otel32(item_key)
+        ok, detail = adapter.upsert_dataset_item(
+            {
+                "id": item_id,
+                "datasetName": name,
+                "input": {
+                    "prompt": meta.get("prompt"),
+                    "slug": meta.get("slug"),
+                    "change_class": meta.get("change_class"),
+                    "workflow": meta.get("workflow"),
+                },
+                "expectedOutput": {"integrity_pass": 1},
+                "metadata": {"source": "pipeline-kit-obs"},
+                "sourceTraceId": meta.get("trace_id"),
+            }
+        )
+        if not ok:
+            return shipped, detail
+        run_name = f"{meta.get('slug') or 'run'}:{str(meta.get('trace_id'))[:8]}"
+        ok, detail = adapter.create_dataset_run_item(
+            {
+                "runName": run_name,
+                "runDescription": str(meta.get("name") or ""),
+                "datasetItemId": item_id,
+                "traceId": meta.get("trace_id"),
+            }
+        )
+        if not ok:
+            return shipped, detail
+        shipped += 1
+    return shipped, None
+
+
+def flush_project(repo: Path) -> dict[str, Any]:
+    cfg = load_obs_config(repo)
+    if cfg.get("enabled") is not True:
+        return {"ok": True, "skipped": "disabled"}
+    ledger = repo / ".pipeline" / "state" / "obs" / "events.jsonl"
+    offset = read_offset(repo)
+    rows, new_offset = load_ledger(ledger, offset=offset)
+    if not rows:
+        return {"ok": True, "skipped": "no new events", "offset": offset}
+    report = score_events(repo, rows)
+    adapter = make_adapter(repo, cfg)
+    if not isinstance(adapter, LangfuseAdapter):
+        return {"ok": False, "error": f"adapter {cfg.get('adapter')} is not implemented"}
+    if not adapter.config.public_key or not adapter.config.secret_key:
+        return {"ok": False, "error": "LANGFUSE_PUBLIC_KEY / LANGFUSE_SECRET_KEY missing"}
+    payload, scores, datasets = build_otlp(report, adapter)
+    ok, detail = adapter.post_traces(payload)
+    if not ok:
+        return {"ok": False, "error": detail, "offset": offset}
+    ok, score_detail = adapter.post_scores(scores)
+    if not ok:
+        return {"ok": False, "error": score_detail, "offset": offset}
+    dataset_count, dataset_error = _ship_dataset(adapter, datasets, cfg)
+    write_offset(repo, new_offset)
+    result: dict[str, Any] = {
+        "ok": True,
+        "events": len(rows),
+        "steps": len(report.get("steps") or []),
+        "scores": len(scores),
+        "traces": len(datasets),
+        "dataset_items": dataset_count,
+        "offset": new_offset,
+    }
+    if dataset_error:
+        result["dataset_error"] = dataset_error
+    return result

@@ -176,6 +176,13 @@ pipeline-kit workflows
 | `pipeline-kit plugins status [project]` | Graphify CLI and Archify skill status |
 | `pipeline-kit plugins uninstall graphify [project]` | Remove the Graphify IDE skill (`--purge` deletes `graphify-out/`) |
 | `pipeline-kit plugins uninstall archify [project]` | Remove the managed Archify skill; keep `features/*/diagrams/` |
+| `pipeline-kit obs install [project]` | Merge fail-open agent-run hooks (Langfuse first). Does not replace existing hooks. |
+| `pipeline-kit obs report [project]` | Local scores from the ledger. No network. |
+| `pipeline-kit obs flush [project]` | Ship new ledger rows to the configured adapter. |
+
+Full agent-run observability handbook (install, Langfuse identity, scores, ideal values, troubleshooting): **[OBSERVABILITY.md](./OBSERVABILITY.md)** (copied to `.pipeline/docs/OBSERVABILITY.md` on `init`).
+
+Flush traces use Cursor `conversation_id` as the Langfuse trace/session (not the feature slug). User prompt comes from `beforeSubmitPrompt` or the transcript on flush.
 
 Install/update commands accept `--ide cursor`, `claude-code`, `github`, or
 `none`. Add `--agent-stubs` to create thin `.cursor/agents/*.md` files.
@@ -558,7 +565,7 @@ not commit those. Commit `features/` only if you want specs in git.
 | Tracker MCP | Jira (or compatible) workflows. Enable `intake.jira` and authenticate the MCP in the IDE. |
 | Wiki | After a painful run, retro adds one page under `.pipeline/wiki/`. Start with the shipped index or empty it. |
 | `.pipeline/rules/*.mdc` | Durable coding standards. They do **not** auto-apply in Cursor (not under `.cursor/rules`). Mention a rule in `AGENTS.md` or on a step allowlist. |
-| Hooks | Not copied by the installer. Copy `.cursor/hooks/` + `hooks.json` if you want allowlist enforcement, commit-deny, and verify nudges. The pipeline runs without them. |
+| Hooks | Policy hooks (allowlist, commit-deny) are still optional and not auto-copied. Agent-run observability hooks are opt-in via `pipeline-kit obs install` and merge without replacing existing entries. |
 | New workflow | See `.pipeline/README.md` (“How to add a workflow”). |
 
 ---

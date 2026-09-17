@@ -1,0 +1,83 @@
+{
+  "version": 1,
+  "hooks": {
+    "beforeSubmitPrompt": [
+      {
+        "command": "python3 .pipeline/hooks/obs/obs_collect.py",
+        "timeout": 8
+      }
+    ],
+    "postToolUse": [
+      {
+        "command": "python3 .pipeline/hooks/obs/obs_collect.py",
+        "timeout": 8
+      }
+    ],
+    "postToolUseFailure": [
+      {
+        "command": "python3 .pipeline/hooks/obs/obs_collect.py",
+        "timeout": 8
+      }
+    ],
+    "afterShellExecution": [
+      {
+        "command": "python3 .pipeline/hooks/obs/obs_collect.py",
+        "timeout": 8
+      }
+    ],
+    "afterMCPExecution": [
+      {
+        "command": "python3 .pipeline/hooks/obs/obs_collect.py",
+        "timeout": 8
+      }
+    ],
+    "afterFileEdit": [
+      {
+        "command": "python3 .pipeline/hooks/obs/obs_collect.py",
+        "timeout": 8
+      }
+    ],
+    "afterAgentResponse": [
+      {
+        "command": "python3 .pipeline/hooks/obs/obs_collect.py",
+        "timeout": 8
+      }
+    ],
+    "subagentStart": [
+      {
+        "command": "python3 .pipeline/hooks/obs/obs_collect.py",
+        "timeout": 8
+      }
+    ],
+    "subagentStop": [
+      {
+        "command": "python3 .pipeline/hooks/obs/obs_collect.py",
+        "timeout": 8
+      }
+    ],
+    "stop": [
+      {
+        "command": "python3 .pipeline/hooks/obs/obs_collect.py",
+        "timeout": 8
+      }
+    ],
+    "sessionStart": [
+      {
+        "command": "python3 .pipeline/hooks/obs/obs_collect.py",
+        "timeout": 8
+      }
+    ],
+    "sessionEnd": [
+      {
+        "command": "python3 .pipeline/hooks/obs/obs_collect.py",
+        "timeout": 8
+      }
+    ],
+    "preCompact": [
+      {
+        "command": "python3 .pipeline/hooks/obs/obs_collect.py",
+        "timeout": 8
+      }
+    ]
+  }
+}

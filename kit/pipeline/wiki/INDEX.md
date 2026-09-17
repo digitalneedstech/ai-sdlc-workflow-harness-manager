@@ -19,6 +19,7 @@ Match **triggers** against the current request, error, or pipeline class. Read
 | Telemetry contract; `EVENTS: none`; G1–G7; analytics vendor not in the spec | [telemetry-event-extraction.md](telemetry-event-extraction.md) |
 | `deploy-local.sh`; port already in use; secret material in HANDOFF | [local-deploy-reuse-listeners.md](local-deploy-reuse-listeners.md) |
 | Hooks not loading; `hooks.json`; external portal owns HITL | [ide-hooks-and-external-gates.md](ide-hooks-and-external-gates.md) |
+| Agent-run traces; Langfuse; tool-call legitimacy; `pipeline-kit obs` | [agent-observability.md](agent-observability.md) |
 | PIPELINE_COMPLETE after health; skip retro; `NO_NEW_PAGE`; `CONVERSATION_DIGEST` | [pipeline-retro-after-devops.md](pipeline-retro-after-devops.md) |
 | Visible copy grep misses; text split across source tokens | [ui-copy-split-in-source.md](ui-copy-split-in-source.md) |
 | test-strategy; test-plan; FEATURE_SIGNOFF; tester-policy; `RUN_TESTER`; `qa-test-cases` | [feature-pipeline-test-layers.md](feature-pipeline-test-layers.md) |

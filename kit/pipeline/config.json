@@ -191,8 +191,19 @@
     "fallback": "mermaid",
     "visual_check": "when-available"
   },
+  "agent_observability": {
+    "_note": "Opt-in agent-run observability. Distinct from telemetry-agent (customer app events). Secrets stay in the environment.",
+    "enabled": false,
+    "adapter": "langfuse",
+    "sample_rate": 1.0,
+    "redact": [".env", "*secret*", "*credential*"],
+    "max_field_chars": 8000,
+    "flush_on": ["subagentStop", "sessionEnd"],
+    "dataset": "pipeline-kit-agent-runs",
+    "retention_days": 14
+  },
   "verify": {
-    "_note": "Add path-substring reminders for this repo after install.",
+    "_note": "Add path-substring reminders for this repo after install. Optional expect is a regex the scorer uses for integrity checks.",
     "rules": []
   },
   "gates": {

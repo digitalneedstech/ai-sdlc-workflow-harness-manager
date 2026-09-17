@@ -558,7 +558,7 @@ not commit those. Commit `features/` only if you want specs in git.
 | Tracker MCP | Jira (or compatible) workflows. Enable `intake.jira` and authenticate the MCP in the IDE. |
 | Wiki | After a painful run, retro adds one page under `.pipeline/wiki/`. Start with the shipped index or empty it. |
 | `.pipeline/rules/*.mdc` | Durable coding standards. They do **not** auto-apply in Cursor (not under `.cursor/rules`). Mention a rule in `AGENTS.md` or on a step allowlist. |
-| Hooks | Not copied by the installer. Copy `.cursor/hooks/` + `hooks.json` if you want allowlist enforcement, commit-deny, and verify nudges. The pipeline runs without them. |
+| Hooks | Policy hooks (allowlist, commit-deny) are still optional and not auto-copied. Agent-run observability hooks are opt-in via `pipeline-kit obs install` and merge without replacing existing entries. |
 | New workflow | See `.pipeline/README.md` (“How to add a workflow”). |
 
 ---

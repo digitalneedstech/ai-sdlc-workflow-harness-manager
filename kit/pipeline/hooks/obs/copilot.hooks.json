@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      {
+        "type": "command",
+        "bash": "python3 .pipeline/hooks/obs/obs_collect.py",
+        "powershell": "python3 .pipeline/hooks/obs/obs_collect.py",
+        "timeoutSec": 10
+      }
+    ],
+    "userPromptSubmitted": [
+      {
+        "type": "command",
+        "bash": "python3 .pipeline/hooks/obs/obs_collect.py",
+        "powershell": "python3 .pipeline/hooks/obs/obs_collect.py",
+        "timeoutSec": 10
+      }
+    ],
+    "postToolUse": [
+      {
+        "type": "command",
+        "bash": "python3 .pipeline/hooks/obs/obs_collect.py",
+        "powershell": "python3 .pipeline/hooks/obs/obs_collect.py",
+        "timeoutSec": 10
+      }
+    ],
+    "postToolUseFailure": [
+      {
+        "type": "command",
+        "bash": "python3 .pipeline/hooks/obs/obs_collect.py",
+        "powershell": "python3 .pipeline/hooks/obs/obs_collect.py",
+        "timeoutSec": 10
+      }
+    ],
+    "subagentStart": [
+      {
+        "type": "command",
+        "bash": "python3 .pipeline/hooks/obs/obs_collect.py",
+        "powershell": "python3 .pipeline/hooks/obs/obs_collect.py",
+        "timeoutSec": 10
+      }
+    ],
+    "subagentStop": [
+      {
+        "type": "command",
+        "bash": "python3 .pipeline/hooks/obs/obs_collect.py",
+        "powershell": "python3 .pipeline/hooks/obs/obs_collect.py",
+        "timeoutSec": 10
+      }
+    ],
+    "agentStop": [
+      {
+        "type": "command",
+        "bash": "python3 .pipeline/hooks/obs/obs_collect.py",
+        "powershell": "python3 .pipeline/hooks/obs/obs_collect.py",
+        "timeoutSec": 10
+      }
+    ],
+    "sessionEnd": [
+      {
+        "type": "command",
+        "bash": "python3 .pipeline/hooks/obs/obs_collect.py",
+        "powershell": "python3 .pipeline/hooks/obs/obs_collect.py",
+        "timeoutSec": 10
+      }
+    ]
+  }
+}

@@ -1,0 +1,46 @@
+:root {
+  --ifm-color-primary: #0f766e;
+  --ifm-color-primary-dark: #0d6861;
+  --ifm-color-primary-darker: #0c625b;
+  --ifm-color-primary-darkest: #0a514b;
+  --ifm-color-primary-light: #11847b;
+  --ifm-color-primary-lighter: #128a81;
+  --ifm-color-primary-lightest: #159b91;
+  --ifm-code-font-size: 95%;
+  --ifm-font-family-base: "Segoe UI", system-ui, sans-serif;
+  --ifm-heading-font-family: "Segoe UI", system-ui, sans-serif;
+  --ifm-navbar-height: 4rem;
+  --docusaurus-highlighted-code-line-bg: rgba(15, 118, 110, 0.08);
+  --pk-paper: #f6f3ec;
+  --pk-ink: #14201f;
+}
+
+[data-theme='dark'] {
+  --ifm-color-primary: #2dd4bf;
+  --ifm-color-primary-dark: #14b8a6;
+  --ifm-color-primary-darker: #0f766e;
+  --ifm-color-primary-darkest: #115e59;
+  --ifm-color-primary-light: #5eead4;
+  --ifm-color-primary-lighter: #99f6e4;
+  --ifm-color-primary-lightest: #ccfbf1;
+  --docusaurus-highlighted-code-line-bg: rgba(45, 212, 191, 0.12);
+  --pk-paper: #101816;
+  --pk-ink: #ecf4f2;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+.navbar {
+  box-shadow: none;
+  border-bottom: 1px solid var(--ifm-toc-border-color);
+}
+
+.footer--dark {
+  background: #0c1413;
+}
+
+.markdown h1:first-child {
+  letter-spacing: -0.03em;
+}

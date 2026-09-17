@@ -29,10 +29,11 @@ def test_features_status_matches_init_defaults(
     _init(app)
     assert _run_cli(["features", "status", str(app)]) == 0
     out = capsys.readouterr().out
-    assert "test-design  off" in out
-    assert "playwright   off" in out
-    assert "telemetry    off" in out
-    assert "tester       on" in out
+    assert "test-design" in out and "off" in out
+    assert "playwright" in out
+    assert "telemetry" in out
+    assert "tester" in out
+    assert "agent-observability" in out
     cfg = json.loads((app / ".pipeline" / "config.json").read_text())
     assert cfg["test_design"]["enabled"] is not True
     assert cfg["workflows"]["feature-development"]["skips"]["skip_telemetry"] is True

@@ -35,6 +35,7 @@ PACK_DIRS = (
     "commands",
     "adapters",
     "docs",
+    "hooks",
 )
 PACK_FILES = ("README.md",)
 SKIP_NAMES = {"state", "config.json", "install.json"}
@@ -218,6 +219,11 @@ def sync_kit() -> int:
         docs = dest / "docs"
         docs.mkdir(parents=True, exist_ok=True)
         shutil.copy2(guide, docs / "CUSTOMER-GUIDE.md")
+    obs_guide = HERE / "OBSERVABILITY.md"
+    if obs_guide.is_file():
+        docs = dest / "docs"
+        docs.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(obs_guide, docs / "OBSERVABILITY.md")
     print(f"synced kit ← {live}", file=sys.stderr)
     print(f"wrote {dest}", file=sys.stderr)
     return 0
@@ -282,6 +288,12 @@ def install(
         dest_guide.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(guide, dest_guide)
         copied.append(str(dest_guide.relative_to(marker_root)))
+    obs_guide = HERE / "OBSERVABILITY.md"
+    if obs_guide.is_file():
+        dest_obs = pack_dest / "docs" / "OBSERVABILITY.md"
+        dest_obs.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(obs_guide, dest_obs)
+        copied.append(str(dest_obs.relative_to(marker_root)))
 
     status = merge_config(pack_dest / "config.json", generic_config(load_source_config(pack_src)))
     print(f"config.json: {status}", file=sys.stderr)
@@ -402,6 +414,19 @@ def _feature_commands():
     return cmd_disable, cmd_enable, cmd_list, cmd_status
 
 
+def _obs_commands():
+    _ensure_pkg_path()
+    from pipeline_observability.commands import (  # noqa: WPS433
+        cmd_flush,
+        cmd_install,
+        cmd_report,
+        cmd_status,
+        cmd_uninstall,
+    )
+
+    return cmd_flush, cmd_install, cmd_report, cmd_status, cmd_uninstall
+
+
 def doctor(
     *,
     target: Path,
@@ -430,11 +455,15 @@ def doctor(
         sys.path.insert(0, root)
     from knowledge.doctor import graphify_doctor_checks
     from pipeline_plugins.archify import archify_doctor_checks
+    from pipeline_observability.commands import obs_doctor_checks
 
     info_lines, required = graphify_doctor_checks(target)
     arch_info, arch_required = archify_doctor_checks(target)
+    obs_info, obs_required = obs_doctor_checks(pack)
     info_lines.extend(arch_info)
+    info_lines.extend(obs_info)
     required.update(arch_required)
+    required.update(obs_required)
     for line in info_lines:
         print(f"info  {line}")
     checks.update(required)
@@ -637,6 +666,7 @@ def cli_main(argv: list[str] | None = None) -> int:
             "tester",
             "archify",
             "jira-intake",
+            "agent-observability",
         ),
     )
     f_enable.add_argument("project", nargs="?", default=".")
@@ -650,9 +680,29 @@ def cli_main(argv: list[str] | None = None) -> int:
             "tester",
             "archify",
             "jira-intake",
+            "agent-observability",
         ),
     )
     f_disable.add_argument("project", nargs="?", default=".")
+
+    obs_parser = commands.add_parser(
+        "obs",
+        help="install or inspect agent-run observability (not customer telemetry-agent)",
+    )
+    obs_commands = obs_parser.add_subparsers(dest="obs_command", required=True)
+    o_install = obs_commands.add_parser("install", help="merge fail-open hooks; never replaces existing entries")
+    o_install.add_argument("project", nargs="?", default=".")
+    o_install.add_argument("--ide", choices=("cursor", "claude-code", "github"), default="cursor")
+    o_install.add_argument("--adapter", choices=("langfuse", "datadog", "otlp"), default="langfuse")
+    o_uninstall = obs_commands.add_parser("uninstall", help="remove only obs hook entries")
+    o_uninstall.add_argument("project", nargs="?", default=".")
+    o_uninstall.add_argument("--ide", choices=("cursor", "claude-code", "github"), default="cursor")
+    o_status = obs_commands.add_parser("status", help="enabled flag, adapter, ledger size")
+    o_status.add_argument("project", nargs="?", default=".")
+    o_flush = obs_commands.add_parser("flush", help="score new ledger rows and ship to the adapter")
+    o_flush.add_argument("project", nargs="?", default=".")
+    o_report = obs_commands.add_parser("report", help="print local scores without network")
+    o_report.add_argument("project", nargs="?", default=".")
 
     args = parser.parse_args(argv)
     home = Path(args.home).expanduser().resolve() if getattr(args, "home", "") else None
@@ -776,6 +826,28 @@ def cli_main(argv: list[str] | None = None) -> int:
         if args.features_command == "disable":
             return cmd_disable(project, args.name)
         parser.error("unknown features command")
+        return 2
+    if args.command == "obs":
+        cmd_flush, cmd_install, cmd_report, cmd_status, cmd_uninstall = _obs_commands()
+        if not project.is_dir():
+            print(f"not a directory: {project}", file=sys.stderr)
+            return 64
+        if args.obs_command == "install":
+            return cmd_install(
+                project,
+                ide=args.ide,
+                adapter=args.adapter,
+                version=version(),
+            )
+        if args.obs_command == "uninstall":
+            return cmd_uninstall(project, ide=args.ide)
+        if args.obs_command == "status":
+            return cmd_status(project)
+        if args.obs_command == "flush":
+            return cmd_flush(project)
+        if args.obs_command == "report":
+            return cmd_report(project)
+        parser.error("unknown obs command")
         return 2
     parser.error(f"unknown command: {args.command}")
     return 2
