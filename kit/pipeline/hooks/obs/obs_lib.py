@@ -105,6 +105,37 @@ def enabled(repo: Path) -> bool:
     return block.get("enabled") is True
 
 
+_KIT_VERSION: str | None = None
+_KIT_VERSION_READY = False
+
+
+def kit_version(repo: Path) -> str | None:
+    """Installed pack version from .pipeline/install.json. Cached; fail-open."""
+    global _KIT_VERSION, _KIT_VERSION_READY
+    if _KIT_VERSION_READY:
+        return _KIT_VERSION
+    _KIT_VERSION_READY = True
+    env = os.environ.get("PIPELINE_KIT_VERSION", "").strip()
+    if env:
+        _KIT_VERSION = env
+        return _KIT_VERSION
+    for rel in (
+        Path(".pipeline") / "install.json",
+        Path(".pipeline") / "state" / "obs" / "install.json",
+    ):
+        path = repo / rel
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if isinstance(data, dict):
+            value = data.get("version")
+            if isinstance(value, str) and value.strip():
+                _KIT_VERSION = value.strip()
+                return _KIT_VERSION
+    return None
+
+
 def redact_text(value: str) -> str:
     return SECRET_RE.sub("[redacted]", value)
 

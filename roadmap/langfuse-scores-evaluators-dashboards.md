@@ -101,7 +101,7 @@ metrics (shipreadymetrics-aligned). See `eval-harness-langfuse.md`.
 
 | Data | Where | Note |
 |------|--------|------|
-| Tokens / $ | generation `usage_details` | Langfuse may infer $ if you set model prices. Hooks never send dollars. |
+| Tokens / $ | generation `usage_details` + `cost_details` | Flush prices known models (cache-read discounted). Hooks never send dollars. |
 | `time_to_first_tool_ms` | generation attribute | Latency proxy, not a score |
 
 ## LLM-as-judge evaluators (10) — optional, UI only

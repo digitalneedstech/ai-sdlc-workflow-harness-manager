@@ -129,6 +129,16 @@ def test_eval_ready_spans_and_starter7_scores(tmp_path: Path):
     tags = [v["stringValue"] for v in root_attrs["langfuse.trace.tags"]["arrayValue"]["values"]]
     assert "pack_id=pipeline-kit" in tags
     assert "developer-agent" in tags
+    marker = json.loads((app / ".pipeline" / "install.json").read_text(encoding="utf-8"))
+    installed = str(marker["version"])
+    assert f"kit_version={installed}" in tags
+    assert root_attrs["pipeline.kit_version"]["stringValue"] == installed
+    assert root_attrs["langfuse.trace.metadata.kit_version"]["stringValue"] == installed
+    resource = payload["resourceSpans"][0]["resource"]["attributes"]
+    resource_by_key = {item["key"]: item["value"] for item in resource}
+    assert resource_by_key["service.version"]["stringValue"] == installed
+    assert resource_by_key["pipeline.kit_version"]["stringValue"] == installed
+    assert payload["resourceSpans"][0]["scopeSpans"][0]["scope"]["version"] == installed
     expected = [
         v["stringValue"]
         for v in root_attrs["langfuse.trace.metadata.steps_expected"]["arrayValue"]["values"]
@@ -146,6 +156,7 @@ def test_eval_ready_spans_and_starter7_scores(tmp_path: Path):
     ]
     assert "secure-implementation" in skills
     assert step_attrs["langfuse.observation.metadata.subagent_name"]["stringValue"] == "developer-agent"
+    assert step_attrs["pipeline.kit_version"]["stringValue"] == installed
 
     by_name = {item["name"]: item for item in scores}
     assert by_name["tool_calls_total"]["value"] >= 1  # existing Layer C intact
@@ -158,10 +169,27 @@ def test_eval_ready_spans_and_starter7_scores(tmp_path: Path):
     assert by_name["critic_retry_count"]["value"] == 0.0
     assert by_name["secret_leak_count"]["value"] == 1.0
     assert datasets[0]["session_id"] == "feature-development:demo"
+    assert datasets[0]["kit_version"] == installed
 
     # Deterministic ids: a second build (double flush) yields identical score ids.
     _payload2, scores2, _d2 = _build(app, _rows())
     assert sorted(item["id"] for item in scores) == sorted(item["id"] for item in scores2)
+
+
+def test_kit_version_resolution(tmp_path: Path, monkeypatch):
+    sys.path.insert(0, str(REPO))
+    from pipeline_observability.export import kit_version
+
+    monkeypatch.delenv("PIPELINE_KIT_VERSION", raising=False)
+    assert kit_version(tmp_path) == "unknown"
+    (tmp_path / ".pipeline").mkdir()
+    (tmp_path / ".pipeline" / "install.json").write_text(
+        json.dumps({"name": "pipeline-kit", "version": "9.9.9"}),
+        encoding="utf-8",
+    )
+    assert kit_version(tmp_path) == "9.9.9"
+    monkeypatch.setenv("PIPELINE_KIT_VERSION", "env-override")
+    assert kit_version(tmp_path) == "env-override"
 
 
 def test_missing_handoff_fails_open(tmp_path: Path):

@@ -24,6 +24,7 @@ from obs_lib import (  # noqa: E402
     sanitize,
     snapshot_context,
     utc_now,
+    kit_version,
 )
 
 SNAPSHOT_EVENTS = {
@@ -82,6 +83,9 @@ def main() -> int:
             "event": event,
             "payload": sanitize(payload),
         }
+        version = kit_version(repo)
+        if version:
+            row["kit_version"] = version
         if event in SNAPSHOT_EVENTS:
             context = snapshot_context(repo, payload)
             if context:

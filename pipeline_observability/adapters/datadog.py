@@ -5,6 +5,8 @@ from __future__ import annotations
 from typing import Any
 
 from pipeline_observability.adapters.base import AdapterConfig
+from pipeline_observability.adapters.langfuse import otel_attributes
+from pipeline_observability.pricing import event_usage_attrs
 
 
 class DatadogAdapter:
@@ -21,7 +23,11 @@ class DatadogAdapter:
         return {"DD-API-KEY": self.config.api_key}
 
     def map_attributes(self, event: dict[str, Any]) -> list[dict[str, Any]]:
-        return []
+        attrs: dict[str, Any] = {
+            "gen_ai.request.model": event.get("model_id") or event.get("model"),
+        }
+        attrs.update(event_usage_attrs(event, include_langfuse=False))
+        return otel_attributes(attrs)
 
     def post_traces(self, payload: dict[str, Any]) -> tuple[bool, str]:
         return False, "datadog adapter is a stub (untested)"

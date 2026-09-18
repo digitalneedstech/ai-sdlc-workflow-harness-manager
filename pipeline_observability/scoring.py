@@ -374,7 +374,7 @@ def score_events(repo: Path, rows: list[dict[str, Any]]) -> dict[str, Any]:
         "steps": steps_out,
         "events": events,
         "event_count": len(events),
-        "cost_note": "Hooks do not send dollar cost. Langfuse may estimate from tokens if present.",
+        "cost_note": "Hooks do not send dollar cost. Flush prices generation spans from model + tokens when known.",
     }
 
 

@@ -9,13 +9,14 @@ import re
 from collections import defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Mapping
 
 from pipeline_observability.adapters.base import AdapterConfig
 from pipeline_observability.adapters.datadog import DatadogAdapter
 from pipeline_observability.adapters.langfuse import LangfuseAdapter, otel_attributes
 from pipeline_observability.adapters.otlp import OtlpAdapter
 from pipeline_observability.normalize import load_ledger, parse_transcript
+from pipeline_observability.pricing import is_placeholder_model, observation_usage_attrs
 from pipeline_observability.scoring import TOOL_EVENTS, score_events
 
 SCORE_NAMES = (
@@ -184,6 +185,7 @@ def _common(
     slug: str | None,
     workflow: str | None,
     extra: dict[str, Any] | None = None,
+    kit_version: str | None = None,
 ) -> dict[str, Any]:
     attrs: dict[str, Any] = {
         "langfuse.session.id": session,
@@ -191,6 +193,8 @@ def _common(
         "langfuse.trace.tags": tags,
         "langfuse.trace.metadata.slug": slug,
         "langfuse.trace.metadata.workflow": workflow,
+        "pipeline.kit_version": kit_version,
+        "langfuse.trace.metadata.kit_version": kit_version,
     }
     if user:
         attrs["langfuse.user.id"] = user
@@ -216,19 +220,9 @@ def _last(events: list[dict[str, Any]], key: str) -> Any:
     return None
 
 
-PLACEHOLDER_MODELS = frozenset(
-    {"auto-smart", "auto", "default", "composer", "inherit", "unknown"}
-)
 USAGE_EVENTS = frozenset(
     {"afterAgentResponse", "AfterAgentResponse", "stop", "Stop", "agentStop"}
 )
-
-
-def _placeholder_model(name: Any) -> bool:
-    if not isinstance(name, str):
-        return True
-    stripped = name.strip()
-    return not stripped or stripped.lower() in PLACEHOLDER_MODELS
 
 
 def _generation_model(group: list[dict[str, Any]]) -> str | None:
@@ -244,7 +238,7 @@ def _generation_model(group: list[dict[str, Any]]) -> str | None:
             continue
         last_any = pair[0]
         for stripped in pair:
-            if not _placeholder_model(stripped):
+            if not is_placeholder_model(stripped):
                 last_real = stripped
                 break
     return last_real or last_any
@@ -259,8 +253,20 @@ def _token_int(tokens: Any, key: str) -> int:
     return max(0, int(value))
 
 
-def _generation_usage(group: list[dict[str, Any]]) -> dict[str, Any]:
-    """Langfuse usage header reads langfuse.observation.usage_details (exclusive buckets)."""
+def _obs_prices(repo: Path | None) -> Mapping[str, Any] | None:
+    if repo is None:
+        return None
+    raw = load_obs_config(repo).get("model_prices")
+    return raw if isinstance(raw, dict) else None
+
+
+def _generation_usage(
+    group: list[dict[str, Any]],
+    *,
+    model: str | None = None,
+    prices: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Langfuse usage_details (exclusive buckets) plus priced cost_details when known."""
     input_tokens = 0
     output_tokens = 0
     cache_read = 0
@@ -277,24 +283,16 @@ def _generation_usage(group: list[dict[str, Any]]) -> dict[str, Any]:
         output_tokens = max(output_tokens, _token_int(tokens, "output_tokens"))
         cache_read = max(cache_read, _token_int(tokens, "cache_read_tokens"))
         cache_write = max(cache_write, _token_int(tokens, "cache_write_tokens"))
-    if not found or (input_tokens == 0 and output_tokens == 0 and cache_read == 0 and cache_write == 0):
+    if not found:
         return {}
-    exclusive_input = max(0, input_tokens - cache_read - cache_write)
-    details: dict[str, int] = {"input": exclusive_input, "output": output_tokens}
-    if cache_read:
-        details["input_cached_tokens"] = cache_read
-    if cache_write:
-        details["input_cache_creation"] = cache_write
-    attrs: dict[str, Any] = {
-        "langfuse.observation.usage_details": json.dumps(details, separators=(",", ":")),
-        "gen_ai.usage.input_tokens": input_tokens or None,
-        "gen_ai.usage.output_tokens": output_tokens or None,
-    }
-    if cache_read:
-        attrs["gen_ai.usage.cache_read_tokens"] = cache_read
-    if cache_write:
-        attrs["gen_ai.usage.cache_write_tokens"] = cache_write
-    return attrs
+    return observation_usage_attrs(
+        model=model,
+        input_tokens=input_tokens,
+        output_tokens=output_tokens,
+        cache_read=cache_read,
+        cache_write=cache_write,
+        prices=prices,
+    )
 
 
 def _tool_obs_type(event: dict[str, Any]) -> str:
@@ -346,6 +344,36 @@ def _parent_for_tool(event: dict[str, Any], *, root: str, gens: dict[str, str], 
 
 def _pack_id() -> str:
     return os.environ.get("PIPELINE_EVAL_PACK_ID") or "pipeline-kit"
+
+
+def _marker_version(path: Path) -> str | None:
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    if not isinstance(data, dict):
+        return None
+    value = data.get("version")
+    if isinstance(value, str):
+        text = value.strip()
+        return text or None
+    return None
+
+
+def kit_version(repo: Path | None) -> str:
+    """Installed pipeline-kit version for traces. Fail-open; never raise."""
+    env = os.environ.get("PIPELINE_KIT_VERSION", "").strip()
+    if env:
+        return env
+    if repo is not None:
+        for rel in (
+            Path(".pipeline") / "install.json",
+            Path(".pipeline") / "state" / "obs" / "install.json",
+        ):
+            found = _marker_version(repo / rel)
+            if found:
+                return found
+    return "unknown"
 
 
 def _read_text(path: Path, limit: int = 200_000) -> str:
@@ -519,6 +547,10 @@ def build_conversation_spans(
         if step_tag not in tags:
             tags.append(step_tag)
     tags.append(f"pack_id={_pack_id()}")
+    kit_ver = kit_version(repo)
+    if kit_ver:
+        tags.append(f"kit_version={kit_ver}")
+    prices = _obs_prices(repo)
     # Session groups the parent chat + Task traces of one pipeline run. Trace id unchanged.
     if workflow and slug:
         session = f"{workflow}:{slug}"
@@ -537,7 +569,9 @@ def build_conversation_spans(
         "pipeline.slug": slug,
         "pipeline.workflow": workflow,
         "pipeline.pack_id": _pack_id(),
+        "pipeline.kit_version": kit_ver,
         "langfuse.trace.metadata.pack_id": _pack_id(),
+        "langfuse.trace.metadata.kit_version": kit_ver,
         "langfuse.trace.metadata.steps_ran": steps_ran or None,
         "langfuse.trace.metadata.steps_expected": expected_steps or None,
     }
@@ -549,7 +583,16 @@ def build_conversation_spans(
             start=start,
             end=end,
             parent=None,
-            attrs=_common(session=session, user=user, name=name, tags=tags, slug=slug, workflow=workflow, extra=root_extra),
+            attrs=_common(
+                session=session,
+                user=user,
+                name=name,
+                tags=tags,
+                slug=slug,
+                workflow=workflow,
+                extra=root_extra,
+                kit_version=kit_ver,
+            ),
         )
     )
     gens: dict[str, str] = {}
@@ -576,8 +619,10 @@ def build_conversation_spans(
             "langfuse.observation.completion_start_time": _iso(first_tool.get("ts") if first_tool else None),
             "langfuse.observation.model.parameters": json.dumps(params) if params else None,
             "pipeline.slug": slug,
+            "pipeline.kit_version": kit_ver,
         }
-        extra.update(_generation_usage(group))
+        prices = _obs_prices(repo)
+        extra.update(_generation_usage(group, model=model, prices=prices))
         if first_tool and first_tool.get("ts") and group[0].get("ts"):
             extra["pipeline.score.time_to_first_tool_ms"] = max(
                 0, int((_parse_ts(first_tool.get("ts")) - g_start) / 1_000_000)
@@ -590,7 +635,7 @@ def build_conversation_spans(
                 start=g_start,
                 end=g_end,
                 parent=root,
-                attrs=_common(session=session, user=user, name=name, tags=tags, slug=slug, workflow=workflow, extra=extra),
+                attrs=_common(session=session, user=user, name=name, tags=tags, slug=slug, workflow=workflow, extra=extra, kit_version=kit_ver),
             )
         )
     agents: dict[str, str] = {}
@@ -643,7 +688,7 @@ def build_conversation_spans(
                 start=a_start,
                 end=a_end,
                 parent=root,
-                attrs=_common(session=session, user=user, name=name, tags=tags, slug=slug, workflow=workflow, extra=extra),
+                attrs=_common(session=session, user=user, name=name, tags=tags, slug=slug, workflow=workflow, extra=extra, kit_version=kit_ver),
             )
         )
     for index, event in enumerate(events):
@@ -659,6 +704,7 @@ def build_conversation_spans(
             slug=event.get("slug") or slug,
             workflow=event.get("workflow") or workflow,
             extra={"pipeline.step": event.get("step"), "pipeline.slug": event.get("slug") or slug},
+            kit_version=kit_ver,
         )
         if ev_name in TOOL_EVENTS:
             tool_id = str(event.get("tool_use_id") or f"{conv}:{index}")
@@ -808,6 +854,7 @@ def build_conversation_spans(
         "output": output,
         "user": user,
         "name": name,
+        "kit_version": kit_ver,
     }
     return spans, scores, meta
 
@@ -818,6 +865,7 @@ def build_otlp(report: dict[str, Any], adapter: LangfuseAdapter) -> tuple[dict[s
     steps = list(report.get("steps") or [])
     repo_raw = report.get("repo")
     repo = Path(str(repo_raw)) if repo_raw else None
+    kit_ver = kit_version(repo)
     if not events:
         for step in steps:
             events.extend(step.get("events") or [])
@@ -844,8 +892,16 @@ def build_otlp(report: dict[str, Any], adapter: LangfuseAdapter) -> tuple[dict[s
     payload = {
         "resourceSpans": [
             {
-                "resource": {"attributes": otel_attributes({"service.name": "pipeline-kit-obs"})},
-                "scopeSpans": [{"scope": {"name": "pipeline-kit-obs"}, "spans": spans}],
+                "resource": {
+                    "attributes": otel_attributes(
+                        {
+                            "service.name": "pipeline-kit-obs",
+                            "service.version": kit_ver,
+                            "pipeline.kit_version": kit_ver,
+                        }
+                    )
+                },
+                "scopeSpans": [{"scope": {"name": "pipeline-kit-obs", "version": kit_ver}, "spans": spans}],
             }
         ]
     }
@@ -918,7 +974,7 @@ def _ship_dataset(adapter: LangfuseAdapter, items: list[dict[str, Any]], cfg: di
                     "workflow": meta.get("workflow"),
                 },
                 "expectedOutput": {"integrity_pass": 1},
-                "metadata": {"source": "pipeline-kit-obs"},
+                "metadata": {"source": "pipeline-kit-obs", "kit_version": meta.get("kit_version")},
                 "sourceTraceId": meta.get("trace_id"),
             }
         )

@@ -214,6 +214,9 @@ def test_collector_fail_open_and_redacts(tmp_path: Path):
     ledger = (app / ".pipeline" / "state" / "obs" / "events.jsonl").read_text(encoding="utf-8")
     assert "sk-lf-SUPERSECRETVALUE12" not in ledger
     assert "input_tokens" in ledger
+    row = json.loads(ledger.strip().splitlines()[-1])
+    marker = json.loads((app / ".pipeline" / "install.json").read_text(encoding="utf-8"))
+    assert row.get("kit_version") == marker["version"]
 
 
 def test_retry_after_seconds_from_langfuse_body():
@@ -465,8 +468,70 @@ def test_generation_usage_max_cache_and_last_model(tmp_path: Path):
     assert gen_attrs["gen_ai.usage.cache_read_tokens"]["intValue"] == "80"
     assert gen_attrs["langfuse.observation.model.name"]["stringValue"] == "grok-4.6"
     assert gen_attrs["gen_ai.request.model"]["stringValue"] == "grok-4.6"
-    assert "langfuse.observation.cost_details" not in gen_attrs
-    assert "gen_ai.usage.cost" not in gen_attrs
+    cost = json.loads(gen_attrs["langfuse.observation.cost_details"]["stringValue"])
+    assert cost["input"] == 0.00006
+    assert cost["output"] == 0.00012
+    assert cost["input_cached_tokens"] == 0.000024
+    assert cost["total"] == 0.000204
+    assert gen_attrs["gen_ai.usage.input_cost"]["doubleValue"] == 0.000084
+    assert gen_attrs["gen_ai.usage.output_cost"]["doubleValue"] == 0.00012
+    assert gen_attrs["gen_ai.usage.cost"]["doubleValue"] == 0.000204
+
+
+def test_pricing_cache_and_overrides():
+    sys.path.insert(0, str(REPO))
+    from pipeline_observability.pricing import compute_cost_details, event_usage_attrs, observation_usage_attrs
+
+    usage = {"input": 20, "output": 8, "input_cached_tokens": 80}
+    cost = compute_cost_details("cursor-grok-4.6-xhigh-fast", usage)
+    assert cost == {
+        "input": 0.00006,
+        "output": 0.00012,
+        "input_cached_tokens": 0.000024,
+        "total": 0.000204,
+    }
+    assert compute_cost_details("auto-smart", usage) is None
+    attrs = observation_usage_attrs(
+        model="gpt-4o-mini",
+        input_tokens=1000,
+        output_tokens=100,
+        cache_read=400,
+        cache_write=100,
+        prices={"gpt-4o-mini": {"input": 1.0, "output": 2.0, "cache_read": 0.1, "cache_write": 1.5}},
+        include_langfuse=False,
+    )
+    assert attrs["gen_ai.usage.input_cost"] == 0.00069
+    assert attrs["gen_ai.usage.output_cost"] == 0.0002
+    assert attrs["gen_ai.usage.cost"] == 0.00089
+    assert "langfuse.observation.cost_details" not in attrs
+    mapped = event_usage_attrs(
+        {
+            "model_id": "grok-4.6",
+            "tokens": {"input_tokens": 100, "output_tokens": 8, "cache_read_tokens": 80},
+        }
+    )
+    assert json.loads(mapped["langfuse.observation.cost_details"])["total"] == 0.000204
+
+
+def test_adapter_map_attributes_include_cost():
+    sys.path.insert(0, str(REPO))
+    from pipeline_observability.adapters.base import AdapterConfig
+    from pipeline_observability.adapters.datadog import DatadogAdapter
+    from pipeline_observability.adapters.langfuse import LangfuseAdapter
+    from pipeline_observability.adapters.otlp import OtlpAdapter
+
+    event = {
+        "model_id": "grok-4.6",
+        "tokens": {"input_tokens": 100, "output_tokens": 8, "cache_read_tokens": 80},
+    }
+    lf = {item["key"]: item["value"] for item in LangfuseAdapter(AdapterConfig("langfuse", "http://x")).map_attributes(event)}
+    assert lf["gen_ai.usage.cost"]["doubleValue"] == 0.000204
+    assert "langfuse.observation.cost_details" in lf
+    otlp = {item["key"]: item["value"] for item in OtlpAdapter(AdapterConfig("otlp", "http://x")).map_attributes(event)}
+    assert otlp["gen_ai.usage.input_cost"]["doubleValue"] == 0.000084
+    assert "langfuse.observation.cost_details" not in otlp
+    dd = {item["key"]: item["value"] for item in DatadogAdapter(AdapterConfig("datadog", "")).map_attributes(event)}
+    assert dd["gen_ai.usage.output_cost"]["doubleValue"] == 0.00012
 
 
 def test_empty_grep_is_wasted(tmp_path: Path):

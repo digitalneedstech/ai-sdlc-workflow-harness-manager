@@ -78,8 +78,11 @@ stay unused.
 4. Flush: normalize ledger → score per step → build OTLP spans → POST Langfuse →
    POST scores → optional dataset upsert → advance offset.
 
-Hooks **never** send dollar cost. Langfuse may **infer** cost from model + usage
-if you define prices under Project Settings → Models.
+Hooks **never** send dollar cost. On flush, generation spans get USD
+`cost_details` from the resolved model + exclusive/cached token buckets
+(kit list prices, overridable via `agent_observability.model_prices`).
+Unknown or placeholder models (`auto-smart`) omit cost so Langfuse can
+still infer from its own catalog.
 
 ---
 
@@ -104,10 +107,12 @@ model (e.g. `grok-4.6`) usually appears only on `afterAgentResponse` / `stop`.
 The exporter uses the **last non-placeholder** `model_id` on the generation span.
 
 **Usage header:** Langfuse reads `langfuse.observation.usage_details` (JSON:
-exclusive `input`, `output`, `input_cached_tokens`). Tokens come from parent
-`afterAgentResponse` / `stop` only; child Task traces often show **0** until
-Cursor adds tokens there. **TTFT** is not in hooks; `time_to_first_tool_ms` on
-the generation is a proxy only.
+exclusive `input`, `output`, `input_cached_tokens`, `input_cache_creation`)
+and `langfuse.observation.cost_details` (USD for those buckets plus `total`).
+OTLP also sets `gen_ai.usage.input_cost` / `output_cost` / `cost`. Tokens come
+from parent `afterAgentResponse` / `stop` only; child Task traces often show
+**0** until Cursor adds tokens there. **TTFT** is not in hooks;
+`time_to_first_tool_ms` on the generation is a proxy only.
 
 **Observation tree:** `agent` (chat) → `generation` (turn) → `tool` /
 `retriever`; nested `agent` per pipeline step; `event` for session/prompt/stop.
@@ -189,8 +194,9 @@ Example micro README change on **developer-agent**: `waste_ratio` 0,
 On the Langfuse **generation** observation → Usage:
 
 - Smaller tokens for the same outcome is better; no universal target.
-- Cache-heavy input is normal on long chats.
-- **Cost $0** until Langfuse has a model price for the resolved id (e.g. `grok-4.6`).
+- Cache-heavy input is normal on long chats; cache-read uses a discounted rate.
+- **Cost $0** when the model is unknown/`auto-smart`, or no tokens were captured.
+  Priced models (e.g. `grok-4.6`) get input/output/cache USD on the generation.
 
 ---
 
@@ -207,6 +213,7 @@ In `.pipeline/config.json` (merged on `init`; enabled by `obs install`):
 | `max_field_chars` | `8000` | Truncate large tool I/O |
 | `dataset` | `pipeline-kit-agent-runs` | Langfuse dataset name on flush |
 | `retention_days` | `14` | Documented intent for ledger hygiene |
+| `model_prices` | kit defaults | USD per million tokens: `{ "grok-4.6": { "input": 3, "output": 15, "cache_read": 0.3, "cache_write": 3.75 } }` |
 
 Optional `verify.rules` (same config) improve `verify_coverage` / `integrity_pass`:
 

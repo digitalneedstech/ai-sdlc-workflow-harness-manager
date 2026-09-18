@@ -6,6 +6,7 @@ from typing import Any
 
 from pipeline_observability.adapters.base import AdapterConfig
 from pipeline_observability.adapters.httputil import basic_auth, post_json
+from pipeline_observability.pricing import event_usage_attrs
 
 
 def _attr(key: str, value: Any) -> dict[str, Any] | None:
@@ -57,21 +58,20 @@ class LangfuseAdapter:
         return {"Authorization": basic_auth(self.config.public_key, self.config.secret_key)}
 
     def map_attributes(self, event: dict[str, Any]) -> list[dict[str, Any]]:
-        return otel_attributes(
-            {
-                "pipeline.step": event.get("step"),
-                "pipeline.slug": event.get("slug"),
-                "pipeline.workflow": event.get("workflow"),
-                "tool.name": event.get("tool_name"),
-                "tool.kind": event.get("tool_kind"),
-                "tool.verdict": event.get("verdict"),
-                "tool.confidence": event.get("confidence"),
-                "tool.path": event.get("target_path"),
-                "gen_ai.request.model": event.get("model"),
-                "gen_ai.usage.input_tokens": (event.get("tokens") or {}).get("input_tokens"),
-                "gen_ai.usage.output_tokens": (event.get("tokens") or {}).get("output_tokens"),
-            }
-        )
+        attrs: dict[str, Any] = {
+            "pipeline.step": event.get("step"),
+            "pipeline.slug": event.get("slug"),
+            "pipeline.workflow": event.get("workflow"),
+            "pipeline.kit_version": event.get("kit_version"),
+            "tool.name": event.get("tool_name"),
+            "tool.kind": event.get("tool_kind"),
+            "tool.verdict": event.get("verdict"),
+            "tool.confidence": event.get("confidence"),
+            "tool.path": event.get("target_path"),
+            "gen_ai.request.model": event.get("model_id") or event.get("model"),
+        }
+        attrs.update(event_usage_attrs(event, include_langfuse=True))
+        return otel_attributes(attrs)
 
     def post_traces(self, payload: dict[str, Any]) -> tuple[bool, str]:
         ok, detail, _status = post_json(self.endpoint(), payload, self.auth_headers())
