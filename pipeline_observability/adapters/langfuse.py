@@ -88,6 +88,18 @@ class LangfuseAdapter:
             return False, "; ".join(errors[:3])
         return True, f"posted {len(batch)} scores"
 
+    def create_score_config(self, payload: dict[str, Any]) -> tuple[bool, str]:
+        """Idempotent-ish: Langfuse rejects duplicate names with 400/409 — treat as exists."""
+        ok, detail, status = post_json(
+            f"{self._root()}/api/public/score-configs",
+            payload,
+            self._json_headers(),
+            retries=3,
+        )
+        if ok or status in (400, 409):
+            return True, str(payload.get("name") or "")
+        return False, detail
+
     def ensure_dataset(self, name: str) -> tuple[bool, str]:
         ok, detail, status = post_json(
             f"{self._root()}/api/public/datasets",

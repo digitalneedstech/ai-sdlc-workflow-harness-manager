@@ -36,6 +36,25 @@ SCORE_NAMES = (
     "context_peak_percent",
 )
 
+# Run-level Starter 7 scores (roadmap/eval-harness-langfuse.md). Additive: never
+# reuse or repurpose a SCORE_NAMES entry. Attached to the root observation.
+RUN_SCORE_NAMES = (
+    "task_complete",
+    "hitl_count",
+    "hitl_wait_s",
+    "critic_retry_count",
+    "secret_leak_count",
+)
+STEP_SUCCESS_SCORE = "step_success"
+
+# Same pattern as kit/pipeline/hooks/obs/obs_lib.py (hooks are not importable here).
+SECRET_RE = re.compile(
+    r"(?i)((?:sk-lf-|sk-|pk-lf-|ghp_|github_pat_|xox[baprs]-|AKIA)"
+    r"[A-Za-z0-9_\-]{8,}|Bearer\s+[A-Za-z0-9._\-]{8,})"
+)
+VERDICT_RE = re.compile(r"\b(approve-with-nits|changes-required|approve)\b", re.I)
+HANDOFF_SUCCESS_RE = re.compile(r"\bSUCCESS\b", re.I)
+
 UUID_RE = re.compile(
     r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
 )
@@ -325,9 +344,148 @@ def _parent_for_tool(event: dict[str, Any], *, root: str, gens: dict[str, str], 
     return root
 
 
+def _pack_id() -> str:
+    return os.environ.get("PIPELINE_EVAL_PACK_ID") or "pipeline-kit"
+
+
+def _read_text(path: Path, limit: int = 200_000) -> str:
+    try:
+        if not path.is_file() or path.stat().st_size > limit:
+            return ""
+        return path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return ""
+
+
+def _handoff_file(repo: Path | None, slug: str | None, step: str | None) -> Path | None:
+    if repo is None or not slug:
+        return None
+    root = repo / "features" / str(slug)
+    if not root.is_dir():
+        return None
+    try:
+        files = sorted(set(root.glob("HANDOFF*.md")) | set(root.glob("**/HANDOFF*.md")))
+    except OSError:
+        return None
+    if step:
+        short = str(step).replace("-agent", "").lower()
+        preferred = [item for item in files if short in item.name.lower()]
+        files = preferred or files
+    return files[-1] if files else None
+
+
+def _step_eval(repo: Path | None, slug: str | None, step: str | None) -> dict[str, Any]:
+    """HANDOFF clip + SUCCESS flag + critic verdict for one step. Fail-open."""
+    out: dict[str, Any] = {"handoff": None, "success": None, "verdict": None}
+    path = _handoff_file(repo, slug, step)
+    if path is None:
+        return out
+    text = _read_text(path)
+    if not text:
+        return out
+    out["success"] = bool(HANDOFF_SUCCESS_RE.search(text))
+    match = VERDICT_RE.search(text)
+    if match:
+        out["verdict"] = match.group(1).lower()
+    out["handoff"] = _clip(text[-1200:], 1500)
+    return out
+
+
+def _skill_names(allowed: Any) -> list[str]:
+    """Skill folder names from a step's allowed_reads (SKILL.md paths). No fake spans."""
+    names: list[str] = []
+    if not isinstance(allowed, list):
+        return names
+    for item in allowed:
+        text = str(item).replace("\\", "/")
+        if "/skills/" in text or text.startswith("skills/"):
+            tail = text.split("skills/", 1)[1]
+            name = tail.split("/", 1)[0]
+            if name and name not in names:
+                names.append(name)
+    return names
+
+
+def _workflow_chain(repo: Path | None, workflow: str | None, change: str | None) -> list[str]:
+    """Expected agent steps from .pipeline/config.json (chain or classes). Gates (@…) excluded."""
+    if repo is None or not workflow:
+        return []
+    try:
+        data = json.loads((repo / ".pipeline" / "config.json").read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return []
+    flows = data.get("workflows") if isinstance(data, dict) else None
+    block = flows.get(str(workflow)) if isinstance(flows, dict) else None
+    if not isinstance(block, dict):
+        return []
+    chain = block.get("chain")
+    if not (isinstance(chain, list) and chain):
+        classes = block.get("classes")
+        chain = classes.get(str(change)) if isinstance(classes, dict) and change else None
+    if not isinstance(chain, list):
+        return []
+    return [str(item) for item in chain if isinstance(item, str) and not str(item).startswith("@")]
+
+
+def _deploy_health(repo: Path | None, slug: str | None) -> bool | None:
+    if repo is None or not slug:
+        return None
+    text = _read_text(repo / "features" / str(slug) / "deploy-result.env")
+    if not text:
+        return None
+    return "OVERALL=passed" in text
+
+
+def _secret_leak_count(repo: Path | None, slug: str | None) -> int | None:
+    """SECRET_RE hits across features/{slug} artifacts. None = N/A (no artifacts)."""
+    if repo is None or not slug:
+        return None
+    root = repo / "features" / str(slug)
+    if not root.is_dir():
+        return None
+    count = 0
+    try:
+        for path in sorted(root.rglob("*")):
+            if path.is_file() and path.suffix.lower() in {".md", ".env", ".txt", ".json"}:
+                count += len(SECRET_RE.findall(_read_text(path, limit=512_000)))
+    except OSError:
+        return count
+    return count
+
+
+def _hitl_metrics(events: list[dict[str, Any]]) -> tuple[int, float]:
+    """Extra user prompts after the first = HITL touches; wait = gap since prior event."""
+    count = 0
+    wait_s = 0.0
+    prev_ts: int | None = None
+    seen_first = False
+    for item in events:
+        ts = _parse_ts(item.get("ts"))
+        if item.get("event") == "beforeSubmitPrompt":
+            if seen_first:
+                count += 1
+                if prev_ts is not None and ts > prev_ts:
+                    wait_s += (ts - prev_ts) / 1_000_000_000
+            seen_first = True
+        prev_ts = ts
+    return count, round(wait_s, 1)
+
+
+def _critic_retry_count(events: list[dict[str, Any]]) -> int:
+    """Same-step re-spawns (distinct subagent ids − 1) on non-critic steps."""
+    subs: dict[str, set[str]] = defaultdict(set)
+    for item in events:
+        sid = item.get("subagent_id")
+        step = item.get("step")
+        if isinstance(sid, str) and sid and isinstance(step, str) and step:
+            subs[step].add(sid)
+    return sum(max(0, len(ids) - 1) for step, ids in subs.items() if "critic" not in step)
+
+
 def build_conversation_spans(
     events: list[dict[str, Any]],
     steps: list[dict[str, Any]],
+    repo: Path | None = None,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, Any]]:
     spans: list[dict[str, Any]] = []
     scores: list[dict[str, Any]] = []
@@ -356,6 +514,15 @@ def build_conversation_spans(
     if mode:
         tags.append(str(mode))
     tags.append("agent")
+    steps_ran = sorted({str(item.get("step")) for item in events if item.get("step")})
+    for step_tag in steps_ran:
+        if step_tag not in tags:
+            tags.append(step_tag)
+    tags.append(f"pack_id={_pack_id()}")
+    # Session groups the parent chat + Task traces of one pipeline run. Trace id unchanged.
+    if workflow and slug:
+        session = f"{workflow}:{slug}"
+    expected_steps = _workflow_chain(repo, str(workflow) if workflow else None, str(change) if change else None)
     name = f"{workflow}:{slug}" if workflow and slug else (str(slug) if slug else conv[:12])
     prompt = _user_prompt(events)
     output = _assistant_output(events)
@@ -369,6 +536,10 @@ def build_conversation_spans(
         "langfuse.trace.output": output,
         "pipeline.slug": slug,
         "pipeline.workflow": workflow,
+        "pipeline.pack_id": _pack_id(),
+        "langfuse.trace.metadata.pack_id": _pack_id(),
+        "langfuse.trace.metadata.steps_ran": steps_ran or None,
+        "langfuse.trace.metadata.steps_expected": expected_steps or None,
     }
     spans.append(
         _span(
@@ -434,13 +605,35 @@ def build_conversation_spans(
         a_start = _parse_ts(group[0].get("ts"))
         a_end = _parse_ts(group[-1].get("ts"))
         step_name = str(_first(group, "step") or _first(group, "subagent_type") or "subagent")
+        step_slug = _first(group, "slug") or slug
+        step_eval = _step_eval(repo, str(step_slug) if step_slug else None, step_name)
+        status = _last(group, "status")
+        # Judges only see this observation's I/O: attach the HANDOFF clip here.
+        # No artifacts on disk -> output stays the plain status (previous behavior).
+        if step_eval["handoff"] or step_eval["verdict"]:
+            step_output: Any = json.dumps(
+                {
+                    "status": status,
+                    "handoff": step_eval["handoff"],
+                    "critic_verdict": step_eval["verdict"],
+                },
+                ensure_ascii=False,
+            )
+        else:
+            step_output = status
+        skills = _skill_names(_first(group, "allowed_reads"))
         extra = {
             "langfuse.observation.type": "agent",
             "langfuse.observation.input": _clip(_first(group, "task"), 4000),
-            "langfuse.observation.output": _last(group, "status"),
+            "langfuse.observation.output": step_output,
             "pipeline.step": step_name,
-            "pipeline.slug": _first(group, "slug") or slug,
+            "pipeline.slug": step_slug,
+            "pipeline.workflow": workflow,
+            "pipeline.change_class": change,
+            "pipeline.skills": skills or None,
             "langfuse.observation.metadata.subagent_id": sid,
+            "langfuse.observation.metadata.subagent_name": step_name,
+            "langfuse.observation.metadata.pipeline.skills": skills or None,
         }
         spans.append(
             _span(
@@ -537,6 +730,74 @@ def build_conversation_spans(
                     "comment": f"step={step_name} slug={step.get('slug')}",
                 }
             )
+    # Starter 7 (roadmap/eval-harness-langfuse.md). Fail-open + N/A != 0: scores are
+    # only emitted when repo artifacts are addressable (slug known); never crash flush.
+    step_success: dict[str, bool | None] = {}
+    integrity_ok = True
+    for step in steps:
+        step_name = str(step.get("step") or "unattributed")
+        raw_integrity = step.get("integrity_pass")
+        if isinstance(raw_integrity, (int, float)) and float(raw_integrity) < 1.0:
+            integrity_ok = False
+        step_slug = step.get("slug") or slug
+        if repo is None or not step_slug or step_name == "unattributed":
+            continue
+        success = _step_eval(repo, str(step_slug), step_name)["success"]
+        step_success[step_name] = success
+        scores.append(
+            {
+                "id": otel32(f"{trace_id}:{step_name}:{STEP_SUCCESS_SCORE}"),
+                "traceId": trace_id,
+                "observationId": step_spans.get(step_name) or root,
+                "name": STEP_SUCCESS_SCORE,
+                "value": 1.0 if success else 0.0,
+                "dataType": "NUMERIC",
+                "comment": f"step={step_name} slug={step_slug} handoff={'found' if success is not None else 'missing'}",
+            }
+        )
+    if repo is not None and slug:
+        aborted = any(
+            item.get("event") in {"stop", "Stop"} and item.get("status") == "aborted" for item in events
+        )
+        check = list(expected_steps) or [name_ for name_ in step_success]
+        complete: bool | None = None
+        if check:
+            complete = True
+            for step_name in check:
+                success = step_success.get(step_name)
+                if success is None:
+                    success = _step_eval(repo, str(slug), step_name)["success"]
+                if success is not True:
+                    complete = False
+                    break
+            if "devops-agent" in check or "devops-agent" in step_success:
+                complete = complete and _deploy_health(repo, str(slug)) is True
+            if aborted or not integrity_ok:
+                complete = False
+        hitl_count, hitl_wait = _hitl_metrics(events)
+        leaks = _secret_leak_count(repo, str(slug))
+        run_values: list[tuple[str, float | None, str]] = [
+            ("task_complete", None if complete is None else (1.0 if complete else 0.0), "BOOLEAN"),
+            ("hitl_count", float(hitl_count), "NUMERIC"),
+            ("hitl_wait_s", float(hitl_wait), "NUMERIC"),
+            ("critic_retry_count", float(_critic_retry_count(events)), "NUMERIC"),
+            ("secret_leak_count", None if leaks is None else float(leaks), "NUMERIC"),
+        ]
+        run_comment = f"slug={slug} workflow={workflow} aborted={aborted}"
+        for score_name, value, data_type in run_values:
+            if value is None:
+                continue  # N/A stays N/A, never 0
+            scores.append(
+                {
+                    "id": otel32(f"{trace_id}:run:{score_name}"),
+                    "traceId": trace_id,
+                    "observationId": root,
+                    "name": score_name,
+                    "value": value,
+                    "dataType": data_type,
+                    "comment": run_comment,
+                }
+            )
     meta = {
         "trace_id": trace_id,
         "session_id": session,
@@ -555,6 +816,8 @@ def build_otlp(report: dict[str, Any], adapter: LangfuseAdapter) -> tuple[dict[s
     del adapter
     events = list(report.get("events") or [])
     steps = list(report.get("steps") or [])
+    repo_raw = report.get("repo")
+    repo = Path(str(repo_raw)) if repo_raw else None
     if not events:
         for step in steps:
             events.extend(step.get("events") or [])
@@ -573,7 +836,7 @@ def build_otlp(report: dict[str, Any], adapter: LangfuseAdapter) -> tuple[dict[s
                 for step in steps
                 if any(item.get("step") == step.get("step") for item in group)
             ] or steps
-        part_spans, part_scores, meta = build_conversation_spans(group, conv_steps)
+        part_spans, part_scores, meta = build_conversation_spans(group, conv_steps, repo=repo)
         spans.extend(part_spans)
         scores.extend(part_scores)
         if meta:
@@ -688,7 +951,13 @@ def flush_project(repo: Path) -> dict[str, Any]:
     report = score_events(repo, rows)
     adapter = make_adapter(repo, cfg)
     if not isinstance(adapter, LangfuseAdapter):
-        return {"ok": False, "error": f"adapter {cfg.get('adapter')} is not implemented"}
+        # Stub adapters (datadog, otlp) skip cleanly; ledger and offset are retained
+        # so a later switch to langfuse re-ships the same rows.
+        return {
+            "ok": True,
+            "skipped": f"adapter {cfg.get('adapter')} not implemented; ledger retained",
+            "offset": offset,
+        }
     if not adapter.config.public_key or not adapter.config.secret_key:
         return {"ok": False, "error": "LANGFUSE_PUBLIC_KEY / LANGFUSE_SECRET_KEY missing"}
     payload, scores, datasets = build_otlp(report, adapter)
