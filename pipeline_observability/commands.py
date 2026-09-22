@@ -87,7 +87,7 @@ def cmd_status(project: Path) -> int:
     print(f"adapter\t{adapter}")
     print(f"ledger_bytes\t{size}")
     print(f"langfuse_keys\t{keys}")
-    print("cost\thooks never send dollars; Langfuse may estimate from tokens")
+    print("cost\thooks never send dollars; flush prices generations from model + tokens")
     return 0
 
 
@@ -133,7 +133,7 @@ def obs_doctor_checks(root: Path) -> tuple[list[str], dict[str, bool]]:
             cfg = {}
     if cfg.get("enabled") is True:
         info.append("agent_observability.enabled is true")
-        info.append("hooks do not report dollar cost; tokens are captured when present")
+        info.append("hooks do not report dollar cost; flush prices generations from model + tokens")
         hooks = project / ".cursor" / "hooks.json"
         if hooks.is_file():
             required["obs cursor hook merge"] = "obs_collect.py" in hooks.read_text(encoding="utf-8")

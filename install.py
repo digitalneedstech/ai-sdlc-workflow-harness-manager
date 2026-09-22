@@ -36,6 +36,7 @@ PACK_DIRS = (
     "adapters",
     "docs",
     "hooks",
+    "eval",
 )
 PACK_FILES = ("README.md",)
 SKIP_NAMES = {"state", "config.json", "install.json"}
@@ -704,6 +705,18 @@ def cli_main(argv: list[str] | None = None) -> int:
     o_report = obs_commands.add_parser("report", help="print local scores without network")
     o_report.add_argument("project", nargs="?", default=".")
 
+    eval_parser = commands.add_parser(
+        "eval",
+        help="evaluation harness (Langfuse score configs + judge setup)",
+    )
+    eval_commands = eval_parser.add_subparsers(dest="eval_command", required=True)
+    e_judges = eval_commands.add_parser("judges", help="LLM-as-judge setup helpers")
+    e_judges_commands = e_judges.add_subparsers(dest="judges_command", required=True)
+    e_sync = e_judges_commands.add_parser(
+        "sync", help="create Langfuse score configs and print evaluator/rule UI steps"
+    )
+    e_sync.add_argument("project", nargs="?", default=".")
+
     args = parser.parse_args(argv)
     home = Path(args.home).expanduser().resolve() if getattr(args, "home", "") else None
     project = Path(getattr(args, "project", ".")).expanduser().resolve()
@@ -848,6 +861,16 @@ def cli_main(argv: list[str] | None = None) -> int:
         if args.obs_command == "report":
             return cmd_report(project)
         parser.error("unknown obs command")
+        return 2
+    if args.command == "eval":
+        from pipeline_eval.commands import cmd_judges_sync  # noqa: WPS433
+
+        if not project.is_dir():
+            print(f"not a directory: {project}", file=sys.stderr)
+            return 64
+        if args.eval_command == "judges" and args.judges_command == "sync":
+            return cmd_judges_sync(project)
+        parser.error("unknown eval command")
         return 2
     parser.error(f"unknown command: {args.command}")
     return 2
