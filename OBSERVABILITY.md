@@ -1,7 +1,9 @@
 # Agent-run observability
 
 Portable **agent-run** tracing and deterministic scores for coding agents (Cursor,
-Claude Code, GitHub Copilot hooks). This is **not** customer-application telemetry
+Claude Code, GitHub Copilot hooks). This is a **bundled add-on** (`pipeline-kit
+obs install`), not an entry in `pipeline-kit plugins`. Langfuse is the default
+adapter. This is **not** customer-application telemetry
 (`pipeline-kit features enable telemetry` / `telemetry-agent`). It records what
 the **agent** did: tools, pipeline steps, tokens when Cursor sends them, and
 Langfuse traces when you flush.

@@ -5,6 +5,8 @@ description: Coding-agent traces and deterministic scores. Local JSONL ledger, t
 
 Portable **agent-run** tracing for Cursor, Claude Code, and GitHub Copilot hooks. It records what the **agent** did: tools, pipeline steps, tokens when the IDE sends them, and Langfuse traces when you flush.
 
+This is a **bundled add-on** (first-party kit code), listed with other opt-in extras on [Plugins](/docs/capabilities/plugins). It is **not** `pipeline-kit plugins install`. Langfuse is the default adapter.
+
 This is **not** customer-application telemetry ([`telemetry-agent`](/docs/capabilities/telemetry)).
 
 Secrets stay in the environment (`LANGFUSE_*`). Never commit API keys.

@@ -121,7 +121,8 @@ Must-configure overview:
 | `pyproject.toml` / `install.sh` | Install the `pipeline-kit` command with `uv` or `pipx` |
 | `install.py` | CLI implementation and backward-compatible Python installer |
 | `knowledge/` | Optional QA overlay commands (consumes Graphify) |
-| `pipeline_plugins/` | Optional Graphify and Archify plugin lifecycle |
+| `pipeline_plugins/` | Optional Graphify and Archify plugin lifecycle (not observability) |
+| `pipeline_observability/` | Agent-run traces, scores, Langfuse flush (`obs` CLI) |
 | `kit/pipeline/` | Bundled pack copied to `<app>/.pipeline` |
 | [CUSTOMER-GUIDE.md](./CUSTOMER-GUIDE.md) | Architect / developer handbook |
 | `website/` | Local Docusaurus documentation (`npm start` in that folder) |
@@ -192,7 +193,8 @@ the feature ladder is unchanged.
 5. Tester wave: parallel unit / api / ui Tasks. UI codegen is
    `pipeline-kit knowledge playwright` (a projector of `cases.json`, not Graphify).
 
-Graphify and Archify stay under Optional plugins. Do not `import graphify`.
+Graphify and Archify stay under Optional plugins. Observability is the bundled
+add-on in that same section (`obs install`). Do not `import graphify`.
 
 ## Project features (opt-in flags)
 
@@ -211,13 +213,17 @@ pipeline-kit features disable telemetry
 
 ## Optional plugins
 
-Graphify and Archify are **optional**. `pipeline-kit init` does not install
-them. The kit never vendors their renderers and never `import`s Graphify.
+`pipeline-kit init` does not turn these on. **External plugins** (Graphify,
+Archify) use `pipeline-kit plugins`. **Agent-run observability** is a
+bundled add-on: use `pipeline-kit obs install`, not `plugins install`.
+Langfuse is the default adapter, not a plugin. The kit never vendors
+Graphify or Archify and never `import`s Graphify.
 
-| Plugin | What it does | Default |
-|--------|----------------|---------|
-| **Graphify** | Official CLI writes `graphify-out/graph.json` for QA test design | Off until `knowledge init` / `plugins install graphify` |
-| **Archify** | Pinned Agent Skill (`tt-a1i/archify` `v2.16.0`) for Architect HTML diagrams | Off until `plugins install archify`. Mermaid in `architecture.md` stays required |
+| Add-on | Kind | What it does | Default |
+|--------|------|----------------|---------|
+| **Graphify** | External plugin | Official CLI writes `graphify-out/graph.json` for QA test design | Off until `knowledge init` / `plugins install graphify` |
+| **Archify** | External plugin | Pinned Agent Skill (`tt-a1i/archify` `v2.16.0`) for Architect HTML diagrams | Off until `plugins install archify`. Mermaid in `architecture.md` stays required |
+| **Agent-run observability** | Bundled add-on | Coding-agent traces and scores (hooks → ledger → Langfuse) | Off until `obs install`. Distinct from `telemetry-agent` |
 
 ### Graphify
 
@@ -271,13 +277,11 @@ unpinned skill.
 
 Details: [CUSTOMER-GUIDE.md](./CUSTOMER-GUIDE.md#22-optional-plugins).
 
----
-
-## Agent-run observability (opt-in)
+### Agent-run observability
 
 Traces and deterministic scores for **coding-agent** tool runs (Cursor / Claude /
 Copilot hooks → local ledger → Langfuse). Distinct from customer-app
-`telemetry-agent`.
+`telemetry-agent`. Not an entry in `plugins list`.
 
 ```bash
 pipeline-kit init --ide cursor

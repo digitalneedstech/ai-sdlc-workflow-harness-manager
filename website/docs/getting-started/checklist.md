@@ -17,4 +17,4 @@ Use this on every new engagement. The full customer surface is **AGENTS.md + con
 7. Open the repo root in the IDE. Confirm the `run-workflow` skill is visible.
 8. Smoke test: ask “How does X work?” (expect `ask`) and “Add a small label change” (expect `feature-development`).
 
-Optional later: tracker MCP, wiki pages after retro, [knowledge](/docs/capabilities/knowledge), [plugins](/docs/capabilities/plugins), [observability](/docs/capabilities/observability).
+Optional later: tracker MCP, wiki pages after retro, [knowledge](/docs/capabilities/knowledge), [plugins and observability](/docs/capabilities/plugins).

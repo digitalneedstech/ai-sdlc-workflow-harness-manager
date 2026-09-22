@@ -170,7 +170,7 @@ pipeline-kit workflows
 | `pipeline-kit knowledge init [project]` | Opt-in: create `test-knowledge/` and set `test_design.enabled` |
 | `pipeline-kit knowledge extract [project]` | Run official `graphify extract . --code-only` (no homemade graph) |
 | `pipeline-kit knowledge status [project]` | Graphify CLI and `graphify-out/graph.json` |
-| `pipeline-kit plugins list` | List optional Graphify / Archify plugins |
+| `pipeline-kit plugins list` | List Graphify / Archify (observability uses `obs status`) |
 | `pipeline-kit plugins install graphify [project]` | Register the official Graphify IDE skill |
 | `pipeline-kit plugins install archify [project]` | Pin Archify `v2.16.0` and set `architecture_diagrams.enabled` |
 | `pipeline-kit plugins status [project]` | Graphify CLI and Archify skill status |
@@ -236,13 +236,21 @@ ignore it. Do not create a second graph store.
 
 ### 2.2 Optional plugins
 
-Graphify (QA graph) and Archify (Architect diagrams) are optional. Neither
-is installed by `pipeline-kit init`. Pipeline-kit never vendors them.
+`pipeline-kit init` does not turn these on. Two kinds:
+
+| Kind | What it is | Command |
+|------|------------|---------|
+| **External plugins** | Graphify and Archify. The kit never vendors them. | `pipeline-kit plugins …` |
+| **Bundled add-on** | Agent-run observability (collector, ledger, scores, flush). Langfuse is an adapter, not a plugin. | `pipeline-kit obs install` — not `plugins install` |
 
 ```bash
 pipeline-kit plugins list
 pipeline-kit plugins status
+pipeline-kit obs status
 ```
+
+Graphify (QA graph) and Archify (Architect diagrams) are the **external**
+plugins. Pipeline-kit never vendors them.
 
 **Graphify** — official CLI. Compatibility path:
 `pipeline-kit knowledge init --register-skill` still registers the Graphify
@@ -287,6 +295,23 @@ Delivered HTML is self-contained interactive HTML (inline JavaScript). Treat
 it as active content when publishing. Unattended runs should set
 `ARCHIFY_UPDATE_CHECK_DISABLED=1` so Archify does not fetch an update
 manifest. Archify does not send repository contents on that check.
+
+**Agent-run observability** is first-party kit code copied into
+`.pipeline/hooks/obs/` on `init` (off until you install). It records what
+the coding agent did, not product analytics (`telemetry-agent`).
+
+```bash
+pipeline-kit obs install --ide cursor --adapter langfuse
+# LANGFUSE_* in .env, never in config.json
+pipeline-kit obs report
+pipeline-kit obs flush
+pipeline-kit obs uninstall
+```
+
+`features enable agent-observability` only sets
+`agent_observability.enabled`. You still need `obs install` to merge IDE
+hooks. Handbook: **[OBSERVABILITY.md](./OBSERVABILITY.md)** (also
+`.pipeline/docs/OBSERVABILITY.md` after `init`).
 
 ---
 

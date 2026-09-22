@@ -43,7 +43,7 @@ const problems = [
 const capabilities = [
   {to: '/docs/capabilities/workflows', title: 'Workflows', body: 'ask, feature-development, Jira story/epic/bug, QA bootstrap.'},
   {to: '/docs/capabilities/knowledge', title: 'Knowledge base', body: 'Opt-in QA overlay from a Graphify graph, then human promote.'},
-  {to: '/docs/capabilities/plugins', title: 'Plugins', body: 'Optional Graphify and Archify. The kit never vendors them.'},
+  {to: '/docs/capabilities/plugins', title: 'Plugins', body: 'Optional Graphify, Archify, and bundled agent-run observability. Init does not turn them on.'},
   {to: '/docs/capabilities/observability', title: 'Observability', body: 'Agent-run traces and scores to a local ledger, then Langfuse.'},
   {to: '/docs/capabilities/planning-gates', title: 'Planning gates', body: 'Human sign-off on requirements, architecture, and BA specs.'},
   {to: '/docs/capabilities/loader', title: 'Allowlist loader', body: 'Each specialist reads only the files for the current step.'},

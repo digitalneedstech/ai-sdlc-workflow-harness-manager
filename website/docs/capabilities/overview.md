@@ -20,10 +20,10 @@ Core delivery is on after `pipeline-kit init`. Everything in the second table is
 | Capability | How you turn it on |
 |------------|--------------------|
 | [Knowledge base](/docs/capabilities/knowledge) | `pipeline-kit knowledge init` |
-| [Plugins](/docs/capabilities/plugins) | `pipeline-kit plugins install graphify \| archify` |
+| [Plugins](/docs/capabilities/plugins) | External Graphify/Archify (`plugins install`) and bundled observability (`obs install`) |
 | [Graphify](/docs/capabilities/graphify) | Official CLI + skill registration |
 | [Archify](/docs/capabilities/archify) | Pinned Agent Skill `v2.16.0` |
-| [Agent-run observability](/docs/capabilities/observability) | `pipeline-kit obs install` |
+| [Agent-run observability](/docs/capabilities/observability) | Bundled add-on: `pipeline-kit obs install` (not `plugins install`) |
 | [App telemetry](/docs/capabilities/telemetry) | `features enable telemetry` or `RUN_TELEMETRY` |
 
 :::warning Two different “observability” words

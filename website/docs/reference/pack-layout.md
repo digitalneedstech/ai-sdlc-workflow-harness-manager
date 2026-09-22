@@ -37,7 +37,7 @@ IDE adapter (one of):
 | `install.py` | CLI implementation |
 | `kit/pipeline/` | Bundled pack copied to `<app>/.pipeline` |
 | `knowledge/` | QA overlay commands |
-| `pipeline_plugins/` | Graphify and Archify lifecycle |
+| `pipeline_plugins/` | Graphify and Archify lifecycle (not observability) |
 | `pipeline_features/` | Feature flag CLI |
 | `pipeline_observability/` | Obs CLI, scoring, adapters |
 | `CUSTOMER-GUIDE.md` | Canonical handbook |

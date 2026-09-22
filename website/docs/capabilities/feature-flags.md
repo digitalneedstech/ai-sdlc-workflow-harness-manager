@@ -3,7 +3,7 @@ title: Feature flags
 description: Named on/off capabilities that mirror config.json. Chat overrides still win for a single run.
 ---
 
-`pipeline-kit features` toggles the same keys as `.pipeline/config.json`. It does **not** replace `knowledge init` or `plugins install`. Chat overrides (`RUN_TESTER`, `RUN_TELEMETRY`, `RUN_ARCHITECT`) still win for a single run.
+`pipeline-kit features` toggles the same keys as `.pipeline/config.json`. It does **not** replace `knowledge init`, `plugins install`, or `obs install`. Chat overrides (`RUN_TESTER`, `RUN_TELEMETRY`, `RUN_ARCHITECT`) still win for a single run.
 
 ```bash
 pipeline-kit features list
