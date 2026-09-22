@@ -157,6 +157,44 @@ pipeline-kit doctor --ide cursor
 pipeline-kit workflows
 ```
 
+Default `--mode kit` copies the markdown pack. That path is unchanged.
+
+### Orchestrator mode (optional, parallel)
+
+`--mode orchestrator` does **not** copy `agents/`, `skills/`, `loader/`, or
+`workflows/`. The chain lives in the installed wheel. Associates add their
+own workflows in `pipeline_extensions/`; kit mode never loads those files.
+
+```bash
+# install the Cursor SDK extra once (kit mode does not need this)
+uv tool install -e ".[orchestrator]"
+cd /path/to/your-app
+pipeline-kit init --mode orchestrator --ide cursor
+# set CURSOR_API_KEY from Cursor Dashboard -> Integrations
+# chat text is not inherited; pass it or write features/<slug>/request.md
+pipeline-kit run --slug checkout-redesign --workflow feature-development \
+  --request "redesign checkout so guests can pay without an account"
+pipeline-kit approve --slug checkout-redesign --gate requirements
+pipeline-kit resume --slug checkout-redesign
+pipeline-kit workflows --scaffold security-review
+pipeline-kit run --slug pci-gap --workflow security-review --runner fake \
+  --request-file features/pci-gap/request.md
+```
+
+Copy-ready examples live in the kit repo at
+[`pipeline_orchestrator/demo/`](./pipeline_orchestrator/demo/)
+(`security-review`, `ci-audit`, `dependency-audit`,
+`accessibility-review`). Copy `pipeline_extensions/` into the customer
+app; they are not installed by `init`.
+
+Custom workflows are orchestrator-only. They do not appear in kit-mode
+`pipeline-kit workflows` listings and do not change `.pipeline/workflows/`.
+
+The wheel is version-pinned, not a hard sandbox: a developer can still
+edit their own `site-packages`. Every run records `workflow_provider` and
+`kit_version`.
+
+
 | Command | Purpose |
 |---------|---------|
 | `pipeline-kit init [project]` | Install/update `<repo>/.pipeline` and its IDE adapter |

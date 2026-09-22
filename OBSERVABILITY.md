@@ -26,6 +26,12 @@ Secrets stay in the environment (`LANGFUSE_*`). Never commit API keys.
 Adapters today: **Langfuse** (OTLP + scores + datasets over HTTP, no SDK).
 Datadog and generic OTLP stubs exist for future work.
 
+Orchestrator mode (`pipeline-kit run`) appends `run_start`, `step_start`,
+`step_end`, `gate_wait`, `gate_approved`, and `retry` to the same
+`.pipeline/state/obs/events.jsonl` ledger, with `agent_id`, `run_id`, and
+`kit_version` when the Cursor SDK runner is used. Kit-mode hook collection is
+unchanged.
+
 ---
 
 ## Install (any project)

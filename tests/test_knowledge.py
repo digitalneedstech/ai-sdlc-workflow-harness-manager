@@ -125,7 +125,8 @@ def test_doctor_stays_ready_without_graphify(
     out = capsys.readouterr().out
     assert "info  graphify: missing" in out
     assert "info  graphify-out/graph.json: absent" in out
-    assert "pipeline-kit 1.2.0 is ready" in out
+    version = (REPO / "VERSION").read_text(encoding="utf-8").strip()
+    assert f"pipeline-kit {version} is ready" in out
 
 
 def test_doctor_fails_when_enabled_and_graph_missing(

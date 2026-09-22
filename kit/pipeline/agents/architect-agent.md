@@ -9,7 +9,7 @@ description: >-
 
 # Architect — technical design author
 
-| Attribute | Value |
+| Attribute | Value |   
 |-----------|--------|
 | Type | Agent brief |
 | Audience | This specialist Task only |
