@@ -40,6 +40,8 @@ Specialist briefs and skill bodies stay under `.pipeline/` so the IDE does not a
 
 Opt-in extras — knowledge, plugins, agent-run observability — are documented under [Capabilities](/docs/capabilities/overview). `pipeline-kit init` does not turn them on.
 
+The source repo is grouped as **modes** (`kit/`, `orchestrator/`), **extensions**, and **capabilities**. See [Repository layout](/docs/intro/repo-layout).
+
 ## Requirements
 
 Python **3.11+**. The CLI has no other runtime dependencies. Optional plugins (Graphify, Archify) and bundled observability (Langfuse keys) are separate.

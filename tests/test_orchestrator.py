@@ -267,7 +267,7 @@ def test_demo_extensions_load_and_run(tmp_path: Path, capsys: pytest.CaptureFixt
     app = tmp_path / "app"
     app.mkdir()
     shutil.copytree(
-        REPO / "pipeline_orchestrator" / "demo" / "pipeline_extensions",
+        REPO / "extensions" / "orchestrator" / "pipeline_extensions",
         app / "pipeline_extensions",
     )
     assert _cli(["init", str(app), "--ide", "none", "--mode", "orchestrator"]) == 0

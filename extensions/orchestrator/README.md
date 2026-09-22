@@ -22,7 +22,7 @@ for security review, a critic.
 ## Copy into an app
 
 ```bash
-cp -R pipeline_orchestrator/demo/pipeline_extensions /path/to/your-app/
+cp -R extensions/orchestrator/pipeline_extensions /path/to/your-app/
 cd /path/to/your-app
 pipeline-kit init --mode orchestrator --ide cursor
 pipeline-kit workflows

@@ -42,6 +42,12 @@ Architects can later layer org template → user → project without changing th
 org template  →  team defaults  →  ~/.pipeline  →  <repo>/.pipeline (wins)
 ```
 
+## Two modes
+
+`--mode kit` (default) copies `kit/pipeline/` to `.pipeline/` and runs specialists through the loader. `--mode orchestrator` keeps the chain in the Python engine (`orchestrator/`, import `pipeline_orchestrator`) and never runs that markdown ladder.
+
+Adding a process is an [extension](/docs/capabilities/extensions) in the matching mode. Details: [Kit vs orchestrator](/docs/capabilities/modes).
+
 ## Receptionist, not a monolith
 
 `AGENTS.md` stays a routing table. The agent does not load the pack until `run-workflow` runs the loader. Trivia and off-repo asks skip the pipeline entirely.
@@ -49,5 +55,7 @@ org template  →  team defaults  →  ~/.pipeline  →  <repo>/.pipeline (wins)
 ## Next
 
 - [Who it is for](/docs/intro/who-it-is-for)
+- [Repository layout](/docs/intro/repo-layout)
+- [Kit vs orchestrator](/docs/capabilities/modes)
 - [Loader and allowlists](/docs/capabilities/loader)
 - [Install the CLI](/docs/getting-started/install-cli)

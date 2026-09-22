@@ -5,6 +5,16 @@ description: What the kit ships, what is opt-in, and where to drill down.
 
 Core delivery is on after `pipeline-kit init`. Everything in the second table is **opt-in**.
 
+Two **run modes** share the same first-party workflow names. [Kit vs orchestrator](/docs/capabilities/modes). Adding a process is an [extension](/docs/capabilities/extensions), not a fork.
+
+## Runtimes
+
+| Surface | What it is |
+|---------|------------|
+| [Kit vs orchestrator](/docs/capabilities/modes) | Two ways to run the same first-party workflow names |
+| [Extensions](/docs/capabilities/extensions) | Add a process in kit mode (JSON + skill) or orchestrator mode (`pipeline_extensions`) |
+| [Repository layout](/docs/intro/repo-layout) | How this source tree is grouped |
+
 ## Always available after init
 
 | Capability | What it is |

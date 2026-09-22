@@ -104,6 +104,14 @@ without changing the runtime model.
 agent does not load the pack until `run-workflow` runs the loader. Trivia
 and off-repo asks skip the pipeline entirely.
 
+**Two modes, same first-party workflows.** Default `--mode kit` copies
+the markdown pack from `kit/pipeline/`. `--mode orchestrator` runs the
+graphs from `orchestrator/` (Python import `pipeline_orchestrator`). Add
+a process with [`extensions/`](./extensions/) — kit mode is a skill +
+workflow JSON; orchestrator mode is `pipeline_extensions/*.py`. Optional
+add-ons live under [`capabilities/`](./capabilities/) (plugins, knowledge,
+observability, eval, feature flags).
+
 What you take to the next customer: the **kit** (installer + bundled pack).
 What you change per customer: `AGENTS.md`, `config.json`, deploy/test
 runbooks. That is the scaling contract.
@@ -157,6 +165,44 @@ pipeline-kit doctor --ide cursor
 pipeline-kit workflows
 ```
 
+Default `--mode kit` copies the markdown pack. That path is unchanged.
+
+### Orchestrator mode (optional, parallel)
+
+`--mode orchestrator` does **not** copy `agents/`, `skills/`, `loader/`, or
+`workflows/`. The chain lives in the installed wheel. Associates add their
+own workflows in `pipeline_extensions/`; kit mode never loads those files.
+
+```bash
+# install the Cursor SDK extra once (kit mode does not need this)
+uv tool install -e ".[orchestrator]"
+cd /path/to/your-app
+pipeline-kit init --mode orchestrator --ide cursor
+# set CURSOR_API_KEY from Cursor Dashboard -> Integrations
+# chat text is not inherited; pass it or write features/<slug>/request.md
+pipeline-kit run --slug checkout-redesign --workflow feature-development \
+  --request "redesign checkout so guests can pay without an account"
+pipeline-kit approve --slug checkout-redesign --gate requirements
+pipeline-kit resume --slug checkout-redesign
+pipeline-kit workflows --scaffold security-review
+pipeline-kit run --slug pci-gap --workflow security-review --runner fake \
+  --request-file features/pci-gap/request.md
+```
+
+Copy-ready examples live in the kit repo at
+[`extensions/orchestrator/`](./extensions/orchestrator/)
+(`security-review`, `ci-audit`, `dependency-audit`,
+`accessibility-review`). Copy `pipeline_extensions/` into the customer
+app; they are not installed by `init`.
+
+Custom workflows are orchestrator-only. They do not appear in kit-mode
+`pipeline-kit workflows` listings and do not change `.pipeline/workflows/`.
+
+The wheel is version-pinned, not a hard sandbox: a developer can still
+edit their own `site-packages`. Every run records `workflow_provider` and
+`kit_version`.
+
+
 | Command | Purpose |
 |---------|---------|
 | `pipeline-kit init [project]` | Install/update `<repo>/.pipeline` and its IDE adapter |
@@ -180,8 +226,9 @@ pipeline-kit workflows
 | `pipeline-kit obs report [project]` | Local scores from the ledger. No network. |
 | `pipeline-kit obs flush [project]` | Ship new ledger rows to the configured adapter. |
 
-Full agent-run observability handbook: **[OBSERVABILITY.md](./OBSERVABILITY.md)**
-(copied to `.pipeline/docs/OBSERVABILITY.md` on `init`).
+Full agent-run observability handbook (install, Langfuse identity, scores, ideal values, troubleshooting): **[OBSERVABILITY.md](./OBSERVABILITY.md)** (copied to `.pipeline/docs/OBSERVABILITY.md` on `init`).
+
+Flush traces use Cursor `conversation_id` as the Langfuse trace/session (not the feature slug). User prompt comes from `beforeSubmitPrompt` or the transcript on flush.
 
 Install/update commands accept `--ide cursor`, `claude-code`, `github`, or
 `none`. Add `--agent-stubs` to create thin `.cursor/agents/*.md` files.
@@ -589,7 +636,7 @@ not commit those. Commit `features/` only if you want specs in git.
 | Tracker MCP | Jira (or compatible) workflows. Enable `intake.jira` and authenticate the MCP in the IDE. |
 | Wiki | After a painful run, retro adds one page under `.pipeline/wiki/`. Start with the shipped index or empty it. |
 | `.pipeline/rules/*.mdc` | Durable coding standards. They do **not** auto-apply in Cursor (not under `.cursor/rules`). Mention a rule in `AGENTS.md` or on a step allowlist. |
-| Hooks | Policy hooks (allowlist, commit-deny) are still optional and not auto-copied. Agent-run observability hooks are opt-in via `pipeline-kit obs install` and merge without replacing existing entries. |
+| Hooks | Policy guardrails ship in `.pipeline/hooks/` (sibling of `hooks/obs/`). `init --ide cursor` or `--ide claude-code` merges them into the IDE hook file without replacing existing entries. Agent-run observability stays opt-in via `pipeline-kit obs install`. |
 | New workflow | See `.pipeline/README.md` (“How to add a workflow”). |
 
 ---

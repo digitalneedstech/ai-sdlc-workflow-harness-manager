@@ -295,6 +295,117 @@ def _copy_tree(src: Path, dest: Path, root: Path, copied: list[str]) -> None:
         _copy_file(item, dest / rel, root, copied)
 
 
+GUARDRAIL_NEEDLE = ".pipeline/hooks/"
+OBS_NEEDLE = ".pipeline/hooks/obs/"
+
+
+def _hook_command_text(entry: Any) -> str:
+    if not isinstance(entry, dict):
+        return ""
+    parts: list[str] = []
+    for key in ("command", "bash", "powershell"):
+        value = entry.get(key)
+        if isinstance(value, str):
+            parts.append(value)
+    nested = entry.get("hooks")
+    if isinstance(nested, list):
+        parts.extend(_hook_command_text(item) for item in nested)
+    return " ".join(parts)
+
+
+def _is_guardrail_entry(entry: Any) -> bool:
+    text = _hook_command_text(entry)
+    return GUARDRAIL_NEEDLE in text and OBS_NEEDLE not in text
+
+
+def _append_guardrail_entries(bucket: list[Any], entries: list[Any]) -> int:
+    added = 0
+    seen = {_hook_command_text(item) for item in bucket}
+    for entry in entries:
+        command = _hook_command_text(entry)
+        if command and command in seen:
+            continue
+        bucket.append(entry)
+        if command:
+            seen.add(command)
+        added += 1
+    return added
+
+
+def _merge_hook_object(existing: dict[str, Any], fragment: dict[str, Any]) -> int:
+    hooks = existing.setdefault("hooks", {})
+    if not isinstance(hooks, dict):
+        raise ValueError("hooks must be an object")
+    added = 0
+    incoming = fragment.get("hooks") if isinstance(fragment.get("hooks"), dict) else {}
+    for event, entries in incoming.items():
+        if not isinstance(entries, list):
+            continue
+        bucket = hooks.setdefault(event, [])
+        if not isinstance(bucket, list):
+            raise ValueError(f"hooks.{event} must be an array")
+        added += _append_guardrail_entries(bucket, entries)
+    return added
+
+
+def _strip_guardrail_entries(data: dict[str, Any]) -> dict[str, Any]:
+    hooks = data.get("hooks")
+    if not isinstance(hooks, dict):
+        return data
+    for event, entries in list(hooks.items()):
+        if not isinstance(entries, list):
+            continue
+        kept = [item for item in entries if not _is_guardrail_entry(item)]
+        if kept:
+            hooks[event] = kept
+        else:
+            del hooks[event]
+    return data
+
+
+def merge_guardrail_hooks(*, ide: str, ide_root: Path, pack: Path) -> int:
+    """Append policy-hook commands. Does not replace existing or obs entries."""
+    if ide == "cursor":
+        fragment_path = pack / "hooks" / "cursor.hooks.json"
+        dest = ide_root / ".cursor" / "hooks.json"
+    elif ide == "claude-code":
+        fragment_path = pack / "hooks" / "claude.settings.json"
+        dest = ide_root / ".claude" / "settings.json"
+    else:
+        return 0
+    if not fragment_path.is_file():
+        return 0
+    fragment = json.loads(fragment_path.read_text(encoding="utf-8"))
+    if not isinstance(fragment, dict):
+        return 0
+    existing: dict[str, Any] = {"version": 1, "hooks": {}} if ide == "cursor" else {}
+    if dest.is_file():
+        loaded = json.loads(dest.read_text(encoding="utf-8"))
+        if isinstance(loaded, dict):
+            existing = loaded
+            existing.setdefault("hooks", {})
+            if ide == "cursor":
+                existing.setdefault("version", 1)
+    added = _merge_hook_object(existing, fragment)
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    dest.write_text(json.dumps(existing, indent=2) + "\n", encoding="utf-8")
+    return added
+
+
+def strip_guardrail_hooks(*, ide_root: Path) -> None:
+    for rel in (Path(".cursor") / "hooks.json", Path(".claude") / "settings.json"):
+        path = ide_root / rel
+        if not path.is_file():
+            continue
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if not isinstance(data, dict):
+            continue
+        path.write_text(json.dumps(_strip_guardrail_entries(data), indent=2) + "\n", encoding="utf-8")
+
+
 def generic_config(source: dict[str, Any]) -> dict[str, Any]:
     data = json.loads(json.dumps(source))
     data["_readme"] = (
@@ -544,6 +655,10 @@ def install(
                 _copy_file(skill_src, ide_root / skill_rel, target, copied)
             else:
                 print(f"note: --user --ide {ide} writes no IDE adapter (use cursor, claude-code, or --project)", file=sys.stderr)
+        if scope == "project":
+            added = merge_guardrail_hooks(ide=ide, ide_root=ide_root, pack=pack_dest)
+            if added:
+                print(f"policy hooks: merged {added} entries ({ide})", file=sys.stderr)
 
     if agent_stubs and mode != "orchestrator":
         stubs_dir = (
@@ -584,6 +699,7 @@ def uninstall(*, scope: str, target: Path, home: Path | None = None) -> int:
     if marker.is_file():
         marker.unlink()
         removed += 1
+    strip_guardrail_hooks(ide_root=root)
     print(f"removed {removed} kit files; features/ and local config edits were left.", file=sys.stderr)
     return 0
 
@@ -600,6 +716,11 @@ def _ensure_pkg_path() -> None:
     root = str(HERE)
     if root not in sys.path:
         sys.path.insert(0, root)
+    try:
+        from layout import install_source_importers
+    except ImportError:
+        return
+    install_source_importers()
 
 
 def _knowledge_commands():
@@ -693,9 +814,7 @@ def doctor(
         skill_rel = IDE_SKILL_REL.get(ide)
         if skill_rel:
             checks[f"{ide} adapter"] = (root / skill_rel).is_file()
-    root = str(HERE)
-    if root not in sys.path:
-        sys.path.insert(0, root)
+    _ensure_pkg_path()
     from knowledge.doctor import graphify_doctor_checks
     from pipeline_plugins.archify import archify_doctor_checks
     from pipeline_observability.commands import obs_doctor_checks

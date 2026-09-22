@@ -41,6 +41,8 @@ const problems = [
 ];
 
 const capabilities = [
+  {to: '/docs/capabilities/modes', title: 'Two modes', body: 'Kit mode copies the markdown pack. Orchestrator mode runs the same names from Python.'},
+  {to: '/docs/capabilities/extensions', title: 'Extensions', body: 'Add a workflow in kit mode (JSON + skill) or orchestrator mode (pipeline_extensions).'},
   {to: '/docs/capabilities/workflows', title: 'Workflows', body: 'ask, feature-development, Jira story/epic/bug, QA bootstrap.'},
   {to: '/docs/capabilities/knowledge', title: 'Knowledge base', body: 'Opt-in QA overlay from a Graphify graph, then human promote.'},
   {to: '/docs/capabilities/plugins', title: 'Plugins', body: 'Optional Graphify, Archify, and bundled agent-run observability. Init does not turn them on.'},
@@ -146,12 +148,14 @@ pipeline-kit workflows`}</code>
               <div className={styles.flowArrow}>↓</div>
               <div className={styles.flowRow}>run-workflow — pick a workflow, run the loader</div>
               <div className={styles.flowArrow}>↓</div>
-              <div className={styles.flowRow}>.pipeline pack — skills, agents, workflows, wiki, rules</div>
+              <div className={styles.flowRow}>.pipeline pack (kit) or orchestrator engine — same workflow names</div>
               <div className={styles.flowArrow}>↓</div>
               <div className={styles.flowRow}>config.json overlay + features/ artifacts for this run</div>
             </div>
             <p style={{marginTop: '1.25rem'}}>
               <Link to="/docs/intro/how-it-works">Architecture in detail →</Link>
+              {' · '}
+              <Link to="/docs/intro/repo-layout">Repository layout →</Link>
             </p>
           </div>
         </section>

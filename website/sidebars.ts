@@ -10,6 +10,7 @@ const sidebars: SidebarsConfig = {
         'intro/what-is-pipeline-kit',
         'intro/problems',
         'intro/how-it-works',
+        'intro/repo-layout',
         'intro/who-it-is-for',
       ],
     },
@@ -32,6 +33,8 @@ const sidebars: SidebarsConfig = {
       label: 'Capabilities',
       items: [
         'capabilities/overview',
+        'capabilities/modes',
+        'capabilities/extensions',
         'capabilities/workflows',
         'capabilities/planning-gates',
         'capabilities/knowledge',

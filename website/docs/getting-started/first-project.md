@@ -14,6 +14,14 @@ pipeline-kit workflows
 
 Use `--ide claude-code`, `--ide github`, or `--ide none` when appropriate.
 
+Default is **kit mode** (markdown pack). Optional **orchestrator mode** runs the same first-party names from Python:
+
+```bash
+pipeline-kit init --mode orchestrator --ide cursor
+```
+
+See [Kit vs orchestrator](/docs/capabilities/modes).
+
 ## What you should see
 
 - `.pipeline/` with workflows, skills, agents, wiki, loader, and `config.json`

@@ -104,6 +104,14 @@ without changing the runtime model.
 agent does not load the pack until `run-workflow` runs the loader. Trivia
 and off-repo asks skip the pipeline entirely.
 
+**Two modes, same first-party workflows.** Default `--mode kit` copies
+the markdown pack from `kit/pipeline/`. `--mode orchestrator` runs the
+graphs from `orchestrator/` (Python import `pipeline_orchestrator`). Add
+a process with [`extensions/`](./extensions/) — kit mode is a skill +
+workflow JSON; orchestrator mode is `pipeline_extensions/*.py`. Optional
+add-ons live under [`capabilities/`](./capabilities/) (plugins, knowledge,
+observability, eval, feature flags).
+
 What you take to the next customer: the **kit** (installer + bundled pack).
 What you change per customer: `AGENTS.md`, `config.json`, deploy/test
 runbooks. That is the scaling contract.
@@ -182,7 +190,7 @@ pipeline-kit run --slug pci-gap --workflow security-review --runner fake \
 ```
 
 Copy-ready examples live in the kit repo at
-[`pipeline_orchestrator/demo/`](./pipeline_orchestrator/demo/)
+[`extensions/orchestrator/`](./extensions/orchestrator/)
 (`security-review`, `ci-audit`, `dependency-audit`,
 `accessibility-review`). Copy `pipeline_extensions/` into the customer
 app; they are not installed by `init`.
@@ -628,7 +636,7 @@ not commit those. Commit `features/` only if you want specs in git.
 | Tracker MCP | Jira (or compatible) workflows. Enable `intake.jira` and authenticate the MCP in the IDE. |
 | Wiki | After a painful run, retro adds one page under `.pipeline/wiki/`. Start with the shipped index or empty it. |
 | `.pipeline/rules/*.mdc` | Durable coding standards. They do **not** auto-apply in Cursor (not under `.cursor/rules`). Mention a rule in `AGENTS.md` or on a step allowlist. |
-| Hooks | Policy hooks (allowlist, commit-deny) are still optional and not auto-copied. Agent-run observability hooks are opt-in via `pipeline-kit obs install` and merge without replacing existing entries. |
+| Hooks | Policy guardrails ship in `.pipeline/hooks/` (sibling of `hooks/obs/`). `init --ide cursor` or `--ide claude-code` merges them into the IDE hook file without replacing existing entries. Agent-run observability stays opt-in via `pipeline-kit obs install`. |
 | New workflow | See `.pipeline/README.md` (“How to add a workflow”). |
 
 ---

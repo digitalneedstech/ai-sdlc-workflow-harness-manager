@@ -9,14 +9,30 @@ Global: `pipeline-kit --version` (same number as `pipeline-kit version`).
 
 | Command | Purpose |
 |---------|---------|
-| `init [project]` | Install/update `<repo>/.pipeline` and its IDE adapter. `--ide`, `--agent-stubs`, `--dry-run` |
+| `init [project]` | Install/update `<repo>/.pipeline` and its IDE adapter. `--ide`, `--mode kit\|orchestrator`, `--agent-stubs`, `--dry-run` |
 | `setup` | Install/update `~/.pipeline` and a user IDE adapter |
 | `update [project]` | Refresh managed files while retaining local `config.json` values. `--user` for the home pack |
 | `uninstall [project]` | Remove managed project files. `--user` for the home pack |
 | `doctor [project]` | Check Python, pack, config, loader, marker, and optional IDE adapter |
-| `workflows [project]` | List workflows from the active project or user pack |
+| `workflows [project]` | List workflows from the active project or user pack. `--scaffold NAME` is orchestrator-only |
 
-`--ide` is `cursor`, `claude-code`, `github`, or `none`.
+`--ide` is `cursor`, `claude-code`, `github`, or `none`. `--mode` is `kit` (default) or `orchestrator`.
+
+## Orchestrator mode
+
+Requires the `orchestrator` extra (`uv tool install -e ".[orchestrator]"`) and `CURSOR_API_KEY` for live runs.
+
+| Command | Purpose |
+|---------|---------|
+| `run --slug S --workflow W` | Start or continue a code-owned run. `--request`, `--request-file`, `--runner fake`, `--dry-run` |
+| `approve --slug S --gate G` | Pass a HITL gate |
+| `resume --slug S` | Continue after a gate |
+| `status --slug S` | Print orchestrator run state |
+| `verify` | Report install mode and sealed graph |
+| `export-briefs` | Write a non-executing brief reference copy |
+| `workflows --scaffold NAME` | Write `pipeline_extensions/{name}.py` in the app |
+
+Kit mode never loads `pipeline_extensions/`. Examples: [Extensions](/docs/capabilities/extensions).
 
 ## Knowledge
 

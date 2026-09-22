@@ -36,8 +36,10 @@ You take the kit to a new engagement. You must overlay process without forking s
 
 You change the installer or the bundled pack in this repository:
 
+- [Repository layout](/docs/intro/repo-layout)
 - [This repository](/docs/maintainers/repo)
 - [Authoring pack markdown](/docs/maintainers/authoring)
+- [Extensions](/docs/capabilities/extensions)
 
 ## What this is not
 

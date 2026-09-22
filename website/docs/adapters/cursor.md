@@ -11,7 +11,7 @@ Skill path: `.cursor/skills/run-workflow/SKILL.md`.
 
 Cursor **project** hooks and skills load from the **workspace root**. Open the repository that contains `.cursor/hooks.json` and `.pipeline/`. A multi-root window whose first folder is another repo will not fire these hooks.
 
-Agent-run observability merges into `.cursor/hooks.json` without replacing existing entries. See [observability](/docs/capabilities/observability).
+`init --ide cursor` merges policy guardrails (shell, MCP, pack allowlist, specialist start gates) into `.cursor/hooks.json` without replacing existing entries. Agent-run observability still needs `obs install`. See [observability](/docs/capabilities/observability).
 
 `--agent-stubs` creates thin `.cursor/agents/*.md` pointers. Without stubs, parent Tasks use `generalPurpose`.
 

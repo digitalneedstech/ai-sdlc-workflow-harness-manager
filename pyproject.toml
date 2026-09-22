@@ -20,7 +20,7 @@ pipeline-kit = "pipeline_kit.install:cli_main"
 
 [tool.setuptools]
 packages = ["pipeline_kit", "knowledge", "pipeline_plugins", "pipeline_features", "pipeline_observability", "pipeline_observability.adapters", "pipeline_eval", "pipeline_orchestrator", "pipeline_orchestrator.runners"]
-package-dir = { pipeline_kit = ".", knowledge = "knowledge", pipeline_plugins = "pipeline_plugins", pipeline_features = "pipeline_features", pipeline_observability = "pipeline_observability", pipeline_eval = "pipeline_eval", pipeline_orchestrator = "pipeline_orchestrator" }
+package-dir = { pipeline_kit = ".", knowledge = "capabilities/knowledge", pipeline_plugins = "capabilities/plugins", pipeline_features = "capabilities/feature_flags", pipeline_observability = "capabilities/observability", pipeline_eval = "capabilities/eval", pipeline_orchestrator = "orchestrator" }
 include-package-data = true
 
 [tool.setuptools.dynamic]

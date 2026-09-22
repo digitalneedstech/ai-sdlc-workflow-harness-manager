@@ -18,6 +18,6 @@ Add `--agent-stubs` to create thin `.cursor/agents/*.md` files. Named Cursor Tas
 
 `--user --ide cursor` writes `~/.cursor/skills/run-workflow` so every repo on that laptop can see the skill even without a project pack.
 
-Policy hooks are optional and not auto-copied. Agent-run observability hooks are opt-in (`pipeline-kit obs install`) and **merge** into an existing `hooks.json` without replacing it.
+Policy guardrails live in `.pipeline/hooks/` (not `hooks/obs/`) and merge on `init` for Cursor and Claude Code. Agent-run observability hooks stay opt-in (`pipeline-kit obs install`) and **merge** into an existing `hooks.json` without replacing it.
 
 Per-IDE notes: [Cursor](/docs/adapters/cursor), [Claude Code](/docs/adapters/claude-code), [GitHub](/docs/adapters/github), [none](/docs/adapters/none).

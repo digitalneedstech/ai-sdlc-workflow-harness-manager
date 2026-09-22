@@ -19,4 +19,4 @@ Pipeline write or shell gates never fire, or every tool is denied because an ext
 - Use Cursor `type: prompt` hooks for portable policy (they do not travel to other IDEs)
 - Set `failClosed: true` unless you intend a hard freeze on hook bugs
 
-The installer does **not** copy policy hooks. Observability hooks are opt-in via `obs install` and merge without replacing existing entries.
+Policy guardrails ship in `.pipeline/hooks/` and merge on `init --ide cursor` or `--ide claude-code`. Observability hooks stay opt-in via `obs install` and merge without replacing existing entries.

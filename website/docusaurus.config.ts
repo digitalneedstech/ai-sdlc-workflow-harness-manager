@@ -119,8 +119,8 @@ const config: Config = {
           title: 'Use',
           items: [
             {label: 'Capabilities', to: '/docs/capabilities/overview'},
+            {label: 'Two modes', to: '/docs/capabilities/modes'},
             {label: 'Knowledge base', to: '/docs/capabilities/knowledge'},
-            {label: 'Observability', to: '/docs/capabilities/observability'},
             {label: 'Plugins', to: '/docs/capabilities/plugins'},
           ],
         },
