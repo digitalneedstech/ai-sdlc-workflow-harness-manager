@@ -38,6 +38,7 @@ def test_orchestrator_init_does_not_copy_briefs(tmp_path: Path):
     assert not (app / ".pipeline" / "workflows").exists()
     assert (app / ".pipeline" / "config.json").is_file()
     assert (app / ".pipeline" / "wiki" / "INDEX.md").is_file()
+    assert (app / ".pipeline" / "hooks" / "obs" / "obs_collect.py").is_file()
     skill = app / ".cursor" / "skills" / "run-workflow" / "SKILL.md"
     assert skill.is_file()
     text = skill.read_text(encoding="utf-8")
@@ -174,6 +175,67 @@ def test_custom_workflow_is_orchestrator_only(tmp_path: Path):
     assert (app / "features" / "pci-gap" / "state" / "security-review-agent.json").is_file()
 
 
+def test_run_persists_user_request(tmp_path: Path):
+    app = tmp_path / "app"
+    app.mkdir()
+    assert _cli(["init", str(app), "--ide", "none", "--mode", "orchestrator"]) == 0
+    ask = "add a line in AGENTS.md about orchestrator mode"
+    code = _cli(
+        [
+            "run",
+            str(app),
+            "--slug",
+            "agents-md-line",
+            "--workflow",
+            "feature-development",
+            "--change-class",
+            "micro",
+            "--runner",
+            "fake",
+            "--request",
+            ask,
+        ]
+    )
+    assert code == 0
+    run = json.loads(
+        (app / ".pipeline" / "state" / "runs" / "agents-md-line.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert run["user_request"] == ask
+    assert (app / "features" / "agents-md-line" / "request.md").read_text(
+        encoding="utf-8"
+    ).strip() == ask
+
+
+def test_run_loads_request_md(tmp_path: Path):
+    app = tmp_path / "app"
+    app.mkdir()
+    assert _cli(["init", str(app), "--ide", "none", "--mode", "orchestrator"]) == 0
+    dest = app / "features" / "from-file" / "request.md"
+    dest.parent.mkdir(parents=True)
+    dest.write_text("fix the empty cart badge\n", encoding="utf-8")
+    code = _cli(
+        [
+            "run",
+            str(app),
+            "--slug",
+            "from-file",
+            "--workflow",
+            "feature-development",
+            "--change-class",
+            "micro",
+            "--runner",
+            "fake",
+        ]
+    )
+    assert code == 0
+    run = json.loads(
+        (app / ".pipeline" / "state" / "runs" / "from-file.json").read_text(encoding="utf-8")
+    )
+    assert run["user_request"] == "fix the empty cart badge"
+
+
 def test_fake_startup_failure_is_exit_1(tmp_path: Path):
     import sys
 
@@ -197,6 +259,63 @@ def test_fake_startup_failure_is_exit_1(tmp_path: Path):
     runner = FakeRunner({"developer-agent": {"startup_failure": True}})
     code = asyncio.run(advance(project=app, spec=spec, run=run, runner=runner))
     assert code == 1
+
+
+def test_demo_extensions_load_and_run(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
+    import shutil
+
+    app = tmp_path / "app"
+    app.mkdir()
+    shutil.copytree(
+        REPO / "pipeline_orchestrator" / "demo" / "pipeline_extensions",
+        app / "pipeline_extensions",
+    )
+    assert _cli(["init", str(app), "--ide", "none", "--mode", "orchestrator"]) == 0
+    capsys.readouterr()
+    assert _cli(["workflows", str(app)]) == 0
+    listed = capsys.readouterr().out
+    for name in (
+        "security-review",
+        "ci-audit",
+        "dependency-audit",
+        "accessibility-review",
+    ):
+        assert name in listed
+    assert _cli(
+        [
+            "run",
+            str(app),
+            "--slug",
+            "pci-sample",
+            "--workflow",
+            "security-review",
+            "--runner",
+            "fake",
+            "--request",
+            "review auth on checkout",
+        ]
+    ) == 3
+    run = json.loads(
+        (app / ".pipeline" / "state" / "runs" / "pci-sample.json").read_text(encoding="utf-8")
+    )
+    assert run["workflow"] == "security-review"
+    assert run["status"] == "awaiting_approval"
+    assert run["current_node"] == "security"
+    assert (app / "features" / "pci-sample" / "state" / "security-review-agent.json").is_file()
+    assert _cli(
+        [
+            "run",
+            str(app),
+            "--slug",
+            "deps-sample",
+            "--workflow",
+            "dependency-audit",
+            "--runner",
+            "fake",
+            "--request",
+            "list unpinned Python deps",
+        ]
+    ) == 0
 
 
 def test_missing_state_fails_closed(tmp_path: Path):

@@ -46,6 +46,10 @@ def node_id(node: Node) -> str:
     return node.id
 
 
+def request_path(project: Path, slug: str) -> Path:
+    return project / "features" / slug / "request.md"
+
+
 def new_run(
     *,
     project: Path,
@@ -55,8 +59,14 @@ def new_run(
     runner: str,
     kit_version: str,
     chain: list[Node],
+    user_request: str = "",
 ) -> dict[str, Any]:
     now = utc_now()
+    request_text = (user_request or "").strip()
+    if request_text:
+        dest = request_path(project, slug)
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_text(request_text + "\n", encoding="utf-8")
     steps = {
         node_id(node): {
             "status": "pending",
@@ -96,6 +106,7 @@ def new_run(
         "gates": gates,
         "retries": {},
         "node_ids": [node_id(n) for n in chain],
+        "user_request": request_text,
     }
     board = {
         "version": 1,

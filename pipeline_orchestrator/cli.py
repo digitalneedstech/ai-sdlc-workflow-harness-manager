@@ -13,8 +13,30 @@ from pipeline_orchestrator.gates import approve
 from pipeline_orchestrator.registry import list_specs, resolve_spec
 from pipeline_orchestrator.runners.cursor_sdk import CursorSdkRunner
 from pipeline_orchestrator.runners.fake import FakeRunner
-from pipeline_orchestrator.state import load_run
+from pipeline_orchestrator.state import load_run, request_path
 from pipeline_orchestrator.verify import cmd_verify, read_install_mode
+
+
+def resolve_user_request(
+    project: Path,
+    slug: str,
+    request: str = "",
+    request_file: str = "",
+) -> str:
+    text = (request or "").strip()
+    if text:
+        return text
+    if request_file:
+        path = Path(request_file)
+        if not path.is_absolute():
+            path = project / path
+        if not path.is_file():
+            raise FileNotFoundError("request file not found: %s" % path)
+        return path.read_text(encoding="utf-8").strip()
+    auto = request_path(project, slug)
+    if auto.is_file():
+        return auto.read_text(encoding="utf-8").strip()
+    return ""
 
 
 def _runner(name: str, fake_results: dict | None = None):
@@ -42,6 +64,8 @@ def cmd_run(
     change_class: str,
     runner: str,
     dry_run: bool,
+    request: str = "",
+    request_file: str = "",
 ) -> int:
     from install import version
 
@@ -64,6 +88,26 @@ def cmd_run(
     if runner in {"cursor", "cursor-sdk"} and not os.environ.get("CURSOR_API_KEY", "").strip():
         print("CURSOR_API_KEY is not set")
         return EXIT_STARTUP
+    try:
+        impl = _runner(runner)
+    except ValueError as exc:
+        print(str(exc))
+        return EXIT_STARTUP
+    if runner in {"cursor", "cursor-sdk"} and not impl.is_available():
+        print("cursor-sdk missing; install with: uv tool install -e \".[orchestrator]\"")
+        return EXIT_STARTUP
+    try:
+        user_request = resolve_user_request(project, slug, request, request_file)
+    except FileNotFoundError as exc:
+        print(str(exc))
+        return EXIT_STARTUP
+    if not user_request:
+        print(
+            "warning: no user request; pass --request or write features/%s/request.md"
+            % slug
+        )
+    else:
+        print("USER_REQUEST: %s" % user_request.splitlines()[0][:200])
     run = start_run(
         project=project,
         spec=spec,
@@ -71,12 +115,8 @@ def cmd_run(
         change_class=cls,
         runner_name=runner,
         kit_version=version(),
+        user_request=user_request,
     )
-    try:
-        impl = _runner(runner)
-    except ValueError as exc:
-        print(str(exc))
-        return EXIT_STARTUP
     return asyncio.run(advance(project=project, spec=spec, run=run, runner=impl, spec_dir=spec_dir))
 
 

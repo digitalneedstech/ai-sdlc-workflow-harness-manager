@@ -166,15 +166,26 @@ Default `--mode kit` copies the markdown pack. That path is unchanged.
 own workflows in `pipeline_extensions/`; kit mode never loads those files.
 
 ```bash
+# install the Cursor SDK extra once (kit mode does not need this)
+uv tool install -e ".[orchestrator]"
 cd /path/to/your-app
 pipeline-kit init --mode orchestrator --ide cursor
 # set CURSOR_API_KEY from Cursor Dashboard -> Integrations
-pipeline-kit run --slug checkout-redesign --workflow feature-development
+# chat text is not inherited; pass it or write features/<slug>/request.md
+pipeline-kit run --slug checkout-redesign --workflow feature-development \
+  --request "redesign checkout so guests can pay without an account"
 pipeline-kit approve --slug checkout-redesign --gate requirements
 pipeline-kit resume --slug checkout-redesign
 pipeline-kit workflows --scaffold security-review
-pipeline-kit run --slug pci-gap --workflow security-review --runner fake
+pipeline-kit run --slug pci-gap --workflow security-review --runner fake \
+  --request-file features/pci-gap/request.md
 ```
+
+Copy-ready examples live in the kit repo at
+[`pipeline_orchestrator/demo/`](./pipeline_orchestrator/demo/)
+(`security-review`, `ci-audit`, `dependency-audit`,
+`accessibility-review`). Copy `pipeline_extensions/` into the customer
+app; they are not installed by `init`.
 
 Custom workflows are orchestrator-only. They do not appear in kit-mode
 `pipeline-kit workflows` listings and do not change `.pipeline/workflows/`.

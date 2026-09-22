@@ -16,8 +16,11 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
+import re
 import shutil
 import stat
+import subprocess
 import sys
 from pathlib import Path
 from typing import Any
@@ -47,8 +50,199 @@ IDE_SKILL_REL = {
 }
 
 
+_SEMVER = re.compile(r"^(\d+)\.(\d+)\.(\d+)(?:[-+][0-9A-Za-z.-]+)?$")
+_VERSION_PARTS = ("major", "minor", "patch")
+KIT_REPO_ENV = "PIPELINE_KIT_REPO"
+
+
 def version() -> str:
     return (HERE / "VERSION").read_text(encoding="utf-8").strip()
+
+
+def parse_semver(value: str) -> tuple[int, int, int]:
+    match = _SEMVER.fullmatch(value.strip())
+    if not match:
+        raise ValueError(f"not a semver X.Y.Z: {value}")
+    return int(match.group(1)), int(match.group(2)), int(match.group(3))
+
+
+def bump_semver(current: str, part: str) -> str:
+    if part not in _VERSION_PARTS:
+        raise ValueError(f"bump part must be major, minor, or patch: {part}")
+    major, minor, patch = parse_semver(current)
+    if part == "major":
+        return f"{major + 1}.0.0"
+    if part == "minor":
+        return f"{major}.{minor + 1}.0"
+    return f"{major}.{minor}.{patch + 1}"
+
+
+def is_kit_source(root: Path) -> bool:
+    return (
+        (root / "VERSION").is_file()
+        and (root / "install.py").is_file()
+        and (root / "pyproject.toml").is_file()
+        and (root / "kit" / "pipeline").is_dir()
+    )
+
+
+def is_kit_checkout(root: Path) -> bool:
+    return is_kit_source(root) and (root / ".git").exists()
+
+
+def _validated_checkout(value: str, origin: str) -> Path:
+    root = Path(value).expanduser().resolve()
+    if not is_kit_source(root):
+        raise ValueError(f"{origin} is not a pipeline-kit source tree: {root}")
+    if not (root / ".git").exists():
+        raise ValueError(f"{origin} is not a git checkout: {root}")
+    return root
+
+
+def resolve_kit_checkout(explicit: str | None = None) -> Path:
+    """Locate the kit's own git checkout. Never the installed copy or a customer project."""
+    if explicit:
+        return _validated_checkout(explicit, "--repo")
+    configured = os.environ.get(KIT_REPO_ENV, "").strip()
+    if configured:
+        return _validated_checkout(configured, KIT_REPO_ENV)
+    cwd = Path.cwd().resolve()
+    for candidate in (cwd, *cwd.parents):
+        if is_kit_checkout(candidate):
+            return candidate
+    if is_kit_checkout(HERE):
+        return HERE
+    raise ValueError(
+        "no pipeline-kit git checkout found. Release from the kit clone, "
+        f"pass --repo PATH, or set {KIT_REPO_ENV}.\n"
+        f"the running copy ({HERE}) is installed, not a checkout — "
+        "bumping it would publish nothing."
+    )
+
+
+def _sync_website_package_version(pkg: Path, new: str) -> bool:
+    text = pkg.read_text(encoding="utf-8")
+    updated, count = re.subn(
+        r'("version"\s*:\s*")([^"]*)(")',
+        rf"\g<1>{new}\g<3>",
+        text,
+        count=1,
+    )
+    if count:
+        pkg.write_text(updated, encoding="utf-8")
+    return count > 0
+
+
+def write_kit_version(root: Path, new: str) -> list[str]:
+    parse_semver(new)
+    changed: list[str] = []
+    version_file = root / "VERSION"
+    version_file.write_text(new + "\n", encoding="utf-8")
+    changed.append("VERSION")
+    website_pkg = root / "website" / "package.json"
+    if website_pkg.is_file() and _sync_website_package_version(website_pkg, new):
+        changed.append("website/package.json")
+    return changed
+
+
+def _git(root: Path, *args: str) -> subprocess.CompletedProcess[str]:
+    """Run git inside the kit checkout only — never the caller's project."""
+    return subprocess.run(
+        ["git", "-C", str(root), *args],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+
+def _git_failed(result: subprocess.CompletedProcess[str], action: str) -> int:
+    detail = (result.stderr or result.stdout).strip()
+    print(f"{action} failed: {detail}" if detail else f"{action} failed", file=sys.stderr)
+    return 70
+
+
+def commit_release(root: Path, new: str, paths: list[str], *, tag: bool) -> int:
+    message = f"Release {new}"
+    commit = _git(root, "commit", "-m", message, "--", *paths)
+    if commit.returncode != 0:
+        return _git_failed(commit, "git commit")
+    print(f"committed in {root}: {message}")
+    if not tag:
+        return 0
+    name = f"v{new}"
+    if _git(root, "rev-parse", "-q", "--verify", f"refs/tags/{name}").returncode == 0:
+        print(f"tag {name} already exists in {root}", file=sys.stderr)
+        return 70
+    tagged = _git(root, "tag", "-a", name, "-m", message)
+    if tagged.returncode != 0:
+        return _git_failed(tagged, "git tag")
+    print(f"tagged {name}")
+    return 0
+
+
+def cmd_version(
+    action: str = "show",
+    value: str = "",
+    *,
+    repo: str = "",
+    dry_run: bool = False,
+    commit: bool = False,
+    tag: bool = False,
+) -> int:
+    if action == "show":
+        print(version())
+        try:
+            root = resolve_kit_checkout(repo or None)
+        except ValueError:
+            return 0
+        in_checkout = (root / "VERSION").read_text(encoding="utf-8").strip()
+        if in_checkout != version():
+            print(f"checkout {root}: {in_checkout} (not the running copy)", file=sys.stderr)
+        return 0
+    try:
+        root = resolve_kit_checkout(repo or None)
+    except ValueError as exc:
+        print(str(exc), file=sys.stderr)
+        return 64
+    if tag and not commit:
+        print("--tag requires --commit", file=sys.stderr)
+        return 64
+    current = (root / "VERSION").read_text(encoding="utf-8").strip()
+    try:
+        if action == "bump":
+            part = (value or "patch").strip().lower()
+            new = bump_semver(current, part)
+        elif action == "set":
+            if not value.strip():
+                print("version set requires X.Y.Z", file=sys.stderr)
+                return 64
+            new = value.strip().lstrip("v")
+            parse_semver(new)
+        else:
+            print(f"unknown version action: {action}", file=sys.stderr)
+            return 64
+    except ValueError as exc:
+        print(str(exc), file=sys.stderr)
+        return 64
+    if new == current:
+        print(f"already {current} in {root}")
+        return 0
+    if dry_run:
+        print(f"would set {current} -> {new} in {root}")
+        if commit:
+            print(f"would commit 'Release {new}'" + (f" and tag v{new}" if tag else ""))
+        return 0
+    changed = write_kit_version(root, new)
+    print(f"{root}: {current} -> {new}")
+    print("updated: " + ", ".join(changed))
+    if not commit:
+        print(f"next: git -C {root} commit -m 'Release {new}' -- {' '.join(changed)}")
+        print(f"next: git -C {root} tag -a v{new} -m 'Release {new}'")
+        return 0
+    code = commit_release(root, new, changed, tag=tag)
+    if code == 0:
+        print(f"next: git -C {root} push --follow-tags")
+    return code
 
 
 def bundled_pack() -> Path:
@@ -305,7 +499,9 @@ def install(
         return 64
     pack_dest.mkdir(parents=True, exist_ok=True)
     copied: list[str] = []
-    dirs = ("wiki",) if mode == "orchestrator" else PACK_DIRS
+    # hooks/obs collectors stay on disk so a leftover .cursor/hooks.json
+    # from `obs install` does not fail when briefs are not copied.
+    dirs = ("wiki", "hooks") if mode == "orchestrator" else PACK_DIRS
     for name in dirs:
         _copy_tree(pack_src / name, pack_dest / name, marker_root, copied)
     for name in PACK_FILES:
@@ -618,6 +814,16 @@ def cli_main(argv: list[str] | None = None) -> int:
     run_parser.add_argument("--change-class", default="")
     run_parser.add_argument("--runner", default="cursor", choices=("cursor", "fake"))
     run_parser.add_argument("--dry-run", action="store_true")
+    run_parser.add_argument(
+        "--request",
+        default="",
+        help="verbatim user ask to pass into every step as USER_REQUEST",
+    )
+    run_parser.add_argument(
+        "--request-file",
+        default="",
+        help="read USER_REQUEST from this file (default: features/<slug>/request.md)",
+    )
 
     resume_parser = commands.add_parser("resume", help="continue a paused orchestrator run")
     resume_parser.add_argument("project", nargs="?", default=".")
@@ -815,7 +1021,50 @@ def cli_main(argv: list[str] | None = None) -> int:
     )
     e_sync.add_argument("project", nargs="?", default=".")
 
+    version_parser = commands.add_parser(
+        "version",
+        help="show or set the kit release version (maintainers)",
+    )
+    version_parser.add_argument(
+        "action",
+        nargs="?",
+        choices=("show", "bump", "set"),
+        default="show",
+        help="show current, bump a semver part, or set an exact version",
+    )
+    version_parser.add_argument(
+        "value",
+        nargs="?",
+        default="",
+        help="patch|minor|major for bump, or X.Y.Z for set",
+    )
+    version_parser.add_argument(
+        "--repo",
+        default="",
+        help=f"pipeline-kit checkout (default: ${KIT_REPO_ENV}, then search up from cwd)",
+    )
+    version_parser.add_argument(
+        "--commit",
+        action="store_true",
+        help="commit the version files in the kit checkout, not the current project",
+    )
+    version_parser.add_argument(
+        "--tag",
+        action="store_true",
+        help="with --commit, also create the vX.Y.Z tag in the kit checkout",
+    )
+    version_parser.add_argument("--dry-run", action="store_true")
+
     args = parser.parse_args(argv)
+    if args.command == "version":
+        return cmd_version(
+            args.action,
+            args.value,
+            repo=args.repo,
+            dry_run=args.dry_run,
+            commit=args.commit,
+            tag=args.tag,
+        )
     home = Path(args.home).expanduser().resolve() if getattr(args, "home", "") else None
     project = Path(getattr(args, "project", ".")).expanduser().resolve()
 
@@ -884,6 +1133,8 @@ def cli_main(argv: list[str] | None = None) -> int:
                 change_class=args.change_class,
                 runner=args.runner,
                 dry_run=args.dry_run,
+                request=getattr(args, "request", "") or "",
+                request_file=getattr(args, "request_file", "") or "",
             )
         if args.command == "resume":
             return cmd_resume(project, slug=args.slug, runner=args.runner)

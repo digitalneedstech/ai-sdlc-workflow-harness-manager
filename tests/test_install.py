@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import importlib.util
 import json
 import runpy
 import subprocess
@@ -291,6 +292,134 @@ FORBIDDEN_PACK_TOKENS = (
     "shop-1842",
     "dark-factory",
 )
+
+
+def test_bump_semver_parts():
+    ns = runpy.run_path(str(INSTALL))
+    assert ns["bump_semver"]("1.2.0", "patch") == "1.2.1"
+    assert ns["bump_semver"]("1.2.9", "minor") == "1.3.0"
+    assert ns["bump_semver"]("1.2.0", "major") == "2.0.0"
+    with pytest.raises(ValueError):
+        ns["parse_semver"]("v1")
+
+
+def test_version_show_prints_file(capsys: pytest.CaptureFixture[str]):
+    assert _run_cli(["version"]) == 0
+    assert capsys.readouterr().out.strip() == (REPO / "VERSION").read_text(encoding="utf-8").strip()
+
+
+def _kit_checkout(root: Path, *, git: bool = True, init: bool = False) -> Path:
+    """A minimal tree that looks like the pipeline-kit source to the version command."""
+    (root / "kit" / "pipeline").mkdir(parents=True)
+    (root / "install.py").write_text("# stub\n", encoding="utf-8")
+    (root / "pyproject.toml").write_text('[project]\nname = "pipeline-kit"\n', encoding="utf-8")
+    (root / "VERSION").write_text("1.2.0\n", encoding="utf-8")
+    (root / "website").mkdir()
+    (root / "website" / "package.json").write_text(
+        '{\n  "name": "pipeline-kit-docs",\n  "version": "1.2.0"\n}\n',
+        encoding="utf-8",
+    )
+    if init:
+        subprocess.run(["git", "init", "-q", str(root)], check=True)
+        for key, value in (("user.email", "kit@example.test"), ("user.name", "Kit Test")):
+            subprocess.run(["git", "-C", str(root), "config", key, value], check=True)
+        subprocess.run(["git", "-C", str(root), "add", "-A"], check=True)
+        subprocess.run(["git", "-C", str(root), "commit", "-qm", "init"], check=True)
+    elif git:
+        (root / ".git").mkdir()
+    return root
+
+
+def test_version_bump_and_set_from_checkout(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
+    repo = _kit_checkout(tmp_path / "pipeline-kit")
+    website = repo / "website"
+
+    assert _run_cli(["version", "bump", "patch", "--repo", str(repo)]) == 0
+    out = capsys.readouterr().out
+    assert "1.2.0 -> 1.2.1" in out
+    assert (repo / "VERSION").read_text(encoding="utf-8") == "1.2.1\n"
+    assert '"version": "1.2.1"' in (website / "package.json").read_text(encoding="utf-8")
+
+    assert _run_cli(["version", "set", "2.0.0", "--repo", str(repo)]) == 0
+    assert (repo / "VERSION").read_text(encoding="utf-8") == "2.0.0\n"
+    assert _run_cli(["version", "bump", "minor", "--repo", str(repo), "--dry-run"]) == 0
+    dry = capsys.readouterr().out
+    assert "would set 2.0.0 -> 2.1.0" in dry
+    assert (repo / "VERSION").read_text(encoding="utf-8") == "2.0.0\n"
+
+
+def test_version_refuses_non_git(tmp_path: Path):
+    repo = _kit_checkout(tmp_path / "pipeline-kit", git=False)
+    assert _run_cli(["version", "bump", "patch", "--repo", str(repo)]) == 64
+    assert (repo / "VERSION").read_text(encoding="utf-8") == "1.2.0\n"
+
+
+def test_version_commits_and_tags_in_kit_checkout(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    repo = _kit_checkout(tmp_path / "pipeline-kit", init=True)
+
+    assert _run_cli(["version", "bump", "minor", "--repo", str(repo), "--commit", "--tag"]) == 0
+    out = capsys.readouterr().out
+    assert "Release 1.3.0" in out
+
+    log = subprocess.run(
+        ["git", "-C", str(repo), "log", "-1", "--pretty=%s"],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    assert log.stdout.strip() == "Release 1.3.0"
+    tags = subprocess.run(
+        ["git", "-C", str(repo), "tag", "--list"],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    assert "v1.3.0" in tags.stdout
+    status = subprocess.run(
+        ["git", "-C", str(repo), "status", "--porcelain"],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    assert status.stdout.strip() == ""
+
+
+def test_version_tag_requires_commit(tmp_path: Path):
+    repo = _kit_checkout(tmp_path / "pipeline-kit", init=True)
+    assert _run_cli(["version", "bump", "patch", "--repo", str(repo), "--tag"]) == 64
+    assert (repo / "VERSION").read_text(encoding="utf-8") == "1.2.0\n"
+
+
+def test_version_uses_env_checkout_from_unrelated_cwd(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    repo = _kit_checkout(tmp_path / "pipeline-kit")
+    project = tmp_path / "customer-app"
+    project.mkdir()
+    monkeypatch.chdir(project)
+    monkeypatch.setenv("PIPELINE_KIT_REPO", str(repo))
+
+    assert _run_cli(["version", "bump", "patch"]) == 0
+    assert (repo / "VERSION").read_text(encoding="utf-8") == "1.2.1\n"
+    assert not (project / "VERSION").exists()
+
+
+def test_version_refuses_installed_copy(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    installed = _kit_checkout(tmp_path / "site-packages" / "pipeline_kit", git=False)
+    project = tmp_path / "customer-app"
+    project.mkdir()
+    monkeypatch.chdir(project)
+    monkeypatch.delenv("PIPELINE_KIT_REPO", raising=False)
+
+    spec = importlib.util.spec_from_file_location("install_under_test", INSTALL)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    monkeypatch.setattr(module, "HERE", installed)
+
+    with pytest.raises(ValueError, match="installed, not a checkout"):
+        module.resolve_kit_checkout()
 
 
 def test_pack_markdown_is_portable_and_headed():

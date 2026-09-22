@@ -65,9 +65,13 @@ pipeline-kit workflows
 ```
 
 Optional **orchestrator mode** (`--mode orchestrator`) runs the same
-workflows from Python in the wheel via the Cursor SDK. Kit mode stays the
-default. Associates add extra workflows with
+workflows from Python in the wheel via the Cursor SDK. Install the extra
+(`uv tool install -e ".[orchestrator]"`) and pass the user ask with
+`--request` or `features/<slug>/request.md` — the chat session is not
+inherited. Kit mode stays the default. Associates add extra workflows with
 `pipeline-kit workflows --scaffold NAME` (orchestrator only).
+Copy-ready examples (security review, CI audit, dependency audit,
+accessibility review): [`pipeline_orchestrator/demo/`](./pipeline_orchestrator/demo/).
 
 Use `--ide claude-code`, `--ide github`, or `--ide none` when appropriate.
 To install a shared user pack instead, run `pipeline-kit setup --ide cursor`.
@@ -128,6 +132,8 @@ Must-configure overview:
 | `knowledge/` | Optional QA overlay commands (consumes Graphify) |
 | `pipeline_plugins/` | Optional Graphify and Archify plugin lifecycle (not observability) |
 | `pipeline_observability/` | Agent-run traces, scores, Langfuse flush (`obs` CLI) |
+| `pipeline_orchestrator/` | Code-owned workflow engine (`--mode orchestrator`) |
+| `pipeline_orchestrator/demo/` | Example associate workflows to copy into an app |
 | `kit/pipeline/` | Bundled pack copied to `<app>/.pipeline` |
 | [CUSTOMER-GUIDE.md](./CUSTOMER-GUIDE.md) | Architect / developer handbook |
 | `website/` | Local Docusaurus documentation (`npm start` in that folder) |
@@ -139,6 +145,18 @@ using the backward-compatible maintainer command:
 ```bash
 python3 install.py --sync-kit
 ```
+
+To cut a release, bump the single source of truth (`VERSION`) rather than editing it by hand:
+
+```bash
+pipeline-kit version bump patch --commit --tag   # or: minor | major | version set 1.3.0
+git -C /path/to/pipeline-kit push --follow-tags
+```
+
+The write and the commit always land in **this** repository — resolved from `--repo`, then
+`$PIPELINE_KIT_REPO`, then upwards from the current directory — never in the project where the
+kit is installed. Without `--commit` the files change and the git commands are printed instead.
+Details: [website/docs/maintainers/repo.md](./website/docs/maintainers/repo.md).
 
 How to add a workflow after install: see `.pipeline/README.md` in the
 customer repo (“How to add a workflow”).
@@ -173,6 +191,7 @@ pipeline-kit obs report
 pipeline-kit obs flush
 # Full guide: OBSERVABILITY.md
 pipeline-kit uninstall [project]  # remove files managed by the kit
+pipeline-kit version              # current kit VERSION (maintainers: bump / set)
 pipeline-kit --version
 ```
 

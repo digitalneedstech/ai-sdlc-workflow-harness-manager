@@ -25,4 +25,40 @@ python3 -m pip install pytest
 python3 -m pytest -q tests
 ```
 
+## Release a new version
+
+The kit version is a single file: `VERSION`. It drives `pipeline-kit --version`, the Python package version, and `.pipeline/install.json` after `init` / `update`. `website/package.json` is kept on the same number.
+
+```bash
+pipeline-kit version                 # current, e.g. 1.2.1
+pipeline-kit version bump patch      # 1.2.1 → 1.2.2
+pipeline-kit version bump minor      # 1.2.1 → 1.3.0
+pipeline-kit version bump major      # 1.2.1 → 2.0.0
+pipeline-kit version set 1.4.0       # exact
+pipeline-kit version bump patch --dry-run
+```
+
+### Where the change lands
+
+Bump and set always write to **this repository**, never to the project you happen to be standing in and never to the installed wheel. The checkout is resolved in this order:
+
+1. `--repo PATH`
+2. `$PIPELINE_KIT_REPO`
+3. the first pipeline-kit git checkout at or above the current directory
+
+If none of those resolve, the command fails rather than bumping the installed copy — a bump there would publish nothing. Export `PIPELINE_KIT_REPO=/path/to/pipeline-kit` to release from anywhere.
+
+### Commit and tag
+
+`--commit` commits `VERSION` (and `website/package.json`) **in the kit checkout**, using `git -C`, so a release never lands in a customer repo. Only those paths are committed; anything else staged in the kit repo is left alone. `--tag` adds the annotated `vX.Y.Z` tag and requires `--commit`.
+
+```bash
+pipeline-kit version bump patch --commit --tag
+git -C /path/to/pipeline-kit push --follow-tags
+```
+
+Without `--commit` the files are written and the exact `git -C … commit` / `tag` commands are printed instead. Pushing is always yours to run.
+
+Customers pick up the new wheel with `uv tool upgrade pipeline-kit` (or a reinstall), then `pipeline-kit update` in each project.
+
 Do not start a nested feature pipeline against this repo unless the change is to the kit itself.

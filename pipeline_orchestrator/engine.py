@@ -64,6 +64,8 @@ async def _run_agent(
     spec_dir: Path | None = None,
 ) -> tuple[int | None, StepResult | None]:
     slug = run["slug"]
+    extra = dict(extra or {})
+    extra.setdefault("USER_REQUEST", str(run.get("user_request") or "").strip())
     emit(
         project,
         "step_start",
@@ -111,12 +113,14 @@ async def _run_agent(
         run["exit_hint"] = EXIT_STARTUP
         save_run(project, run)
         emit(project, "step_end", slug=slug, step=step.id, error=result.error, startup=True)
+        print(result.error or "startup failure")
         return EXIT_STARTUP, result
     if not result.ok:
         run["status"] = "error"
         run["exit_hint"] = EXIT_STEP
         save_run(project, run)
         emit(project, "step_end", slug=slug, step=step.id, error=result.error)
+        print(result.error or "step failed")
         return EXIT_STEP, result
     try:
         checked = step_advanced(project=project, slug=slug, agent=step.id, started_at=started)
@@ -125,6 +129,7 @@ async def _run_agent(
         run["exit_hint"] = EXIT_STEP
         save_run(project, run)
         emit(project, "step_end", slug=slug, step=step.id, error=str(exc))
+        print(str(exc))
         return EXIT_STEP, result
     row["status"] = "completed"
     row["handoff_status"] = checked["status"]
@@ -296,6 +301,12 @@ async def advance(
                 run["status"] = "blocked"
                 run["exit_hint"] = EXIT_STEP
                 save_run(project, run)
+                print(f"blocked: step={node.id} slug={run['slug']}")
+                print(f"  see features/{run['slug']}/questions.md and HANDOFF-*.md")
+                print(
+                    f"  update features/{run['slug']}/request.md then: "
+                    f"pipeline-kit resume --slug {run['slug']}"
+                )
                 return EXIT_STEP
             if not is_ok(status) and status.lower() not in {"success", "assumptions_used"}:
                 # still advance if SUCCESS-like; otherwise fail closed
@@ -325,6 +336,7 @@ def start_run(
     change_class: str,
     runner_name: str,
     kit_version: str,
+    user_request: str = "",
 ) -> dict[str, Any]:
     chain = spec.chain_for(change_class)
     return new_run(
@@ -335,4 +347,5 @@ def start_run(
         runner=runner_name,
         kit_version=kit_version,
         chain=chain,
+        user_request=user_request,
     )
