@@ -12,12 +12,15 @@ license = "MIT"
 authors = [{ name = "Pipeline Kit maintainers" }]
 dependencies = []
 
+[project.optional-dependencies]
+orchestrator = ["cursor-sdk"]
+
 [project.scripts]
 pipeline-kit = "pipeline_kit.install:cli_main"
 
 [tool.setuptools]
-packages = ["pipeline_kit", "knowledge", "pipeline_plugins", "pipeline_features", "pipeline_observability", "pipeline_observability.adapters", "pipeline_eval"]
-package-dir = { pipeline_kit = ".", knowledge = "knowledge", pipeline_plugins = "pipeline_plugins", pipeline_features = "pipeline_features", pipeline_observability = "pipeline_observability", pipeline_eval = "pipeline_eval" }
+packages = ["pipeline_kit", "knowledge", "pipeline_plugins", "pipeline_features", "pipeline_observability", "pipeline_observability.adapters", "pipeline_eval", "pipeline_orchestrator", "pipeline_orchestrator.runners"]
+package-dir = { pipeline_kit = ".", knowledge = "knowledge", pipeline_plugins = "pipeline_plugins", pipeline_features = "pipeline_features", pipeline_observability = "pipeline_observability", pipeline_eval = "pipeline_eval", pipeline_orchestrator = "pipeline_orchestrator" }
 include-package-data = true
 
 [tool.setuptools.dynamic]
@@ -29,4 +32,8 @@ pipeline_kit = [
   "CUSTOMER-GUIDE.md",
   "kit/pipeline/**/*",
 ]
+pipeline_orchestrator = [
+  "prompts/*",
+]
+
 

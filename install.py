@@ -230,19 +230,46 @@ def sync_kit() -> int:
     return 0
 
 
-def write_marker(pack_dest: Path, scope: str, files: list[str]) -> None:
+def write_marker(pack_dest: Path, scope: str, files: list[str], mode: str = "kit") -> None:
     unique: list[str] = []
     for name in files:
         if name not in unique:
             unique.append(name)
     (pack_dest / MARKER_NAME).write_text(
         json.dumps(
-            {"name": "pipeline-kit", "version": version(), "scope": scope, "files": unique},
+            {
+                "name": "pipeline-kit",
+                "version": version(),
+                "scope": scope,
+                "mode": mode or "kit",
+                "files": unique,
+            },
             indent=2,
         )
         + "\n",
         encoding="utf-8",
     )
+
+
+def read_install_mode(pack: Path) -> str:
+    marker = pack / MARKER_NAME
+    if not marker.is_file():
+        return "kit"
+    try:
+        data = json.loads(marker.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return "kit"
+    if isinstance(data, dict):
+        return str(data.get("mode") or "kit")
+    return "kit"
+
+
+def adapter_orchestrator_skill(pack: Path, ide: str) -> Path | None:
+    candidate = pack / "adapters" / ide / "skills" / "run-orchestrator" / "SKILL.md"
+    if candidate.is_file():
+        return candidate
+    fallback = pack / "adapters" / "cursor" / "skills" / "run-orchestrator" / "SKILL.md"
+    return fallback if fallback.is_file() else None
 
 
 def install(
@@ -253,6 +280,7 @@ def install(
     agent_stubs: bool,
     dry_run: bool,
     home: Path | None = None,
+    mode: str = "kit",
 ) -> int:
     pack_src = source_pack()
     home_dir = home or Path.home()
@@ -271,9 +299,14 @@ def install(
         print("[dry run] would copy pack, merge config.json, write install.json", file=sys.stderr)
         return 0
 
+    mode = (mode or "kit").strip().lower()
+    if mode not in {"kit", "orchestrator"}:
+        print(f"unknown mode: {mode}", file=sys.stderr)
+        return 64
     pack_dest.mkdir(parents=True, exist_ok=True)
     copied: list[str] = []
-    for name in PACK_DIRS:
+    dirs = ("wiki",) if mode == "orchestrator" else PACK_DIRS
+    for name in dirs:
         _copy_tree(pack_src / name, pack_dest / name, marker_root, copied)
     for name in PACK_FILES:
         src = pack_src / name
@@ -302,7 +335,10 @@ def install(
         copied.append(".pipeline/config.json")
 
     if ide != "none":
-        skill_src = adapter_skill(pack_src, ide) or adapter_skill(pack_dest, ide)
+        if mode == "orchestrator":
+            skill_src = adapter_orchestrator_skill(pack_src, ide) or adapter_skill(pack_src, ide)
+        else:
+            skill_src = adapter_skill(pack_src, ide) or adapter_skill(pack_dest, ide)
         skill_rel = IDE_SKILL_REL.get(ide)
         if skill_src and skill_rel:
             if scope == "user" and ide in {"cursor", "claude-code"}:
@@ -313,7 +349,7 @@ def install(
             else:
                 print(f"note: --user --ide {ide} writes no IDE adapter (use cursor, claude-code, or --project)", file=sys.stderr)
 
-    if agent_stubs:
+    if agent_stubs and mode != "orchestrator":
         stubs_dir = (
             (home_dir / ".cursor" / "agents")
             if scope == "user"
@@ -323,10 +359,14 @@ def install(
         write_agent_stubs(pack_src / "agents", stubs_dir, stubs_root, copied)
 
     marker_pack = pack_dest
-    write_marker(marker_pack, scope, copied)
+    write_marker(marker_pack, scope, copied, mode=mode)
     copied.append(".pipeline/install.json" if scope == "project" else MARKER_NAME)
-    print(f"installed {version()}: {len(copied)} files", file=sys.stderr)
-    print(f"Done. Loader: python3 {pack_dest / 'loader' / 'load_workflow.py'}", file=sys.stderr)
+    print(f"installed {version()}: {len(copied)} files ({mode})", file=sys.stderr)
+    if mode == "orchestrator":
+        (pack_dest / "state" / "runs").mkdir(parents=True, exist_ok=True)
+        print("Done. Orchestrator: pipeline-kit run --slug <slug> --workflow feature-development", file=sys.stderr)
+    else:
+        print(f"Done. Loader: python3 {pack_dest / 'loader' / 'load_workflow.py'}", file=sys.stderr)
     return 0
 
 
@@ -438,14 +478,20 @@ def doctor(
     home_dir = home or Path.home()
     pack = resolved_pack(target=target, user=user, home=home_dir)
     scope = "user" if pack == home_dir / ".pipeline" else "project"
+    mode = read_install_mode(pack)
     checks = {
         f"Python {sys.version_info.major}.{sys.version_info.minor} (3.11+)": sys.version_info
         >= (3, 11),
         f"{scope} pack: {pack}": pack.is_dir(),
         "install marker": (pack / MARKER_NAME).is_file(),
-        "workflow loader": (pack / "loader" / "load_workflow.py").is_file(),
         "configuration": (pack / "config.json").is_file(),
     }
+    if mode == "orchestrator":
+        checks["orchestrator mode"] = True
+        checks["CURSOR_API_KEY"] = bool(__import__("os").environ.get("CURSOR_API_KEY", "").strip())
+        print(f"info  mode: orchestrator (v{version()})")
+    else:
+        checks["workflow loader"] = (pack / "loader" / "load_workflow.py").is_file()
     if ide and ide != "none":
         root = home_dir if scope == "user" else target
         skill_rel = IDE_SKILL_REL.get(ide)
@@ -477,8 +523,20 @@ def doctor(
     return 1
 
 
-def list_workflows(*, target: Path, user: bool, home: Path | None = None) -> int:
+def list_workflows(*, target: Path, user: bool, home: Path | None = None, scaffold: str = "") -> int:
     pack = resolved_pack(target=target, user=user, home=home)
+    if scaffold:
+        _ensure_pkg_path()
+        from pipeline_orchestrator.scaffold import scaffold_workflow
+
+        project = (home or Path.home()) if user else target
+        return scaffold_workflow(project, scaffold)
+    if read_install_mode(pack) == "orchestrator":
+        _ensure_pkg_path()
+        from pipeline_orchestrator.cli import cmd_list_orchestrator
+
+        project = (home or Path.home()) if user else target
+        return cmd_list_orchestrator(project)
     workflows_dir = pack / "workflows"
     if not workflows_dir.is_dir():
         print(f"no pipeline workflows found at {workflows_dir}", file=sys.stderr)
@@ -503,6 +561,12 @@ def _add_install_options(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--ide", choices=("cursor", "claude-code", "github", "none"), default="cursor")
     parser.add_argument("--agent-stubs", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument(
+        "--mode",
+        choices=("kit", "orchestrator"),
+        default=None,
+        help="kit copies the markdown pack (default). orchestrator uses the wheel engine.",
+    )
     parser.add_argument("--home", default="", help=argparse.SUPPRESS)
 
 
@@ -540,7 +604,41 @@ def cli_main(argv: list[str] | None = None) -> int:
     workflows_parser = commands.add_parser("workflows", help="list workflows in the active pack")
     workflows_parser.add_argument("project", nargs="?", default=".")
     workflows_parser.add_argument("--user", action="store_true")
+    workflows_parser.add_argument(
+        "--scaffold",
+        default="",
+        help="create an associate workflow (orchestrator mode only; does not change kit mode)",
+    )
     workflows_parser.add_argument("--home", default="", help=argparse.SUPPRESS)
+
+    run_parser = commands.add_parser("run", help="run a workflow with the code orchestrator")
+    run_parser.add_argument("project", nargs="?", default=".")
+    run_parser.add_argument("--slug", required=True)
+    run_parser.add_argument("--workflow", default="feature-development")
+    run_parser.add_argument("--change-class", default="")
+    run_parser.add_argument("--runner", default="cursor", choices=("cursor", "fake"))
+    run_parser.add_argument("--dry-run", action="store_true")
+
+    resume_parser = commands.add_parser("resume", help="continue a paused orchestrator run")
+    resume_parser.add_argument("project", nargs="?", default=".")
+    resume_parser.add_argument("--slug", required=True)
+    resume_parser.add_argument("--runner", default="cursor", choices=("cursor", "fake"))
+
+    approve_parser = commands.add_parser("approve", help="approve an orchestrator sign-off gate")
+    approve_parser.add_argument("project", nargs="?", default=".")
+    approve_parser.add_argument("--slug", required=True)
+    approve_parser.add_argument("--gate", required=True)
+    approve_parser.add_argument("--note", default="none")
+
+    status_parser = commands.add_parser("status", help="print orchestrator run state")
+    status_parser.add_argument("project", nargs="?", default=".")
+    status_parser.add_argument("--slug", required=True)
+
+    verify_parser = commands.add_parser("verify", help="report install mode and sealed graph")
+    verify_parser.add_argument("project", nargs="?", default=".")
+
+    export_parser = commands.add_parser("export-briefs", help="write a non-executing brief reference copy")
+    export_parser.add_argument("project", nargs="?", default=".")
 
     knowledge_parser = commands.add_parser(
         "knowledge",
@@ -726,6 +824,8 @@ def cli_main(argv: list[str] | None = None) -> int:
         if not user and not project.is_dir():
             print(f"not a directory: {project}", file=sys.stderr)
             return 64
+        dest = ((home or Path.home()) if user else project) / ".pipeline"
+        mode = getattr(args, "mode", None) or read_install_mode(dest)
         return install(
             scope="user" if user else "project",
             target=(home or Path.home()) if user else project,
@@ -733,8 +833,11 @@ def cli_main(argv: list[str] | None = None) -> int:
             agent_stubs=args.agent_stubs,
             dry_run=args.dry_run,
             home=home,
+            mode=mode,
         )
     if args.command == "setup":
+        dest = (home or Path.home()) / ".pipeline"
+        mode = getattr(args, "mode", None) or read_install_mode(dest)
         return install(
             scope="user",
             target=home or Path.home(),
@@ -742,6 +845,7 @@ def cli_main(argv: list[str] | None = None) -> int:
             agent_stubs=args.agent_stubs,
             dry_run=args.dry_run,
             home=home,
+            mode=mode,
         )
     if args.command == "uninstall":
         return uninstall(
@@ -752,7 +856,44 @@ def cli_main(argv: list[str] | None = None) -> int:
     if args.command == "doctor":
         return doctor(target=project, user=args.user, ide=args.ide, home=home)
     if args.command == "workflows":
-        return list_workflows(target=project, user=args.user, home=home)
+        return list_workflows(
+            target=project,
+            user=args.user,
+            home=home,
+            scaffold=getattr(args, "scaffold", "") or "",
+        )
+    if args.command in {"run", "resume", "approve", "status", "verify", "export-briefs"}:
+        _ensure_pkg_path()
+        from pipeline_orchestrator.cli import (
+            cmd_approve,
+            cmd_export_briefs,
+            cmd_resume,
+            cmd_run,
+            cmd_status,
+        )
+        from pipeline_orchestrator.verify import cmd_verify
+
+        if not project.is_dir():
+            print(f"not a directory: {project}", file=sys.stderr)
+            return 64
+        if args.command == "run":
+            return cmd_run(
+                project,
+                slug=args.slug,
+                workflow=args.workflow,
+                change_class=args.change_class,
+                runner=args.runner,
+                dry_run=args.dry_run,
+            )
+        if args.command == "resume":
+            return cmd_resume(project, slug=args.slug, runner=args.runner)
+        if args.command == "approve":
+            return cmd_approve(project, slug=args.slug, gate=args.gate, note=args.note)
+        if args.command == "status":
+            return cmd_status(project, slug=args.slug)
+        if args.command == "verify":
+            return cmd_verify(project)
+        return cmd_export_briefs(project)
     if args.command == "knowledge":
         (
             cmd_extract,

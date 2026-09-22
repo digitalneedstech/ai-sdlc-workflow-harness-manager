@@ -64,6 +64,11 @@ pipeline-kit doctor --ide cursor
 pipeline-kit workflows
 ```
 
+Optional **orchestrator mode** (`--mode orchestrator`) runs the same
+workflows from Python in the wheel via the Cursor SDK. Kit mode stays the
+default. Associates add extra workflows with
+`pipeline-kit workflows --scaffold NAME` (orchestrator only).
+
 Use `--ide claude-code`, `--ide github`, or `--ide none` when appropriate.
 To install a shared user pack instead, run `pipeline-kit setup --ide cursor`.
 
