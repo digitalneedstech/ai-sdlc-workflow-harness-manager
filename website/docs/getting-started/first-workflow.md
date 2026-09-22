@@ -3,7 +3,7 @@ title: Your first workflow
 description: Smoke-test ask, then a small feature-development change.
 ---
 
-With the project pack installed and `AGENTS.md` routing to `run-workflow`, smoke-test two intents.
+These steps assume **kit mode** (the default) — the project pack is installed and `AGENTS.md` routes to `run-workflow`. If you initialized with `--mode orchestrator`, skip to [Orchestrator smoke test](#orchestrator-smoke-test).
 
 ## 1. Ask (no Task chain)
 
@@ -39,3 +39,17 @@ Expect intake first, then `jira-story`, `jira-epic`, or `jira-bug` from the issu
 2. Confirm you opened the repo that contains `.pipeline/` and the adapter folder.
 3. Run `pipeline-kit doctor --ide cursor`.
 4. Off-repo trivia (weather, news) must **skip** the loader — that is correct.
+
+## Orchestrator smoke test
+
+You initialized with `--mode orchestrator`. Do not wait for `run-workflow` to pick a chain.
+
+```bash
+pipeline-kit run --slug label-tweak --workflow feature-development --runner fake \
+  --request "Add a small label change on the homepage"
+pipeline-kit status --slug label-tweak
+```
+
+`--runner fake` writes state under `features/label-tweak/` without calling the Cursor SDK. A live run needs `CURSOR_API_KEY` and `--request` (or `--request-file`). Chat text is not inherited.
+
+Details: [Two kits](/docs/capabilities/modes), [CLI — orchestrator](/docs/reference/cli#orchestrator-mode).

@@ -3,7 +3,7 @@ title: Repository layout
 description: How the pipeline-kit source tree is grouped — modes, extensions, capabilities.
 ---
 
-This repository is the **kit source**, not a customer application. Folders are grouped by role so you can see what the package is for without reading every Python module.
+This repository is the **kit source**, not a customer application. It contains **two kits**: the markdown pack (`kit/`) and the Python engine (`orchestrator/`). Customer-facing comparison: [Two kits](/docs/capabilities/modes).
 
 ```text
 kit/                         kit mode — portable pack

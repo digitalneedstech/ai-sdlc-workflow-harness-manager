@@ -11,13 +11,15 @@ Start here if you have never installed the pack:
 
 1. [Prerequisites](/docs/getting-started/prerequisites)
 2. [Install the CLI](/docs/getting-started/install-cli)
-3. [First project](/docs/getting-started/first-project)
-4. [Your first workflow](/docs/getting-started/first-workflow)
+3. [Two kits](/docs/capabilities/modes) — pick kit mode or orchestrator mode
+4. [First project](/docs/getting-started/first-project)
+5. [Your first workflow](/docs/getting-started/first-workflow)
 
 ## Developers (regular users)
 
 You already have `.pipeline/` in the repo. Use:
 
+- [Two kits](/docs/capabilities/modes) — kit mode vs orchestrator mode
 - [Capabilities](/docs/capabilities/overview) — workflows, knowledge, plugins, observability
 - [CLI reference](/docs/reference/cli)
 - [Troubleshooting](/docs/troubleshooting/index) when a run goes sideways

@@ -41,7 +41,7 @@ const problems = [
 ];
 
 const capabilities = [
-  {to: '/docs/capabilities/modes', title: 'Two modes', body: 'Kit mode copies the markdown pack. Orchestrator mode runs the same names from Python.'},
+  {to: '/docs/capabilities/modes', title: 'Two kits', body: 'Kit mode is the markdown pack. Orchestrator mode is the Python engine. Same workflow names.'},
   {to: '/docs/capabilities/extensions', title: 'Extensions', body: 'Add a workflow in kit mode (JSON + skill) or orchestrator mode (pipeline_extensions).'},
   {to: '/docs/capabilities/workflows', title: 'Workflows', body: 'ask, feature-development, Jira story/epic/bug, QA bootstrap.'},
   {to: '/docs/capabilities/knowledge', title: 'Knowledge base', body: 'Opt-in QA overlay from a Graphify graph, then human promote.'},
@@ -80,19 +80,20 @@ export default function Home(): ReactNode {
       <header className={styles.hero}>
         <div className={styles.heroInner}>
           <div>
-            <div className={styles.kicker}>Portable operating model</div>
+            <div className={styles.kicker}>Two kits. One product.</div>
             <Heading as="h1" className={styles.heroTitle}>
-              One kit. Many customers. Many processes.
+              One product. Two ways to run it.
             </Heading>
             <p className={styles.heroLead}>
-              Pipeline Kit is a workflow pack and installer for coding agents.
-              Process lives in <code>.pipeline</code>. The IDE only exposes
-              <code> run-workflow</code>. Each engagement overlays config — not
-              a fork of the engine.
+              Pipeline Kit is a portable operating model for coding agents.
+              <strong> Kit mode</strong> is the markdown pack in
+              <code> .pipeline</code>. <strong> Orchestrator mode</strong> is
+              the same workflow names driven from Python. Pick one per project
+              at <code>init</code>.
             </p>
             <div className={styles.actions}>
-              <Link className={clsx('button button--lg', styles.primaryBtn)} to="/docs/intro/what-is-pipeline-kit">
-                What is Pipeline Kit
+              <Link className={clsx('button button--lg', styles.primaryBtn)} to="/docs/capabilities/modes">
+                Compare the two kits
               </Link>
               <Link className="button button--lg button--secondary" to="/docs/getting-started/install-cli">
                 Install locally
@@ -138,10 +139,50 @@ pipeline-kit workflows`}</code>
 
         <section className={clsx(styles.section, styles.sectionAlt)}>
           <div className={styles.wrap}>
+            <Heading as="h2" className={styles.sectionTitle}>Two kits</Heading>
+            <p className={styles.sectionLead}>
+              Same first-party names — ask, feature-development, Jira.
+              Different control surface. Choose one at init and stay there.
+            </p>
+            <div className={styles.grid2}>
+              <Link className={styles.card} to="/docs/capabilities/modes">
+                <span className={styles.num}>KIT MODE — DEFAULT</span>
+                <h3>The markdown pack</h3>
+                <p>
+                  <code>pipeline-kit init --ide cursor</code>
+                  <br />
+                  Skills, briefs, and the loader live in <code>.pipeline/</code>.
+                  The IDE only exposes <code>run-workflow</code>. This is what
+                  most customer engagements should use.
+                </p>
+              </Link>
+              <Link className={styles.card} to="/docs/capabilities/modes">
+                <span className={styles.num}>ORCHESTRATOR MODE</span>
+                <h3>The Python engine</h3>
+                <p>
+                  <code>pipeline-kit init --mode orchestrator --ide cursor</code>
+                  <br />
+                  The chain lives in the wheel. You drive it with
+                  <code> run</code>, <code>approve</code>, and
+                  <code> resume</code>. Chat text is not inherited — pass
+                  <code>--request</code>.
+                </p>
+              </Link>
+            </div>
+            <p style={{marginTop: '1.25rem'}}>
+              <Link to="/docs/capabilities/modes">Full comparison, when to pick which, and commands →</Link>
+            </p>
+          </div>
+        </section>
+
+        <section className={styles.section}>
+          <div className={styles.wrap}>
             <Heading as="h2" className={styles.sectionTitle}>How it is wired</Heading>
             <p className={styles.sectionLead}>
-              A thin IDE adapter calls the receptionist. The pack owns process.
-              The loader allowlists files for the current step only.
+              Kit mode: a thin IDE adapter calls the receptionist; the pack
+              owns process; the loader allowlists the current step.
+              Orchestrator mode: <code>pipeline-kit run</code> drives the
+              same names from the wheel.
             </p>
             <div className={styles.flow}>
               <div className={styles.flowRow}>IDE adapter — one skill (.cursor | .claude | .github | none)</div>
@@ -160,7 +201,7 @@ pipeline-kit workflows`}</code>
           </div>
         </section>
 
-        <section className={styles.section}>
+        <section className={clsx(styles.section, styles.sectionAlt)}>
           <div className={styles.wrap}>
             <Heading as="h2" className={styles.sectionTitle}>Capabilities</Heading>
             <p className={styles.sectionLead}>
@@ -178,7 +219,7 @@ pipeline-kit workflows`}</code>
           </div>
         </section>
 
-        <section className={clsx(styles.section, styles.sectionAlt)}>
+        <section className={styles.section}>
           <div className={styles.wrap}>
             <Heading as="h2" className={styles.sectionTitle}>Who this guide is for</Heading>
             <p className={styles.sectionLead}>

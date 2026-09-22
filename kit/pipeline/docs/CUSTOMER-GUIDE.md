@@ -104,17 +104,33 @@ without changing the runtime model.
 agent does not load the pack until `run-workflow` runs the loader. Trivia
 and off-repo asks skip the pipeline entirely.
 
-**Two modes, same first-party workflows.** Default `--mode kit` copies
-the markdown pack from `kit/pipeline/`. `--mode orchestrator` runs the
-graphs from `orchestrator/` (Python import `pipeline_orchestrator`). Add
-a process with [`extensions/`](./extensions/) — kit mode is a skill +
-workflow JSON; orchestrator mode is `pipeline_extensions/*.py`. Optional
-add-ons live under [`capabilities/`](./capabilities/) (plugins, knowledge,
-observability, eval, feature flags).
-
 What you take to the next customer: the **kit** (installer + bundled pack).
 What you change per customer: `AGENTS.md`, `config.json`, deploy/test
 runbooks. That is the scaling contract.
+
+---
+
+## Two kits (pick one at init)
+
+This product ships **two kits**. Same first-party workflow names
+(`ask`, `feature-development`, Jira). Different how a step runs. Pick
+one per project. Do not mix.
+
+| | **Kit mode** (default) | **Orchestrator mode** |
+|--|------------------------|------------------------|
+| Flag | `pipeline-kit init --ide cursor` | `pipeline-kit init --mode orchestrator --ide cursor` |
+| What it is | Markdown pack in `.pipeline/` | Python engine in the wheel |
+| How work runs | IDE `run-workflow` + loader | `pipeline-kit run` / `approve` / `resume` |
+| What `init` copies | Skills, agents, loader, workflows, wiki, hooks, docs | Slim `.pipeline/` (config, hooks, wiki, docs). No skills/loader/workflows |
+| Extra workflows | Skill + JSON + `config.json` | `pipeline_extensions/*.py` |
+| Extra install | None | `uv tool install -e ".[orchestrator]"` and `CURSOR_API_KEY` |
+
+If you are unsure, use **kit mode**. Orchestrator mode does not inherit
+chat text — pass `--request` or `features/<slug>/request.md`.
+
+Add a process with [`extensions/`](./extensions/). Optional add-ons live
+under [`capabilities/`](./capabilities/) (plugins, knowledge, observability,
+eval, feature flags). Commands for both kits are in §2.
 
 ---
 
@@ -165,7 +181,8 @@ pipeline-kit doctor --ide cursor
 pipeline-kit workflows
 ```
 
-Default `--mode kit` copies the markdown pack. That path is unchanged.
+Default `--mode kit` copies the markdown pack. See [Two kits](#two-kits-pick-one-at-init)
+if you have not chosen yet.
 
 ### Orchestrator mode (optional, parallel)
 

@@ -31,6 +31,17 @@ cd pipeline-kit
 pipeline-kit --version
 ```
 
+## Choose a kit before you init
+
+The CLI is the same. The **project** is one kit or the other.
+
+| Kit | Init | Then |
+|-----|------|------|
+| **Kit mode** (default) | `pipeline-kit init --ide cursor` | Work in the IDE via `run-workflow` |
+| **Orchestrator mode** | `uv tool install -e ".[orchestrator]"` then `pipeline-kit init --mode orchestrator --ide cursor` | `pipeline-kit run --request "…"` |
+
+Read [Two kits](/docs/capabilities/modes) before you initialize a customer repo. You should not mix modes in one project.
+
 ## Common commands after that
 
 ```bash

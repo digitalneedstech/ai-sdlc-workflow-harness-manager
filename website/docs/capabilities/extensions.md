@@ -3,7 +3,7 @@ title: Extensions
 description: Add a workflow in kit mode or orchestrator mode without forking the kit.
 ---
 
-A new customer process is an **extension**, not a new platform. The contract depends on the [mode](/docs/capabilities/modes) the project was initialized with.
+A new customer process is an **extension**, not a new platform. The contract depends on which [kit](/docs/capabilities/modes) the project was initialized with — pack (kit mode) or orchestrator.
 
 ```text
 extensions/

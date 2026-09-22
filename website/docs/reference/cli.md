@@ -5,6 +5,8 @@ description: All pipeline-kit commands — pack, knowledge, plugins, features, o
 
 Global: `pipeline-kit --version` (same number as `pipeline-kit version`).
 
+The CLI is shared. The **project** is one of [two kits](/docs/capabilities/modes): **kit mode** (default markdown pack) or **orchestrator mode** (`--mode orchestrator`). Orchestrator-only commands are listed after the pack table.
+
 ## Pack
 
 | Command | Purpose |
