@@ -10,88 +10,81 @@ import styles from './index.module.css';
 
 type Mode = 'kit' | 'orchestrator';
 
-const sections = [
-  {id: 'problems', label: 'Problems'},
-  {id: 'kits', label: 'Two kits'},
-  {id: 'models', label: 'Model choice'},
-  {id: 'wiring', label: 'How it runs'},
-  {id: 'capabilities', label: 'Capabilities'},
-  {id: 'start', label: 'Start'},
-];
-
 const kitCommand = `uv tool install git+<repo-url>
 cd /path/to/your-app
 pipeline-kit init --ide cursor
-pipeline-kit doctor --ide cursor
-pipeline-kit workflows`;
+pipeline-kit doctor --ide cursor`;
 
 const orchestratorCommand = `uv tool install -e ".[orchestrator]"
 cd /path/to/your-app
 pipeline-kit init --mode orchestrator --ide cursor
-pipeline-kit run --slug preview --workflow feature-development \\
-  --change-class feature --dry-run --request "redesign checkout"`;
+pipeline-kit run --slug preview --workflow feature-development --dry-run`;
 
-const problems = [
+const challenges = [
   {
-    n: '01',
+    id: 'context',
     title: 'Context explosion',
-    body: 'Every skill, brief, and wiki page under the IDE folder is auto-discovered. Cost and quality drop as the pack grows.',
+    factory: 'Every specialist prompt, wiki page, and skill sits in the IDE folder. The model reads the whole factory on every turn.',
+    value: 'Process lives in .pipeline. The IDE discovers one skill. Each step gets an allowlist, not the pack.',
   },
   {
-    n: '02',
-    title: 'Glued to one IDE',
-    body: 'Process mixed with editor wiring. Moving from Cursor to Claude Code meant copying and rewriting the tree.',
+    id: 'models',
+    title: 'Wrong model for the work',
+    factory: 'Planning, review, and implementation all run on the same coding model. Cost goes up. Quality does not.',
+    value: 'Jev classifies the step, then picks from a shortlist. Opus or GPT for reasoning. Composer for implementation.',
   },
   {
-    n: '03',
+    id: 'ide',
+    title: 'Process glued to one IDE',
+    factory: 'Moving from Cursor to Claude Code means copying and rewriting the tree. The factory cannot leave the editor.',
+    value: 'Thin adapters. Cursor, Claude Code, GitHub, or none. The pack and the wheel stay the same.',
+  },
+  {
+    id: 'leak',
     title: 'Customer leakage',
-    body: 'Ports, tracker projects, and folder names baked into skills. The next engagement could not reuse the pack.',
+    factory: 'Ports, Jira keys, and folder names are baked into skills. The next engagement cannot reuse the factory.',
+    value: 'Engagement overlay is config.json. Skills stay generic. Take the kit to the next customer.',
   },
   {
-    n: '04',
-    title: 'No productized install',
-    body: 'Copying last year’s .cursor folder does not scale. Architects need project, user, and later org scopes.',
-  },
-  {
-    n: '05',
+    id: 'ladder',
     title: 'One ladder for every ask',
-    body: 'A “how does tax work?” question should not start PM → BA → developer. Workflows are first-class.',
-  },
-  {
-    n: '06',
-    title: 'Hard to add a process',
-    body: 'A new architecture review should be a workflow JSON + skill + config chain — not a new platform.',
+    factory: 'A taxonomy question starts PM → BA → developer. A bug runs a full feature plan.',
+    value: 'Named workflows. ask stays a question. feature-development delivers. jira-bug skips planning.',
   },
 ];
 
-const capabilities = [
-  {to: '/docs/capabilities/modes', title: 'Two kits', body: 'Kit mode is the markdown pack. Orchestrator mode is the Python engine. Same workflow names.'},
-  {to: '/docs/capabilities/extensions', title: 'Extensions', body: 'Add a workflow in kit mode (JSON + skill) or orchestrator mode (pipeline_extensions).'},
-  {to: '/docs/capabilities/workflows', title: 'Workflows', body: 'ask, feature-development, Jira story/epic/bug, QA bootstrap.'},
-  {to: '/docs/capabilities/knowledge', title: 'Knowledge base', body: 'Opt-in QA overlay from a Graphify graph, then human promote.'},
-  {to: '/docs/capabilities/plugins', title: 'Plugins', body: 'Optional Graphify, Archify, and bundled agent-run observability. Init does not turn them on.'},
-  {to: '/docs/capabilities/observability', title: 'Observability', body: 'Agent-run traces and scores to a local ledger, then Langfuse.'},
-  {to: '/docs/capabilities/planning-gates', title: 'Planning gates', body: 'Human sign-off on requirements, architecture, and BA specs.'},
-  {to: '/docs/capabilities/loader', title: 'Allowlist loader', body: 'Each specialist reads only the files for the current step.'},
-  {to: '/docs/capabilities/feature-flags', title: 'Feature flags', body: 'Toggle test design, Playwright, telemetry, Jira, and obs.'},
-  {to: '/docs/capabilities/wiki', title: 'Agent wiki', body: 'Trigger-routed operational memory. Load one page, not the folder.'},
-];
-
-const audiences = [
+const controls = [
   {
-    to: '/docs/getting-started/install-cli',
-    title: 'New users',
-    body: 'Install the CLI, init a project, run doctor, then try ask and a small change.',
+    id: 'classifier',
+    kicker: 'Orchestrator',
+    title: 'Model classifier',
+    line: 'Pick the Cursor model from what the agent must do, not from habit.',
+    body: 'Jev sees a shortlist — Composer, Grok, Claude Opus, GPT — with a per-agent fit line. Planning and review mark Composer poor fit. Implementation marks it good. Add a model in candidates or cards, not both. A pin skips Jev for one step.',
+    to: '/docs/capabilities/modes',
   },
   {
-    to: '/docs/capabilities/overview',
-    title: 'Regular users',
-    body: 'Workflows, knowledge, plugins, observability, and CLI reference.',
+    id: 'knowledge',
+    kicker: 'Opt-in',
+    title: 'Knowledge',
+    line: 'QA design from a real code graph, then a human promote.',
+    body: 'knowledge init does not run Graphify for you. Extract writes graphify-out/graph.json. Architects add a model delta. Testers get cases.json and a Playwright projector. The feature ladder stays unchanged until the flag is on.',
+    to: '/docs/capabilities/knowledge',
   },
   {
-    to: '/docs/guides/agents-md',
-    title: 'Architects & leads',
-    body: 'Adapt AGENTS.md, config, deploy, and tests for each engagement.',
+    id: 'plugins',
+    kicker: 'Opt-in',
+    title: 'Plugins',
+    line: 'Graphify and Archify stay off until you install them.',
+    body: 'plugins install graphify registers the official CLI skill. plugins install archify pins Archify v2.16.0 for interactive architecture HTML. Init never turns these on. Mermaid in architecture.md stays required.',
+    to: '/docs/capabilities/plugins',
+  },
+  {
+    id: 'obs',
+    kicker: 'Bundled add-on',
+    title: 'Observability',
+    line: 'Trace what the coding agent did, not the customer app.',
+    body: 'obs install merges hooks into a local ledger, then Langfuse. Scores are deterministic. Distinct from product telemetry-agent. Not an entry in plugins list.',
+    to: '/docs/capabilities/observability',
   },
 ];
 
@@ -99,76 +92,53 @@ const agents = [
   {
     id: 'pm',
     label: 'Product manager',
-    need: 'planning: write requirements, scope, and acceptance criteria.',
-    prefer: 'claude-opus-5 · gpt-5.5 · gpt-5.6-sol',
-    composer: 'Poor fit for this agent. Do not pick for planning.',
-    reasoning: 'Good fit for this agent. Prefer this over Composer.',
+    need: 'Planning — requirements and acceptance criteria',
+    pick: 'claude-opus-5',
+    why: 'Reasoning. Composer is a poor fit.',
   },
   {
-    id: 'architect',
+    id: 'arch',
     label: 'Architect',
-    need: 'architecture: choose structure, boundaries, and tradeoffs.',
-    prefer: 'claude-opus-5 · gpt-5.5 · gpt-5.6-sol',
-    composer: 'Poor fit for this agent. Do not pick for architecture.',
-    reasoning: 'Good fit for this agent. Prefer this over Composer.',
+    need: 'Architecture — boundaries and tradeoffs',
+    pick: 'gpt-5.5',
+    why: 'Reasoning. Composer is a poor fit.',
   },
   {
     id: 'dev',
     label: 'Developer',
-    need: 'implementation: edit code and fix defects.',
-    prefer: 'composer-2.5',
-    composer: 'Good fit for this agent.',
-    reasoning: 'Capable but heavier than needed. Prefer Composer.',
+    need: 'Implementation — edit code and fix defects',
+    pick: 'composer-2.5',
+    why: 'Fast coding. Opus is heavier than needed.',
   },
   {
     id: 'critic',
     label: 'Critic',
-    need: 'review: find gaps, contradictions, and missing acceptance criteria.',
-    prefer: 'claude-opus-5 · gpt-5.5',
-    composer: 'Poor fit for this agent. Do not pick for review.',
-    reasoning: 'Good fit for this agent. Prefer this over Composer.',
+    need: 'Review — gaps and missing criteria',
+    pick: 'claude-opus-5',
+    why: 'Reasoning. Composer is a poor fit.',
   },
   {
     id: 'tester',
     label: 'Tester',
-    need: 'verification: follow test instructions and inspect code.',
-    prefer: 'composer-2.5',
-    composer: 'Good fit for this agent.',
-    reasoning: 'Capable but heavier than needed. Prefer Composer.',
+    need: 'Verification — follow tests and inspect code',
+    pick: 'composer-2.5',
+    why: 'Fast coding. Prefer Composer.',
   },
-];
-
-const sentModels = [
-  'composer-2.5',
-  'grok-4.5',
-  'grok-4.6',
-  'grok-4.7',
-  'claude-opus-5',
-  'gpt-5.5',
-  'gpt-5.6-sol',
-];
-
-const flow = [
-  {title: 'Adapter', body: 'One IDE skill — Cursor, Claude Code, GitHub, or none.'},
-  {title: 'Control', body: 'Kit: run-workflow. Orchestrator: pipeline-kit run / approve / resume.'},
-  {title: 'Process', body: 'Same workflow names. Pack files or the sealed Python graph.'},
-  {title: 'Artifacts', body: 'features/{slug}/ plus the project config overlay.'},
 ];
 
 function CopyButton({text}: {text: string}): ReactNode {
   const [copied, setCopied] = useState(false);
-
   return (
     <button
       type="button"
-      className={styles.copyBtn}
+      className={styles.ghost}
       onClick={() => {
         if (!navigator.clipboard) {
           return;
         }
         navigator.clipboard.writeText(text).then(() => {
           setCopied(true);
-          window.setTimeout(() => setCopied(false), 1600);
+          window.setTimeout(() => setCopied(false), 1400);
         });
       }}>
       {copied ? 'Copied' : 'Copy'}
@@ -176,321 +146,300 @@ function CopyButton({text}: {text: string}): ReactNode {
   );
 }
 
-export default function Home(): ReactNode {
-  const {siteConfig} = useDocusaurusContext();
-  const [mode, setMode] = useState<Mode>('kit');
-  const [active, setActive] = useState(sections[0].id);
-  const [agentId, setAgentId] = useState(agents[0].id);
-  const command = mode === 'kit' ? kitCommand : orchestratorCommand;
-  const agent = agents.find((item) => item.id === agentId) ?? agents[0];
+function useMotion() {
+  const [reduce, setReduce] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [shift, setShift] = useState(0);
 
   useEffect(() => {
-    const nodes = sections
-      .map((item) => document.getElementById(item.id))
-      .filter((node): node is HTMLElement => Boolean(node));
+    const media = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const sync = () => setReduce(media.matches);
+    sync();
+    media.addEventListener('change', sync);
+    return () => media.removeEventListener('change', sync);
+  }, []);
+
+  useEffect(() => {
+    const onScroll = () => {
+      const max = document.documentElement.scrollHeight - window.innerHeight;
+      setProgress(max > 0 ? window.scrollY / max : 0);
+      setShift(Math.min(window.scrollY, 520));
+    };
+    onScroll();
+    window.addEventListener('scroll', onScroll, {passive: true});
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  useEffect(() => {
+    const nodes = document.querySelectorAll('[data-reveal]');
     if (!nodes.length) {
+      return undefined;
+    }
+    if (reduce) {
+      nodes.forEach((node) => node.classList.add(styles.seen));
       return undefined;
     }
     const observer = new IntersectionObserver(
       (entries) => {
-        const visible = entries
-          .filter((entry) => entry.isIntersecting)
-          .sort((left, right) => right.intersectionRatio - left.intersectionRatio)[0];
-        if (visible?.target.id) {
-          setActive(visible.target.id);
-        }
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add(styles.seen);
+          }
+        });
       },
-      {rootMargin: '-28% 0px -55% 0px', threshold: [0.15, 0.4, 0.7]},
+      {threshold: 0.14, rootMargin: '0px 0px -8% 0px'},
     );
     nodes.forEach((node) => observer.observe(node));
     return () => observer.disconnect();
+  }, [reduce]);
+
+  return {reduce, progress, shift};
+}
+
+export default function Home(): ReactNode {
+  const {siteConfig} = useDocusaurusContext();
+  const {reduce, progress, shift} = useMotion();
+  const [mode, setMode] = useState<Mode>('kit');
+  const [challengeId, setChallengeId] = useState(challenges[0].id);
+  const [controlId, setControlId] = useState(controls[0].id);
+  const [agentId, setAgentId] = useState(agents[0].id);
+  const command = mode === 'kit' ? kitCommand : orchestratorCommand;
+  const challenge = challenges.find((item) => item.id === challengeId) ?? challenges[0];
+  const control = controls.find((item) => item.id === controlId) ?? controls[0];
+  const agent = agents.find((item) => item.id === agentId) ?? agents[0];
+
+  useEffect(() => {
+    document.documentElement.classList.add('pk-foundry');
+    return () => document.documentElement.classList.remove('pk-foundry');
   }, []);
 
-  const goTo = (id: string) => {
-    const node = document.getElementById(id);
-    node?.scrollIntoView({behavior: 'smooth', block: 'start'});
-  };
+  useEffect(() => {
+    const rows = challenges
+      .map((item) => document.getElementById(`challenge-${item.id}`))
+      .filter((node): node is HTMLElement => Boolean(node));
+    if (!rows.length) {
+      return undefined;
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const hit = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((left, right) => right.intersectionRatio - left.intersectionRatio)[0];
+        const id = hit?.target.getAttribute('data-id');
+        if (id) {
+          setChallengeId(id);
+        }
+      },
+      {rootMargin: '-35% 0px -45% 0px', threshold: [0.4, 0.7]},
+    );
+    rows.forEach((node) => observer.observe(node));
+    return () => observer.disconnect();
+  }, []);
 
   return (
     <Layout
-      title={`${siteConfig.title} documentation`}
-      description="Portable workflow pack and installer for coding agents. Process lives in .pipeline. The IDE is a thin adapter.">
+      title={`${siteConfig.title}`}
+      description="An operating model for enterprise agent factories. Repeatable process, the right model per step, opt-in knowledge and plugins.">
       <div className={styles.page}>
+        <div className={styles.progress} style={{transform: `scaleX(${progress})`}} />
+
         <header className={styles.hero}>
+          <div
+            className={styles.bloom}
+            style={reduce ? undefined : {transform: `translate3d(0, ${shift * 0.18}px, 0)`}}
+          />
           <div className={styles.heroInner}>
-            <div>
-              <p className={styles.kicker}>Portable operating model</p>
-              <Heading as="h1" className={styles.heroTitle}>
-                One product. Two ways to run it.
-              </Heading>
-              <p className={styles.heroLead}>
-                Pipeline Kit is a repeatable process for coding agents.
-                <strong> Kit mode</strong> is the markdown pack in
-                <code> .pipeline</code>. <strong>Orchestrator mode</strong> is
-                the same workflow names driven from Python, with a shortlist
-                of Cursor models chosen per agent.
+            <p className={styles.kicker}>Pipeline Kit</p>
+            <Heading as="h1" className={styles.heroTitle}>
+              An operating model
+              <br />
+              for agent factories.
+            </Heading>
+            <p className={styles.heroLead}>
+              Enterprise teams already have coding agents. They do not have a
+              repeatable factory: the right workflow, the right model, and a
+              pack that survives the next customer. Pipeline Kit is that
+              operating model.
+            </p>
+            <div className={styles.actions}>
+              <Link className={styles.primary} to="/docs/getting-started/install-cli">
+                Install the CLI
+              </Link>
+              <button type="button" className={styles.textLink} onClick={() => document.getElementById('factory')?.scrollIntoView({behavior: reduce ? 'auto' : 'smooth'})}>
+                See the factory problems
+              </button>
+            </div>
+          </div>
+        </header>
+
+        <section className={styles.value} data-reveal>
+          <div className={styles.shell}>
+            <p>Same process on every engagement. Overlay the customer in config, not in skills.</p>
+            <p>Classify the step, then pick the model. Reasoning models plan. Coding models implement.</p>
+            <p>Knowledge, plugins, and traces stay opt-in. The core pack stays portable.</p>
+          </div>
+        </section>
+
+        <section id="factory" className={styles.section}>
+          <div className={styles.shell}>
+            <header className={styles.head} data-reveal>
+              <p className={styles.kicker}>Enterprise factories</p>
+              <Heading as="h2">The work is not “add another agent.”</Heading>
+              <p>
+                The work is making agents behave like a plant: one procedure,
+                measured cost, and a model that matches the station. Scroll the
+                left column. The answer stays pinned.
               </p>
-              <div className={styles.actions}>
-                <Link className={clsx('button button--lg', styles.primaryBtn)} to="/docs/getting-started/install-cli">
-                  Install locally
-                </Link>
-                <Link className="button button--lg button--secondary" to="/docs/capabilities/modes">
-                  Compare the two kits
-                </Link>
+            </header>
+            <div className={styles.pin}>
+              <div>
+                {challenges.map((item) => (
+                  <button
+                    key={item.id}
+                    id={`challenge-${item.id}`}
+                    data-id={item.id}
+                    type="button"
+                    className={clsx(styles.row, challengeId === item.id && styles.rowOn)}
+                    onClick={() => setChallengeId(item.id)}>
+                    <span>{item.title}</span>
+                    <em>{item.factory}</em>
+                  </button>
+                ))}
+              </div>
+              <aside className={styles.sticky} data-reveal>
+                <p className={styles.kicker}>What the kit does</p>
+                <h3>{challenge.title}</h3>
+                <p>{challenge.value}</p>
+                <Link to="/docs/intro/problems">Full problem statement</Link>
+              </aside>
+            </div>
+          </div>
+        </section>
+
+        <section className={styles.section} id="controls">
+          <div className={styles.shell}>
+            <header className={styles.head} data-reveal>
+              <p className={styles.kicker}>Factory controls</p>
+              <Heading as="h2">Four things that change how the plant runs.</Heading>
+              <p>
+                Not a catalog of features. These are the controls operators
+                actually turn: which model, which knowledge, which plugin, and
+                whether the run is scored.
+              </p>
+            </header>
+            <div className={styles.pin}>
+              <div>
+                {controls.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    className={clsx(styles.row, controlId === item.id && styles.rowOn)}
+                    onClick={() => setControlId(item.id)}>
+                    <span>
+                      <small>{item.kicker}</small>
+                      {item.title}
+                    </span>
+                    <em>{item.line}</em>
+                  </button>
+                ))}
+              </div>
+              <aside className={styles.sticky} data-reveal>
+                <p className={styles.kicker}>{control.kicker}</p>
+                <h3>{control.title}</h3>
+                <p>{control.body}</p>
+                <Link to={control.to}>Open the docs</Link>
+              </aside>
+            </div>
+          </div>
+        </section>
+
+        <section className={styles.section} id="classifier">
+          <div className={styles.shell}>
+            <header className={styles.head} data-reveal>
+              <p className={styles.kicker}>Model classifier</p>
+              <Heading as="h2">Each station gets a model that fits the work.</Heading>
+              <p>
+                Jev does not invent the next agent. The sealed graph does that.
+                Jev only answers: which Cursor model should run this step.
+              </p>
+            </header>
+            <div className={styles.classify} data-reveal>
+              <div className={styles.stations}>
+                {agents.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    className={clsx(styles.station, agentId === item.id && styles.stationOn)}
+                    onClick={() => setAgentId(item.id)}>
+                    <span>{item.label}</span>
+                    <code>{item.pick}</code>
+                  </button>
+                ))}
+              </div>
+              <div className={styles.decision}>
+                <p className={styles.kicker}>This step</p>
+                <h3>{agent.label}</h3>
+                <p>{agent.need}</p>
+                <p className={styles.pick}>
+                  Runs <code>{agent.pick}</code>
+                </p>
+                <p>{agent.why}</p>
               </div>
             </div>
-            <div className={styles.panel}>
-              <div className={styles.panelHead}>
-                <div className={styles.switch} role="tablist" aria-label="Install mode">
-                  <button
-                    type="button"
-                    role="tab"
-                    aria-selected={mode === 'kit'}
-                    className={clsx(styles.switchBtn, mode === 'kit' && styles.switchOn)}
-                    onClick={() => setMode('kit')}>
-                    Kit mode
+          </div>
+        </section>
+
+        <section className={styles.section} id="runtimes">
+          <div className={styles.shell}>
+            <header className={styles.head} data-reveal>
+              <p className={styles.kicker}>Two runtimes</p>
+              <Heading as="h2">Same workflow names. Pick one surface.</Heading>
+            </header>
+            <div className={styles.runtimes} data-reveal>
+              <div>
+                <p className={styles.kicker}>Kit mode — default</p>
+                <h3>Markdown pack</h3>
+                <p>
+                  Skills, briefs, and the loader live in <code>.pipeline</code>.
+                  The IDE only exposes <code>run-workflow</code>. This is what
+                  most engagements should use.
+                </p>
+              </div>
+              <div>
+                <p className={styles.kicker}>Orchestrator mode</p>
+                <h3>Python engine</h3>
+                <p>
+                  Sealed graph. Drive it with <code>run</code>, <code>approve</code>,
+                  and <code>resume</code>. Pass <code>--request</code>. Jev
+                  classifies the model before each agent.
+                </p>
+              </div>
+            </div>
+            <div className={styles.terminal} data-reveal>
+              <div className={styles.terminalBar}>
+                <div className={styles.switch} role="tablist" aria-label="Runtime">
+                  <button type="button" className={clsx(mode === 'kit' && styles.on)} onClick={() => setMode('kit')}>
+                    Kit
                   </button>
-                  <button
-                    type="button"
-                    role="tab"
-                    aria-selected={mode === 'orchestrator'}
-                    className={clsx(styles.switchBtn, mode === 'orchestrator' && styles.switchOn)}
-                    onClick={() => setMode('orchestrator')}>
+                  <button type="button" className={clsx(mode === 'orchestrator' && styles.on)} onClick={() => setMode('orchestrator')}>
                     Orchestrator
                   </button>
                 </div>
                 <CopyButton text={command} />
               </div>
-              <p className={styles.panelHint}>
-                {mode === 'kit'
-                  ? 'Default. Skills and the loader live in the project pack.'
-                  : 'Sealed graph. Pass --request. Set CURSOR_API_KEY and TYPESAFE_API_KEY.'}
-              </p>
               <pre>
                 <code>{command}</code>
               </pre>
             </div>
+            <p className={styles.foot}>
+              <Link to="/docs/capabilities/modes">Compare the two kits</Link>
+              {' · '}
+              <Link to="/docs/getting-started/install-cli">Install</Link>
+              {' · '}
+              <Link to="/docs/capabilities/overview">All capabilities</Link>
+            </p>
           </div>
-        </header>
-
-        <nav className={styles.rail} aria-label="On this page">
-          {sections.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              className={clsx(styles.railBtn, active === item.id && styles.railOn)}
-              onClick={() => goTo(item.id)}>
-              {item.label}
-            </button>
-          ))}
-        </nav>
-
-        <main>
-          <section className={styles.stats}>
-            <div className={styles.wrap}>
-              <div className={styles.statGrid}>
-                <div>
-                  <strong>2</strong>
-                  <span>runtimes, one set of workflow names</span>
-                </div>
-                <div>
-                  <strong>7</strong>
-                  <span>default models sent to Jev, not the full catalog</span>
-                </div>
-                <div>
-                  <strong>1</strong>
-                  <span>IDE skill. Process stays in the pack or the wheel</span>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <section id="problems" className={styles.section}>
-            <div className={styles.wrap}>
-              <Heading as="h2" className={styles.sectionTitle}>Problems it solves</Heading>
-              <p className={styles.sectionLead}>
-                Teams already use coding agents. What they lack is a repeatable
-                operating model.
-              </p>
-              <div className={styles.grid3}>
-                {problems.map((item) => (
-                  <article key={item.n} className={styles.card}>
-                    <span className={styles.num}>{item.n}</span>
-                    <h3>{item.title}</h3>
-                    <p>{item.body}</p>
-                  </article>
-                ))}
-              </div>
-              <p className={styles.more}>
-                <Link to="/docs/intro/problems">Full problem statement →</Link>
-              </p>
-            </div>
-          </section>
-
-          <section id="kits" className={clsx(styles.section, styles.sectionAlt)}>
-            <div className={styles.wrap}>
-              <Heading as="h2" className={styles.sectionTitle}>Two kits</Heading>
-              <p className={styles.sectionLead}>
-                Same first-party names — ask, feature-development, Jira.
-                Different control surface. Choose one at init and stay there.
-              </p>
-              <div className={styles.grid2}>
-                <button
-                  type="button"
-                  className={clsx(styles.choice, mode === 'kit' && styles.choiceOn)}
-                  onClick={() => setMode('kit')}>
-                  <span className={styles.num}>Kit mode — default</span>
-                  <h3>The markdown pack</h3>
-                  <p>
-                    <code>pipeline-kit init --ide cursor</code>
-                    <br />
-                    Skills, briefs, and the loader live in <code>.pipeline/</code>.
-                    The IDE only exposes <code>run-workflow</code>.
-                  </p>
-                </button>
-                <button
-                  type="button"
-                  className={clsx(styles.choice, mode === 'orchestrator' && styles.choiceOn)}
-                  onClick={() => setMode('orchestrator')}>
-                  <span className={styles.num}>Orchestrator mode</span>
-                  <h3>The Python engine</h3>
-                  <p>
-                    <code>pipeline-kit init --mode orchestrator --ide cursor</code>
-                    <br />
-                    Drive the chain with <code>run</code>, <code>approve</code>,
-                    and <code>resume</code>. Pass <code>--request</code>. Chat
-                    text is not inherited.
-                  </p>
-                </button>
-              </div>
-              <p className={styles.more}>
-                <Link to="/docs/capabilities/modes">Full comparison and commands →</Link>
-              </p>
-            </div>
-          </section>
-
-          <section id="models" className={styles.section}>
-            <div className={styles.wrap}>
-              <Heading as="h2" className={styles.sectionTitle}>Model choice</Heading>
-              <p className={styles.sectionLead}>
-                In orchestrator mode, Jev picks a Cursor model per agent from a
-                shortlist. Planning and review prefer Opus or GPT.
-                Implementation prefers Composer. Add a model in
-                <code> candidates</code> or in <code> cards</code> — not both.
-              </p>
-              <div className={styles.agentRow} role="tablist" aria-label="Agent capability">
-                {agents.map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    role="tab"
-                    aria-selected={agent.id === item.id}
-                    className={clsx(styles.chip, agent.id === item.id && styles.chipOn)}
-                    onClick={() => setAgentId(item.id)}>
-                    {item.label}
-                  </button>
-                ))}
-              </div>
-              <div className={styles.modelPanel}>
-                <div>
-                  <h3>{agent.label}</h3>
-                  <dl className={styles.meta}>
-                    <div>
-                      <dt>Need</dt>
-                      <dd>{agent.need}</dd>
-                    </div>
-                    <div>
-                      <dt>Prefer</dt>
-                      <dd>{agent.prefer}</dd>
-                    </div>
-                    <div>
-                      <dt>Sent to Jev</dt>
-                      <dd>{sentModels.join(', ')}</dd>
-                    </div>
-                  </dl>
-                </div>
-                <div className={styles.fitList}>
-                  <div>
-                    <span>composer-2.5</span>
-                    <p>{agent.composer}</p>
-                  </div>
-                  <div>
-                    <span>claude-opus-5 / gpt-5.5</span>
-                    <p>{agent.reasoning}</p>
-                  </div>
-                </div>
-              </div>
-              <p className={styles.more}>
-                Handbook: <code>CUSTOMER-GUIDE.md</code> § Model choice ·{' '}
-                <Link to="/docs/capabilities/modes">Two kits →</Link>
-              </p>
-            </div>
-          </section>
-
-          <section id="wiring" className={clsx(styles.section, styles.sectionAlt)}>
-            <div className={styles.wrap}>
-              <Heading as="h2" className={styles.sectionTitle}>How it runs</Heading>
-              <p className={styles.sectionLead}>
-                The IDE is a thin adapter. Process lives in the pack or the
-                wheel. Run artifacts always land in this project’s
-                <code> features/</code>.
-              </p>
-              <ol className={styles.flow}>
-                {flow.map((item, index) => (
-                  <li key={item.title}>
-                    <span>{String(index + 1).padStart(2, '0')}</span>
-                    <div>
-                      <strong>{item.title}</strong>
-                      <p>{item.body}</p>
-                    </div>
-                  </li>
-                ))}
-              </ol>
-              <p className={styles.more}>
-                <Link to="/docs/intro/how-it-works">Architecture in detail →</Link>
-                {' · '}
-                <Link to="/docs/intro/repo-layout">Repository layout →</Link>
-              </p>
-            </div>
-          </section>
-
-          <section id="capabilities" className={styles.section}>
-            <div className={styles.wrap}>
-              <Heading as="h2" className={styles.sectionTitle}>Capabilities</Heading>
-              <p className={styles.sectionLead}>
-                Core delivery is installed with init. Knowledge, plugins, and
-                agent-run observability are opt-in.
-              </p>
-              <div className={styles.grid4}>
-                {capabilities.map((item) => (
-                  <Link key={item.to} className={styles.card} to={item.to}>
-                    <h3>{item.title}</h3>
-                    <p>{item.body}</p>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          </section>
-
-          <section id="start" className={clsx(styles.section, styles.sectionAlt)}>
-            <div className={styles.wrap}>
-              <Heading as="h2" className={styles.sectionTitle}>Who this guide is for</Heading>
-              <p className={styles.sectionLead}>
-                Same handbook, three entry points. The customer adaptation
-                guide stays in the repo as <code>CUSTOMER-GUIDE.md</code> and
-                is copied on <code>init</code>.
-              </p>
-              <div className={styles.audience}>
-                {audiences.map((item) => (
-                  <Link key={item.to} className={styles.card} to={item.to}>
-                    <h3>{item.title}</h3>
-                    <p>{item.body}</p>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          </section>
-        </main>
+        </section>
       </div>
     </Layout>
   );
