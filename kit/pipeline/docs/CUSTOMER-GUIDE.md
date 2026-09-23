@@ -266,6 +266,7 @@ Sign-off gates do not ask the decider. Full examples:
 | `pipeline-kit uninstall --user` | Remove managed user files |
 | `pipeline-kit knowledge init [project]` | Opt-in: create `test-knowledge/` and set `test_design.enabled` |
 | `pipeline-kit knowledge extract [project]` | Run official `graphify extract . --code-only` (no homemade graph) |
+| `pipeline-kit scan [project]` | Write a pack-gap prompt from `graphify-out/graph.json`. Does not call a model or change the pack |
 | `pipeline-kit knowledge status [project]` | Graphify CLI and `graphify-out/graph.json` |
 | `pipeline-kit plugins list` | List Graphify / Archify (observability uses `obs status`) |
 | `pipeline-kit plugins install graphify [project]` | Register the official Graphify IDE skill |

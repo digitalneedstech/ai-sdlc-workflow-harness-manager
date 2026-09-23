@@ -976,6 +976,17 @@ def cli_main(argv: list[str] | None = None) -> int:
     )
     workflows_parser.add_argument("--home", default="", help=argparse.SUPPRESS)
 
+    scan_parser = commands.add_parser(
+        "scan",
+        help="write a pack-gap prompt from the Graphify graph (no model call)",
+    )
+    scan_parser.add_argument("project", nargs="?", default=".")
+    scan_parser.add_argument(
+        "--out",
+        default="",
+        help="directory for context.md and prompt.md (default: features/pack-scan)",
+    )
+
     run_parser = commands.add_parser("run", help="run a workflow with the code orchestrator")
     run_parser.add_argument("project", nargs="?", default=".")
     run_parser.add_argument("--slug", required=True)
@@ -1305,6 +1316,12 @@ def cli_main(argv: list[str] | None = None) -> int:
         )
     if args.command == "doctor":
         return doctor(target=project, user=args.user, ide=args.ide, home=home)
+    if args.command == "scan":
+        _ensure_pkg_path()
+        from pipeline_scan.commands import cmd_scan
+
+        out = Path(args.out).expanduser() if args.out else None
+        return cmd_scan(project, out=out)
     if args.command == "workflows":
         if getattr(args, "scaffold", "") or "":
             blocked = _require_license("orchestrator")

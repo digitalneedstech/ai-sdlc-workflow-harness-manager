@@ -35,3 +35,9 @@ graphify extract . --code-only
 ```
 
 Then continue [knowledge bootstrap](/docs/capabilities/knowledge).
+
+## Pack gap
+
+`pipeline-kit scan` reads `graphify-out/graph.json` and the installed workflows, skills, sub-agents, rules, and hooks. It writes `features/pack-scan/context.md` and `features/pack-scan/prompt.md`. It does not call a model and does not change the pack.
+
+In chat, ask which skills, sub-agents, workflows, rules, and hooks to add. The agent runs `pipeline-kit scan` when the prompt file is missing, reads those two files, and answers. Scan does not turn on `test_design`. `knowledge init` stays the QA overlay.

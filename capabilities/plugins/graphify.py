@@ -70,6 +70,9 @@ def extract_graph(project: Path, *, force: bool = False) -> Path:
             "graphify is not on PATH. Install Graphify officially, then retry.",
             recovery=RECOVERY,
         )
+    from pipeline_scan.graph_context import ensure_graphifyignore
+
+    ensure_graphifyignore(project)
     command = [exe, "extract", ".", "--code-only"]
     if force:
         command.append("--force")

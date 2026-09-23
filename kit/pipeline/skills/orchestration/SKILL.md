@@ -3,7 +3,8 @@ name: orchestration
 description: >-
   Top layer for any product-work ask. Invoke first when the user wants work
   done: “work on …”, “fix …”, “change …”, “develop …”, or a message that
-  contains a tracker issue key. Decide the **workflow** (ask |
+  contains a tracker issue key, or asks which skills, sub-agents,
+  workflows, rules, or hooks to add. Decide the **workflow** (ask |
   feature-development | jira-story | jira-bug | jira-epic |
   test-knowledge-bootstrap). Questions stay on
   `ask` (no Task chain). Product work writes features/{slug}/route.md, then
@@ -48,6 +49,7 @@ When `work_source` is `text`, also classify **intent**:
 
 | Intent | Signals |
 |--------|---------|
+| `pack_gap` | what skills, sub-agents, workflows, rules, or hooks should we add; what is missing from the pipeline; pack scan. Classify this before `question` and `product` — the words “what” and “add” also appear there |
 | `question` | how / what / why / where / explain / “can you tell”, and no product verb |
 | `knowledge_bootstrap` | bootstrap QA knowledge, bootstrap test knowledge |
 | `product` | work on, fix, change, develop, implement, add, build, or an explicit `WORKFLOW:` other than `ask` |
@@ -64,6 +66,7 @@ If intake returns `BLOCKED` because no tracker MCP is reachable, relay its recov
 
 | `work_source` | Workflow |
 |---------------|----------|
+| `text` + `pack_gap` | Parent only. Run `pipeline-kit scan` when `features/pack-scan/prompt.md` is missing. Read that file and `features/pack-scan/context.md`. Answer in chat with the five lists. Do not write `route.md`. Do not start another workflow. If scan exits because the graph is missing, relay its recovery line |
 | `text` + `question` | `ask` — parent answers from the allowlist; **no Task chain** |
 | `text` + `knowledge_bootstrap` | `test-knowledge-bootstrap` — not the feature ladder |
 | `text` + `product` | `feature-development` |
@@ -82,7 +85,7 @@ User override: an explicit `WORKFLOW: {name}` or `CHANGE_CLASS: {class}` in the 
 
 ### O4 Write `features/{slug}/route.md`
 
-Skip this step for `ask` and `test-knowledge-bootstrap`.
+Skip this step for `ask`, `pack_gap`, and `test-knowledge-bootstrap`.
 
 Slug rules:
 

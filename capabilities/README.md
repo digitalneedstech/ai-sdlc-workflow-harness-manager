@@ -9,6 +9,7 @@ Optional add-ons. `pipeline-kit init` does **not** turn these on.
 | [`observability/`](./observability/) | `pipeline_observability` | `pipeline-kit obs` | Agent-run traces, scores, Langfuse flush |
 | [`eval/`](./eval/) | `pipeline_eval` | `pipeline-kit eval` | Judge catalog sync (Langfuse) |
 | [`feature_flags/`](./feature_flags/) | `pipeline_features` | `pipeline-kit features` | Named on/off keys that mirror `config.json` |
+| [`scan/`](./scan/) | `pipeline_scan` | `pipeline-kit scan` | Pack-gap prompt from an existing Graphify graph |
 
 Python import names stay `pipeline_*` / `knowledge` so hooks, associate
 workflows, and the CLI do not change. Folders are grouped here so the
