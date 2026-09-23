@@ -9,6 +9,8 @@ from typing import Any
 
 from pipeline_orchestrator import EXIT_GATE, EXIT_OK, EXIT_STARTUP, EXIT_STEP
 from pipeline_orchestrator.context import compose_prompt
+from pipeline_orchestrator.deciders.base import Decision, DecisionError, DecisionRequest, ModelDecider, job_for
+from pipeline_orchestrator.deciders.factory import make_decider
 from pipeline_orchestrator.events import emit
 from pipeline_orchestrator.graph import AgentStep, LayerFan, Node, SignoffGate, WaveFan, WorkflowSpec
 from pipeline_orchestrator.runners.base import AgentRunner, StepRequest, StepResult
@@ -53,6 +55,36 @@ def _previous_agent(chain: list[Node], index: int) -> AgentStep | None:
     return None
 
 
+def _model_rejected(error: str) -> bool:
+    text = (error or "").lower()
+    if "model" not in text:
+        return False
+    return any(
+        token in text
+        for token in ("invalid", "unknown", "not found", "unsupported", "unavailable", "rejected", "not available")
+    )
+
+
+def _load_catalog(runner: AgentRunner, run: dict[str, Any]) -> tuple[list[str], dict[str, dict]]:
+    cached = run.get("model_catalog")
+    cached_info = run.get("model_info")
+    if isinstance(cached, list) and cached and isinstance(cached_info, dict):
+        ids = [str(item).strip() for item in cached if str(item).strip()]
+        info = {str(key): value for key, value in cached_info.items() if isinstance(value, dict)}
+        return ids, info
+    listed = runner.list_models()
+    ids = [str(item).strip() for item in listed if str(item).strip()]
+    raw = getattr(runner, "model_info", None)
+    info: dict[str, dict] = {}
+    if callable(raw):
+        loaded = raw()
+        if isinstance(loaded, dict):
+            info = {str(key): value for key, value in loaded.items() if isinstance(value, dict)}
+    run["model_catalog"] = ids
+    run["model_info"] = info
+    return ids, info
+
+
 async def _run_agent(
     *,
     project: Path,
@@ -60,6 +92,9 @@ async def _run_agent(
     run: dict[str, Any],
     step: AgentStep,
     runner: AgentRunner,
+    decider: ModelDecider,
+    catalog: list[str],
+    model_info: dict[str, dict] | None = None,
     extra: dict[str, str] | None = None,
     spec_dir: Path | None = None,
 ) -> tuple[int | None, StepResult | None]:
@@ -92,22 +127,47 @@ async def _run_agent(
         emit(project, "step_end", slug=slug, step=step.id, error=str(exc))
         print(str(exc))
         return EXIT_STARTUP, None
-    request = StepRequest(
-        prompt=prompt,
-        step_id=step.id,
-        slug=slug,
-        project=project,
-        model=step.model,
-        mcp=step.mcp,
-        extra=extra or {},
-    )
-    result = await runner.run(request)
+    prior = ""
+    if step.prior_agent:
+        prior = str(((run.get("steps") or {}).get(step.prior_agent) or {}).get("handoff_status") or "")
+    try:
+        decision = decider.decide(
+            DecisionRequest(
+                step_id=step.id,
+                job=job_for(step.id),
+                user_request=str(run.get("user_request") or ""),
+                workflow=spec.name,
+                change_class=str(run.get("change_class") or ""),
+                prior_status=prior,
+                catalog=tuple(catalog),
+                pin=step.model,
+                model_info=dict(model_info or {}),
+            )
+        )
+    except DecisionError as exc:
+        run["status"] = "error"
+        run["exit_hint"] = EXIT_STEP
+        save_run(project, run)
+        emit(project, "step_end", slug=slug, step=step.id, error=str(exc))
+        print(str(exc))
+        return EXIT_STEP, None
     row = run["steps"].setdefault(step.id, {})
-    row["attempts"] = int(row.get("attempts") or 0) + 1
+    row["routing"] = decision.to_routing()
+    print(decision.format(step.id))
+    result, attempts = await _execute(runner, prompt, step, slug, project, extra or {}, decision)
+    row["attempts"] = int(row.get("attempts") or 0) + attempts
     row["agent_id"] = result.agent_id
     row["run_id"] = result.run_id
-    row["model"] = result.model or step.model
+    row["model"] = result.model or decision.model
     row["context_digest"] = digest
+    routing = row.get("routing")
+    if isinstance(routing, dict) and result.model and result.model != decision.model:
+        routing["fallback"] = result.model
+        routing["cursor_rejected"] = decision.model
+        print(
+            "model step=%s chosen=%s reason=cursor_rejected decider=%s"
+            % (step.id, result.model, decision.decider)
+        )
     if result.startup_failure:
         run["status"] = "error"
         run["exit_hint"] = EXIT_STARTUP
@@ -165,6 +225,45 @@ def _load_retry_cap(project: Path, run: dict[str, Any]) -> int:
     return cap
 
 
+async def _execute(
+    runner: AgentRunner,
+    prompt: str,
+    step: AgentStep,
+    slug: str,
+    project: Path,
+    extra: dict[str, str],
+    decision: Decision,
+) -> tuple[StepResult, int]:
+    request = StepRequest(
+        prompt=prompt,
+        step_id=step.id,
+        slug=slug,
+        project=project,
+        model=decision.model,
+        mcp=step.mcp,
+        extra=extra,
+    )
+    result = await runner.run(request)
+    if (
+        not result.ok
+        and not result.startup_failure
+        and _model_rejected(result.error)
+        and decision.fallback
+        and decision.fallback != decision.model
+    ):
+        request = StepRequest(
+            prompt=prompt,
+            step_id=step.id,
+            slug=slug,
+            project=project,
+            model=decision.fallback,
+            mcp=step.mcp,
+            extra=extra,
+        )
+        return await runner.run(request), 2
+    return result, 1
+
+
 async def advance(
     *,
     project: Path,
@@ -172,6 +271,7 @@ async def advance(
     run: dict[str, Any],
     runner: AgentRunner,
     spec_dir: Path | None = None,
+    decider: ModelDecider | None = None,
 ) -> int:
     chain = spec.chain_for(str(run["change_class"]))
     ids = [node_id(n) for n in chain]
@@ -196,6 +296,31 @@ async def advance(
         run["exit_hint"] = EXIT_OK
         save_run(project, run)
         return EXIT_OK
+
+    if decider is None:
+        try:
+            decider = make_decider(project)
+        except ValueError as exc:
+            run["status"] = "error"
+            run["exit_hint"] = EXIT_STARTUP
+            save_run(project, run)
+            print(str(exc))
+            return EXIT_STARTUP
+    try:
+        catalog, model_info = _load_catalog(runner, run)
+    except Exception as exc:
+        run["status"] = "error"
+        run["exit_hint"] = EXIT_STARTUP
+        save_run(project, run)
+        print(str(exc))
+        return EXIT_STARTUP
+    if not catalog:
+        run["status"] = "error"
+        run["exit_hint"] = EXIT_STARTUP
+        save_run(project, run)
+        print("model catalog is empty")
+        return EXIT_STARTUP
+    save_run(project, run)
 
     while index < len(chain):
         node = chain[index]
@@ -233,6 +358,9 @@ async def advance(
                         run=run,
                         step=step,
                         runner=runner,
+                        decider=decider,
+                        catalog=catalog,
+                        model_info=model_info,
                         extra={"FEATURE_SLUG": child_slug, "CHILD": child or run["slug"]},
                         spec_dir=spec_dir,
                     )
@@ -250,6 +378,9 @@ async def advance(
                     run=run,
                     step=step,
                     runner=runner,
+                    decider=decider,
+                    catalog=catalog,
+                    model_info=model_info,
                     extra={"TEST_LAYER": layer},
                     spec_dir=spec_dir,
                 )
@@ -275,6 +406,9 @@ async def advance(
                 run=run,
                 step=node,
                 runner=runner,
+                decider=decider,
+                catalog=catalog,
+                model_info=model_info,
                 spec_dir=spec_dir,
             )
             if code is not None:

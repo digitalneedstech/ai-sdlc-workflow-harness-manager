@@ -219,6 +219,40 @@ The wheel is version-pinned, not a hard sandbox: a developer can still
 edit their own `site-packages`. Every run records `workflow_provider` and
 `kit_version`.
 
+#### Model choice
+
+The sealed graph still picks the next agent. Before each agent, the engine
+asks a decider which Cursor model should run that step. Configure it under
+`orchestrator` in `.pipeline/config.json`.
+
+| Key | Meaning |
+|-----|---------|
+| `decider` | `jev` (default, TypeSafe Choice, needs `TYPESAFE_API_KEY`) or `fixed` (no network) |
+| `fallback_model` | Used when Jev is off, the call fails, or confidence is below `jev.min_confidence` |
+| `models.candidates` | Shortlist Jev may pick from, intersected with this account’s live Cursor list. Empty `[]` sends every catalog id. |
+| `models.cards` | Optional overlay: `kind`, `fit`, `display_name`, `description` for an id already in `candidates` |
+| `models.steps` | Pin one agent to an id. That step skips Jev. |
+| `jev.min_confidence` | Floor (kit default `0.5`). Below it, `fallback_model` runs and stdout still shows `jev_choice` |
+
+Do **not** put the same details in both `candidates` and `cards`. Use one form:
+
+- **One list:** `{ "id": "glm-5.2", "kind": "reasoning", "fit": "…" }` inside `candidates`
+- **Id + overlay:** `"glm-5.2"` in `candidates`, details under `models.cards.glm-5.2`
+
+`kind` is `coding`, `reasoning`, `general`, or `writing`. That value drives
+`for_this_agent` (planning/review mark Composer poor fit; implementation
+marks it good). The id must already appear in `Cursor.models.list()`. A
+name that exists only in config is skipped.
+
+`--dry-run` asks the decider and prints `need`, `basis`, `sent`, scores,
+then a `summary` table. It does not start Cursor agents. Without
+`CURSOR_API_KEY` it prints `reason=catalog_unavailable` and exits 0.
+`--change-class micro` only runs coding steps, so Composer is the expected
+pick. Use `feature` to see planning and review.
+
+Sign-off gates do not ask the decider. Full examples:
+[`orchestrator/README.md`](./orchestrator/README.md#model-choice).
+
 
 | Command | Purpose |
 |---------|---------|
@@ -530,6 +564,11 @@ uses different names. Do not put the Jira site URL or API token in this file.
 | `gates.retry_cap` | Critic `changes-required` retries (default 2). |
 | `gates.require_planning_signoff_before_build` | User must approve PM / Architect / BA artifacts before waves (default true). |
 | `waves.child_chain` | Per-child developer → critic. Telemetry only if `RUN_TELEMETRY`. |
+| `orchestrator.decider` | Orchestrator mode only. `jev` or `fixed`. Kit mode ignores this block. |
+| `orchestrator.models.candidates` | Shortlist sent to Jev. See [Model choice](#model-choice). |
+| `orchestrator.models.cards` | Optional fit/kind overlay. Do not duplicate an object already in `candidates`. |
+| `orchestrator.models.steps` | Pin one step. That agent skips Jev. |
+| `orchestrator.jev.min_confidence` | Confidence floor before `fallback_model` is used. |
 
 PM, Architect, and BA follow **clarify-first**: they read prior `features/{slug}/`
 artifacts (`decisions.md`, plan, architecture) before asking, then ask remaining

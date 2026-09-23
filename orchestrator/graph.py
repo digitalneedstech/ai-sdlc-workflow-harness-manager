@@ -9,7 +9,7 @@ from typing import Any
 @dataclass(frozen=True)
 class AgentStep:
     id: str
-    model: str = "composer-2.5"
+    model: str = ""
     mcp: tuple[str, ...] = ()
     context_files: tuple[str, ...] = ()
     context_from: str | None = None

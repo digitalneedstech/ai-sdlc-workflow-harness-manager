@@ -77,6 +77,22 @@ inherited. Kit mode stays the default. Associates add extra workflows with
 Copy-ready examples (security review, CI audit, dependency audit,
 accessibility review): [`extensions/orchestrator/`](./extensions/orchestrator/).
 
+Before each orchestrator agent, a decider chooses the Cursor model. `jev` (default) asks TypeSafe with a shortlist (`models.candidates`), not the full catalog. `fixed` skips that call. Planning and review prefer Opus or GPT; implementation prefers Composer. Add a model as an object in `candidates`, or as a string plus `models.cards` — not both. A pin skips Jev for one step:
+
+```json
+"orchestrator": {
+  "decider": "jev",
+  "fallback_model": "composer-2.5",
+  "models": {
+    "steps": { "developer-agent": "composer-2.5" },
+    "candidates": ["composer-2.5", "claude-opus-5", "gpt-5.5"],
+    "cards": {}
+  }
+}
+```
+
+`--dry-run` prints `need`, `basis`, `sent`, and a `summary` table. It does not start Cursor agents. Details: [`orchestrator/README.md`](./orchestrator/README.md#model-choice).
+
 Use `--ide claude-code`, `--ide github`, or `--ide none` when appropriate.
 To install a shared user pack instead, run `pipeline-kit setup --ide cursor`.
 

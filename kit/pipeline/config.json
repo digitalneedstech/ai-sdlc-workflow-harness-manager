@@ -206,6 +206,28 @@
     "_note": "Add path-substring reminders for this repo after install. Optional expect is a regex the scorer uses for integrity checks.",
     "rules": []
   },
+  "orchestrator": {
+    "_note": "Model choice for orchestrator mode. decider jev asks TypeSafe before each agent. decider fixed skips that call. Secrets stay in TYPESAFE_API_KEY and CURSOR_API_KEY.",
+    "decider": "jev",
+    "fallback_model": "composer-2.5",
+    "models": {
+      "steps": {},
+      "candidates": [
+        "composer-2.5",
+        "grok-4.5",
+        "grok-4.6",
+        "grok-4.7",
+        "claude-opus-5",
+        "gpt-5.5",
+        "gpt-5.6-sol"
+      ],
+      "cards": {}
+    },
+    "jev": {
+      "model": "jev-latest",
+      "min_confidence": 0.5
+    }
+  },
   "gates": {
     "retry_cap": 2,
     "require_signoff_before_deploy": true,

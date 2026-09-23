@@ -341,3 +341,101 @@ def test_missing_state_fails_closed(tmp_path: Path):
     runner = FakeRunner({"developer-agent": {"omit_state": True}})
     code = asyncio.run(advance(project=app, spec=spec, run=run, runner=runner))
     assert code == 2
+
+
+def test_fixed_decider_does_not_call_jev(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.delenv("TYPESAFE_API_KEY", raising=False)
+
+    def boom(self, request):  # noqa: ANN001
+        raise AssertionError("jev was called")
+
+    monkeypatch.setattr("pipeline_orchestrator.deciders.jev.JevDecider.decide", boom)
+    app = tmp_path / "app"
+    app.mkdir()
+    assert _cli(["init", str(app), "--ide", "none", "--mode", "orchestrator"]) == 0
+    cfg_path = app / ".pipeline" / "config.json"
+    cfg = json.loads(cfg_path.read_text(encoding="utf-8"))
+    cfg["orchestrator"]["decider"] = "fixed"
+    cfg_path.write_text(json.dumps(cfg, indent=2) + "\n", encoding="utf-8")
+    code = _cli(
+        [
+            "run",
+            str(app),
+            "--slug",
+            "fixed-route",
+            "--workflow",
+            "feature-development",
+            "--change-class",
+            "micro",
+            "--runner",
+            "fake",
+        ]
+    )
+    assert code == 0
+    run = json.loads(
+        (app / ".pipeline" / "state" / "runs" / "fixed-route.json").read_text(encoding="utf-8")
+    )
+    routing = run["steps"]["developer-agent"]["routing"]
+    assert routing["decider"] == "fixed"
+    assert routing["reason"] == "fixed"
+    assert routing["chosen"] == "composer-2.5"
+    assert run["steps"]["tester-agent-unit"]["routing"]["decider"] == "fixed"
+
+
+def test_dry_run_prints_decider_without_calling_it(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
+    app = tmp_path / "app"
+    app.mkdir()
+    assert _cli(["init", str(app), "--ide", "none", "--mode", "orchestrator"]) == 0
+    capsys.readouterr()
+    code = _cli(
+        [
+            "run",
+            str(app),
+            "--slug",
+            "preview",
+            "--workflow",
+            "feature-development",
+            "--change-class",
+            "micro",
+            "--dry-run",
+        ]
+    )
+    assert code == 0
+    out = capsys.readouterr().out
+    assert "decider=jev" in out
+    assert "model step=developer-agent chosen=? reason=catalog_unavailable decider=jev" in out
+    assert "summary" in out
+    assert "developer-agent  chosen=?  reason=catalog_unavailable" in out
+
+
+def test_dry_run_prints_each_decided_model(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+):
+    monkeypatch.delenv("TYPESAFE_API_KEY", raising=False)
+    app = tmp_path / "app"
+    app.mkdir()
+    assert _cli(["init", str(app), "--ide", "none", "--mode", "orchestrator"]) == 0
+    capsys.readouterr()
+    code = _cli(
+        [
+            "run",
+            str(app),
+            "--slug",
+            "preview",
+            "--workflow",
+            "feature-development",
+            "--change-class",
+            "micro",
+            "--runner",
+            "fake",
+            "--dry-run",
+            "--request",
+            "add a readme line",
+        ]
+    )
+    assert code == 0
+    out = capsys.readouterr().out
+    assert "model step=developer-agent chosen=composer-2.5 reason=jev_unavailable decider=jev" in out
+    assert "model step=tester-agent-unit chosen=composer-2.5 reason=jev_unavailable decider=jev" in out
+    assert "summary" in out
+    assert "developer-agent  chosen=composer-2.5  reason=jev_unavailable" in out

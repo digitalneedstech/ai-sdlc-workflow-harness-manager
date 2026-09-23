@@ -8,7 +8,10 @@ import os
 from pathlib import Path
 
 from pipeline_orchestrator import EXIT_STARTUP
+from pipeline_orchestrator.deciders.base import DecisionError, DecisionRequest, job_for
+from pipeline_orchestrator.deciders.factory import decider_name, make_decider
 from pipeline_orchestrator.engine import advance, start_run
+from pipeline_orchestrator.graph import AgentStep, LayerFan, WaveFan
 from pipeline_orchestrator.gates import approve
 from pipeline_orchestrator.registry import list_specs, resolve_spec
 from pipeline_orchestrator.runners.cursor_sdk import CursorSdkRunner
@@ -56,6 +59,93 @@ def cmd_list_orchestrator(project: Path) -> int:
     return 0
 
 
+def _dry_run_steps(chain: list) -> list[AgentStep]:
+    steps: list[AgentStep] = []
+    for node in chain:
+        if isinstance(node, AgentStep):
+            steps.append(node)
+        elif isinstance(node, WaveFan):
+            steps.extend(AgentStep(id=step_id, context_from=step_id) for step_id in node.child_chain)
+        elif isinstance(node, LayerFan):
+            steps.extend(
+                AgentStep(id="tester-agent-%s" % layer, context_from="tester-agent")
+                for layer in node.layers
+            )
+    return steps
+
+
+def _print_dry_run(project: Path, *, spec, change_class: str, runner: str, user_request: str) -> int:
+    try:
+        name = decider_name(project)
+    except ValueError as exc:
+        print(str(exc))
+        return EXIT_STARTUP
+    try:
+        chain = spec.chain_for(change_class)
+    except ValueError as exc:
+        print(str(exc))
+        return EXIT_STARTUP
+    print("workflow=%s provider=%s class=%s decider=%s" % (spec.name, spec.provider, change_class, name))
+    catalog: list[str] = []
+    model_info: dict[str, dict] = {}
+    decider = None
+    catalog_note = ""
+    try:
+        impl = _runner(runner)
+        if runner in {"cursor", "cursor-sdk"} and not os.environ.get("CURSOR_API_KEY", "").strip():
+            catalog_note = "catalog_unavailable"
+        elif runner in {"cursor", "cursor-sdk"} and not impl.is_available():
+            catalog_note = "catalog_unavailable"
+        else:
+            catalog = [item for item in impl.list_models() if item]
+            loaded = getattr(impl, "model_info", None)
+            if callable(loaded):
+                raw = loaded()
+                if isinstance(raw, dict):
+                    model_info = {str(key): value for key, value in raw.items() if isinstance(value, dict)}
+            decider = make_decider(project)
+    except Exception as exc:
+        if runner in {"cursor", "cursor-sdk"} and not os.environ.get("CURSOR_API_KEY", "").strip():
+            catalog_note = "catalog_unavailable"
+        else:
+            print(str(exc))
+            return EXIT_STARTUP
+    if decider is not None and not catalog:
+        catalog_note = "catalog_unavailable"
+        decider = None
+    rows: list[str] = []
+    for step in _dry_run_steps(chain):
+        if decider is None:
+            print("model step=%s chosen=? reason=%s decider=%s" % (step.id, catalog_note or "catalog_unavailable", name))
+            rows.append("  %s  chosen=?  reason=%s" % (step.id, catalog_note or "catalog_unavailable"))
+            continue
+        try:
+            decision = decider.decide(
+                DecisionRequest(
+                    step_id=step.id,
+                    job=job_for(step.id),
+                    user_request=user_request,
+                    workflow=spec.name,
+                    change_class=change_class,
+                    prior_status="",
+                    catalog=tuple(catalog),
+                    pin=step.model,
+                    model_info=model_info,
+                )
+            )
+        except DecisionError as exc:
+            print("model step=%s chosen=? reason=error decider=%s error=%s" % (step.id, name, exc))
+            rows.append("  %s  chosen=?  reason=error" % step.id)
+            continue
+        print(decision.format(step.id))
+        rows.append(decision.summary_line(step.id))
+    if rows:
+        print("summary")
+        for row in rows:
+            print(row)
+    return 0
+
+
 def cmd_run(
     project: Path,
     *,
@@ -80,11 +170,17 @@ def cmd_run(
         spec_dir = ext
     cls = change_class or spec.default_change_class
     if dry_run:
-        chain = spec.chain_for(cls)
-        print("workflow=%s provider=%s class=%s" % (spec.name, spec.provider, cls))
-        for node in chain:
-            print("  - %s (%s)" % (node.id, type(node).__name__))
-        return 0
+        try:
+            user_request = resolve_user_request(project, slug, request, request_file)
+        except FileNotFoundError:
+            user_request = ""
+        return _print_dry_run(
+            project,
+            spec=spec,
+            change_class=cls,
+            runner=runner,
+            user_request=user_request,
+        )
     if runner in {"cursor", "cursor-sdk"} and not os.environ.get("CURSOR_API_KEY", "").strip():
         print("CURSOR_API_KEY is not set")
         return EXIT_STARTUP

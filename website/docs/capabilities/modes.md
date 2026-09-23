@@ -88,7 +88,9 @@ pipeline-kit approve --slug checkout-redesign --gate requirements
 pipeline-kit resume --slug checkout-redesign
 ```
 
-`--request` is the user ask. `--slug` is only the folder name under `features/`. `--runner fake` and `--dry-run` do not call the SDK.
+`--request` is the user ask. `--slug` is only the folder name under `features/`. `--runner fake` and `--dry-run` do not start Cursor agents. `--dry-run` still asks the model decider and prints a short `need` / `basis` / `scores` block per agent, then a `summary` table, when the Cursor catalog can be listed.
+
+Each agent step asks a model decider which Cursor model to use. `orchestrator.decider` in `.pipeline/config.json` selects it: `jev` (default, TypeSafe Choice, `TYPESAFE_API_KEY`) or `fixed` (no network; pin, then `fallback_model`). Jev sees `orchestrator.models.candidates` intersected with the live catalog, not every Cursor model. Add an id and optional `kind` / `fit` under `models.cards` (or as an object in `candidates`). A Jev outage or a low-confidence answer uses `fallback_model` and the run continues. Sign-off gates do not ask the decider.
 
 Associates add workflows with `pipeline-kit workflows --scaffold NAME`, or copy the examples from `extensions/orchestrator/` in the kit clone.
 
