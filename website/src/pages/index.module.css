@@ -331,6 +331,22 @@
   line-height: 1.6;
 }
 
+.offer {
+  margin: 0.2rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.offer li {
+  margin: 0 0 0.85rem;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.offer a {
+  color: var(--fg);
+}
+
 .terminal {
   padding-top: 1.4rem;
   border-top: 1px solid var(--line);

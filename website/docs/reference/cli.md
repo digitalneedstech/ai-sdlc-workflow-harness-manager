@@ -60,6 +60,18 @@ See [Agent-run observability](/docs/capabilities/observability).
 
 `version [show]` prints `VERSION`. `version bump patch|minor|major` and `version set X.Y.Z` update `VERSION` (and `website/package.json`) in the **kit git checkout** — resolved from `--repo`, then `$PIPELINE_KIT_REPO`, then upwards from the current directory — never in a customer project or the installed wheel. `--commit` commits there with `git -C`; `--tag` (requires `--commit`) adds `vX.Y.Z`. Also `--dry-run`. See [This repository](/docs/maintainers/repo).
 
+## License
+
+Paid areas are orchestrator mode, Jira intake, the governance workflows (`security-review`, `ci-audit`, `dependency-audit`, `accessibility-review`), and agent-run observability / eval. Kit mode, `ask`, and `feature-development` do not read the license. `obs report` stays local.
+
+```bash
+export PIPELINE_KIT_LICENSE='<token>'
+pipeline-kit license activate
+pipeline-kit license status
+```
+
+`activate` writes `~/.pipeline/license.json` (mode `0600`). `PIPELINE_KIT_LICENSE` in the environment wins over that file for one process. Maintainers sign a token from a kit checkout with `pipeline-kit license issue --org NAME --expires YYYY-MM-DD`. The signing key path is `PIPELINE_KIT_LICENSE_SIGNING_KEY`.
+
 ## Legacy
 
 `python3 install.py` remains for compatibility and maintainer `--sync-kit`.

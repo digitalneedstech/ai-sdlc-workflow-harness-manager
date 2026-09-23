@@ -440,6 +440,56 @@ export default function Home(): ReactNode {
             </p>
           </div>
         </section>
+
+        <section className={styles.section} id="enterprise">
+          <div className={styles.shell}>
+            <header className={styles.head} data-reveal>
+              <p className={styles.kicker}>Subscription</p>
+              <Heading as="h2">What an org license covers.</Heading>
+              <p>
+                Install stays open. One license turns on the controls a delivery
+                org runs across engagements.
+              </p>
+            </header>
+            <div className={styles.runtimes} data-reveal>
+              <div>
+                <p className={styles.kicker}>Included</p>
+                <h3>The factory</h3>
+                <p>
+                  Kit mode, <code>ask</code>, and <code>feature-development</code>.
+                  Loader, wiki, planning gates, and policy hooks. Install, doctor,
+                  and the workflow list stay open.
+                </p>
+              </div>
+              <div>
+                <p className={styles.kicker}>Org license</p>
+                <h3>Four paid areas</h3>
+                <ul className={styles.offer}>
+                  <li>
+                    <Link to="/docs/capabilities/modes">Orchestrator and the model classifier.</Link>{' '}
+                    Sealed graph, approve, and resume.
+                  </li>
+                  <li>
+                    <Link to="/docs/workflows/jira">Jira intake.</Link>{' '}
+                    Story, epic, and bug workflows.
+                  </li>
+                  <li>
+                    <Link to="/docs/capabilities/extensions">Governance workflows.</Link>{' '}
+                    Security, CI, dependency, and accessibility review.
+                  </li>
+                  <li>
+                    <Link to="/docs/capabilities/observability">Observability and eval.</Link>{' '}
+                    Traces, scores, and cost. Local report stays open.
+                  </li>
+                </ul>
+              </div>
+            </div>
+            <p className={styles.foot}>
+              One license covers every engagement on the machine. Activate with{' '}
+              <code>pipeline-kit license activate</code>.
+            </p>
+          </div>
+        </section>
       </div>
     </Layout>
   );

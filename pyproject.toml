@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.11"
 license = "MIT"
 authors = [{ name = "Pipeline Kit maintainers" }]
-dependencies = []
+dependencies = ["cryptography>=44"]
 
 [project.optional-dependencies]
 orchestrator = ["cursor-sdk", "typesafe-sdk"]
@@ -30,6 +30,7 @@ version = { file = "VERSION" }
 pipeline_kit = [
   "VERSION",
   "CUSTOMER-GUIDE.md",
+  "license_public_key.txt",
   "kit/pipeline/**/*",
 ]
 pipeline_orchestrator = [

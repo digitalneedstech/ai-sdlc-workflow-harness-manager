@@ -231,23 +231,28 @@ def test_architect_allowlist_covers_jira_workflows(tmp_path: Path):
     app = tmp_path / "app"
     app.mkdir()
     assert _run(["--project", str(app), "--ide", "none"]) == 0
-    loader = app / ".pipeline" / "loader" / "load_workflow.py"
+    import importlib.util
+
+    loader = app / ".pipeline" / "loader" / "context_pack.py"
+    spec = importlib.util.spec_from_file_location("installed_context_pack", loader)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
     for workflow in ("jira-story", "jira-epic"):
-        subprocess.run(
-            [
-                "python3",
-                str(loader),
-                "--workflow",
-                workflow,
-                "--step",
-                "architect-agent",
-                "--slug",
-                f"try-{workflow}",
-            ],
-            cwd=app,
-            check=True,
-            capture_output=True,
-            text=True,
+        assert (
+            module.main(
+                [
+                    "--workflow",
+                    workflow,
+                    "--step",
+                    "architect-agent",
+                    "--slug",
+                    f"try-{workflow}",
+                    "--repo-root",
+                    str(app),
+                ]
+            )
+            == 0
         )
         pack = json.loads(
             (app / "features" / f"try-{workflow}" / "context-pack.json").read_text()

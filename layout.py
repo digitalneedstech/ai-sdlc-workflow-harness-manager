@@ -63,6 +63,32 @@ class SourcePackageFinder:
         return None
 
 
+class PipelineKitFinder:
+    """Expose ``pipeline_kit.license`` from a source checkout.
+
+    The wheel maps the ``pipeline_kit`` package onto this repo root. A source
+    run has no ``pipeline_kit/`` directory, so this finder serves only the
+    package init and the license module.
+    """
+
+    def find_spec(self, fullname, path=None, target=None):  # noqa: ARG002
+        if fullname == "pipeline_kit":
+            init = ROOT / "__init__.py"
+            if not init.is_file():
+                return None
+            return importlib.util.spec_from_file_location(
+                fullname,
+                init,
+                submodule_search_locations=[],
+            )
+        if fullname == "pipeline_kit.license":
+            module = ROOT / "license.py"
+            if not module.is_file():
+                return None
+            return importlib.util.spec_from_file_location(fullname, module)
+        return None
+
+
 _installed = False
 
 
@@ -74,5 +100,6 @@ def install_source_importers() -> None:
     mapping = {name: path for name, path in SOURCE_PACKAGES.items() if path.is_dir()}
     if not mapping:
         return
+    sys.meta_path.insert(0, PipelineKitFinder())
     sys.meta_path.insert(0, SourcePackageFinder(mapping))
     _installed = True

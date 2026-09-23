@@ -723,6 +723,56 @@ def _ensure_pkg_path() -> None:
     install_source_importers()
 
 
+def _license_cli(args: argparse.Namespace) -> int:
+    _ensure_pkg_path()
+    from pipeline_kit.license import cmd_activate, cmd_issue, cmd_status
+
+    home = Path(args.home).expanduser().resolve() if getattr(args, "home", "") else None
+    if args.license_command == "issue":
+        try:
+            resolve_kit_checkout(args.repo or None)
+        except ValueError as exc:
+            print(str(exc), file=sys.stderr)
+            return 64
+        return cmd_issue(org=args.org, expires=args.expires, features=args.features)
+    if args.license_command == "activate":
+        return cmd_activate(home=home)
+    if args.license_command == "status":
+        return cmd_status(home=home)
+    print(f"unknown license command: {args.license_command}", file=sys.stderr)
+    return 2
+
+
+def _require_license(feature: str) -> int:
+    _ensure_pkg_path()
+    try:
+        from pipeline_kit.license import require
+    except ImportError:
+        print(
+            f"license: {feature} needs pipeline-kit license activate",
+            file=sys.stderr,
+        )
+        return 73
+    return int(require(feature))
+
+
+def _feature_for_saved_run(project: Path, slug: str) -> str:
+    from pipeline_kit.license import feature_for_workflow
+
+    for path in (
+        project / ".pipeline" / "state" / "runs" / f"{slug}.json",
+        project / "features" / slug / "pipeline-state.json",
+    ):
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        workflow = data.get("workflow") if isinstance(data, dict) else None
+        if isinstance(workflow, str) and workflow.strip():
+            return feature_for_workflow(workflow)
+    return "orchestrator"
+
+
 def _knowledge_commands():
     _ensure_pkg_path()
     from knowledge.commands import (  # noqa: WPS433
@@ -1140,6 +1190,28 @@ def cli_main(argv: list[str] | None = None) -> int:
     )
     e_sync.add_argument("project", nargs="?", default=".")
 
+    license_parser = commands.add_parser("license", help="issue or activate an org license")
+    license_commands = license_parser.add_subparsers(dest="license_command", required=True)
+    issue_parser = license_commands.add_parser(
+        "issue",
+        help="sign a token from a kit checkout",
+    )
+    issue_parser.add_argument("--org", required=True)
+    issue_parser.add_argument("--expires", required=True, help="YYYY-MM-DD, valid through that UTC day")
+    issue_parser.add_argument(
+        "--features",
+        default="orchestrator,jira,governance,evidence",
+        help="comma list: orchestrator, jira, governance, evidence",
+    )
+    issue_parser.add_argument("--repo", default="", help="pipeline-kit checkout")
+    activate_parser = license_commands.add_parser(
+        "activate",
+        help="store PIPELINE_KIT_LICENSE in the home pack",
+    )
+    activate_parser.add_argument("--home", default="", help=argparse.SUPPRESS)
+    status_parser = license_commands.add_parser("status", help="print org, expiry, and paid areas")
+    status_parser.add_argument("--home", default="", help=argparse.SUPPRESS)
+
     version_parser = commands.add_parser(
         "version",
         help="show or set the kit release version (maintainers)",
@@ -1175,6 +1247,8 @@ def cli_main(argv: list[str] | None = None) -> int:
     version_parser.add_argument("--dry-run", action="store_true")
 
     args = parser.parse_args(argv)
+    if args.command == "license":
+        return _license_cli(args)
     if args.command == "version":
         return cmd_version(
             args.action,
@@ -1194,6 +1268,10 @@ def cli_main(argv: list[str] | None = None) -> int:
             return 64
         dest = ((home or Path.home()) if user else project) / ".pipeline"
         mode = getattr(args, "mode", None) or read_install_mode(dest)
+        if mode == "orchestrator":
+            blocked = _require_license("orchestrator")
+            if blocked:
+                return blocked
         return install(
             scope="user" if user else "project",
             target=(home or Path.home()) if user else project,
@@ -1206,6 +1284,10 @@ def cli_main(argv: list[str] | None = None) -> int:
     if args.command == "setup":
         dest = (home or Path.home()) / ".pipeline"
         mode = getattr(args, "mode", None) or read_install_mode(dest)
+        if mode == "orchestrator":
+            blocked = _require_license("orchestrator")
+            if blocked:
+                return blocked
         return install(
             scope="user",
             target=home or Path.home(),
@@ -1224,6 +1306,10 @@ def cli_main(argv: list[str] | None = None) -> int:
     if args.command == "doctor":
         return doctor(target=project, user=args.user, ide=args.ide, home=home)
     if args.command == "workflows":
+        if getattr(args, "scaffold", "") or "":
+            blocked = _require_license("orchestrator")
+            if blocked:
+                return blocked
         return list_workflows(
             target=project,
             user=args.user,
@@ -1245,6 +1331,11 @@ def cli_main(argv: list[str] | None = None) -> int:
             print(f"not a directory: {project}", file=sys.stderr)
             return 64
         if args.command == "run":
+            from pipeline_kit.license import feature_for_workflow
+
+            blocked = _require_license(feature_for_workflow(args.workflow))
+            if blocked:
+                return blocked
             return cmd_run(
                 project,
                 slug=args.slug,
@@ -1256,8 +1347,14 @@ def cli_main(argv: list[str] | None = None) -> int:
                 request_file=getattr(args, "request_file", "") or "",
             )
         if args.command == "resume":
+            blocked = _require_license(_feature_for_saved_run(project, args.slug))
+            if blocked:
+                return blocked
             return cmd_resume(project, slug=args.slug, runner=args.runner)
         if args.command == "approve":
+            blocked = _require_license(_feature_for_saved_run(project, args.slug))
+            if blocked:
+                return blocked
             return cmd_approve(project, slug=args.slug, gate=args.gate, note=args.note)
         if args.command == "status":
             return cmd_status(project, slug=args.slug)
@@ -1346,6 +1443,13 @@ def cli_main(argv: list[str] | None = None) -> int:
         if args.features_command == "status":
             return cmd_status(project)
         if args.features_command == "enable":
+            from pipeline_kit.license import PAID_FLAGS
+
+            paid = PAID_FLAGS.get(args.name)
+            if paid:
+                blocked = _require_license(paid)
+                if blocked:
+                    return blocked
             return cmd_enable(project, args.name)
         if args.features_command == "disable":
             return cmd_disable(project, args.name)
@@ -1356,6 +1460,10 @@ def cli_main(argv: list[str] | None = None) -> int:
         if not project.is_dir():
             print(f"not a directory: {project}", file=sys.stderr)
             return 64
+        if args.obs_command != "report":
+            blocked = _require_license("evidence")
+            if blocked:
+                return blocked
         if args.obs_command == "install":
             return cmd_install(
                 project,
@@ -1379,6 +1487,9 @@ def cli_main(argv: list[str] | None = None) -> int:
         if not project.is_dir():
             print(f"not a directory: {project}", file=sys.stderr)
             return 64
+        blocked = _require_license("evidence")
+        if blocked:
+            return blocked
         if args.eval_command == "judges" and args.judges_command == "sync":
             return cmd_judges_sync(project)
         parser.error("unknown eval command")
