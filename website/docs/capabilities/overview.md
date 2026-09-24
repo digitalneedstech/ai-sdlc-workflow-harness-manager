@@ -5,6 +5,16 @@ description: What the kit ships, what is opt-in, and where to drill down.
 
 Core delivery is on after `pipeline-kit init`. Everything in the second table is **opt-in**.
 
+Pipeline Kit ships **two kits**. [Kit mode](/docs/capabilities/modes) is the markdown pack. [Orchestrator mode](/docs/capabilities/modes) is the Python engine. Same first-party workflow names. Adding a process is an [extension](/docs/capabilities/extensions), not a fork.
+
+## The two kits
+
+| Surface | What it is |
+|---------|------------|
+| [Two kits — pack and orchestrator](/docs/capabilities/modes) | Pick one per project at `init`. Do not mix. |
+| [Extensions](/docs/capabilities/extensions) | Add a process in kit mode (JSON + skill) or orchestrator mode (`pipeline_extensions`) |
+| [Repository layout](/docs/intro/repo-layout) | Where each kit lives in this repo |
+
 ## Always available after init
 
 | Capability | What it is |

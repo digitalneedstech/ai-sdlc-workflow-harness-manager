@@ -5,10 +5,15 @@ description: Kit source layout, sync-kit, tests. Not a customer application.
 
 This repository **is** the pipeline-kit source (installer + bundled pack). It is not a customer application.
 
-- Pack body: `kit/pipeline/`
+- Pack body: `kit/pipeline/` (kit mode)
+- Orchestrator engine: `orchestrator/` (import `pipeline_orchestrator`)
+- Extensions: `extensions/kit/`, `extensions/orchestrator/`
+- Capabilities: `capabilities/` (plugins, knowledge, observability, eval, flags)
 - Installer: `install.py` / `pipeline-kit` CLI
 - Customer handbook: `CUSTOMER-GUIDE.md`
 - Docs site: `website/` (this Docusaurus app; not copied on `init`)
+
+Folder map: [Repository layout](/docs/intro/repo-layout).
 
 ## Refresh the bundled pack
 

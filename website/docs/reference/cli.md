@@ -5,18 +5,37 @@ description: All pipeline-kit commands — pack, knowledge, plugins, features, o
 
 Global: `pipeline-kit --version` (same number as `pipeline-kit version`).
 
+The CLI is shared. The **project** is one of [two kits](/docs/capabilities/modes): **kit mode** (default markdown pack) or **orchestrator mode** (`--mode orchestrator`). Orchestrator-only commands are listed after the pack table.
+
 ## Pack
 
 | Command | Purpose |
 |---------|---------|
-| `init [project]` | Install/update `<repo>/.pipeline` and its IDE adapter. `--ide`, `--agent-stubs`, `--dry-run` |
+| `init [project]` | Install/update `<repo>/.pipeline` and its IDE adapter. `--ide`, `--mode kit\|orchestrator`, `--agent-stubs`, `--dry-run` |
 | `setup` | Install/update `~/.pipeline` and a user IDE adapter |
 | `update [project]` | Refresh managed files while retaining local `config.json` values. `--user` for the home pack |
 | `uninstall [project]` | Remove managed project files. `--user` for the home pack |
 | `doctor [project]` | Check Python, pack, config, loader, marker, and optional IDE adapter |
-| `workflows [project]` | List workflows from the active project or user pack |
+| `workflows [project]` | List workflows from the active project or user pack. `--scaffold NAME` is orchestrator-only |
+| `scan [project]` | Assess the repo from `graphify-out/graph.json`. Requires the `assess` package (`uv tool install -e ".[assess]"`) and an `assess` license. Writes `features/assessment/` (report, plan, answers, `prompt.md`). Does not write rule, skill, or agent bodies. `--yes`, `--no-bootstrap`, `--json`, `--apply`, `--dry-run`. Does not call a model |
 
-`--ide` is `cursor`, `claude-code`, `github`, or `none`.
+`--ide` is `cursor`, `claude-code`, `github`, or `none`. `--mode` is `kit` (default) or `orchestrator`.
+
+## Orchestrator mode
+
+Requires the `orchestrator` extra (`uv tool install -e ".[orchestrator]"`) and `CURSOR_API_KEY` for live runs.
+
+| Command | Purpose |
+|---------|---------|
+| `run --slug S --workflow W` | Start or continue a code-owned run. `--request`, `--request-file`, `--runner fake`, `--dry-run` |
+| `approve --slug S --gate G` | Pass a HITL gate |
+| `resume --slug S` | Continue after a gate |
+| `status --slug S` | Print orchestrator run state |
+| `verify` | Report install mode and sealed graph |
+| `export-briefs` | Write a non-executing brief reference copy |
+| `workflows --scaffold NAME` | Write `pipeline_extensions/{name}.py` in the app |
+
+Kit mode never loads `pipeline_extensions/`. Examples: [Extensions](/docs/capabilities/extensions).
 
 ## Knowledge
 
@@ -41,6 +60,18 @@ See [Agent-run observability](/docs/capabilities/observability).
 ## Maintainers
 
 `version [show]` prints `VERSION`. `version bump patch|minor|major` and `version set X.Y.Z` update `VERSION` (and `website/package.json`) in the **kit git checkout** — resolved from `--repo`, then `$PIPELINE_KIT_REPO`, then upwards from the current directory — never in a customer project or the installed wheel. `--commit` commits there with `git -C`; `--tag` (requires `--commit`) adds `vX.Y.Z`. Also `--dry-run`. See [This repository](/docs/maintainers/repo).
+
+## License
+
+Paid areas are orchestrator mode, Jira intake, the governance workflows (`security-review`, `ci-audit`, `dependency-audit`, `accessibility-review`), and agent-run observability / eval. Kit mode, `ask`, and `feature-development` do not read the license. `obs report` stays local.
+
+```bash
+export PIPELINE_KIT_LICENSE='<token>'
+pipeline-kit license activate
+pipeline-kit license status
+```
+
+`activate` writes `~/.pipeline/license.json` (mode `0600`). `PIPELINE_KIT_LICENSE` in the environment wins over that file for one process. Maintainers sign a token from a kit checkout with `pipeline-kit license issue --org NAME --expires YYYY-MM-DD`. The signing key path is `PIPELINE_KIT_LICENSE_SIGNING_KEY`.
 
 ## Legacy
 

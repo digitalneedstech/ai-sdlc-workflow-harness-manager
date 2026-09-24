@@ -28,9 +28,10 @@ def test_knowledge_package_never_imports_graphify():
 
     banned = re.compile(r"^\s*(import graphify|from graphify)\b", re.M)
     for path in (
-        list((REPO / "knowledge").glob("*.py"))
-        + list((REPO / "pipeline_plugins").glob("*.py"))
-        + list((REPO / "pipeline_features").glob("*.py"))
+        list((REPO / "capabilities" / "knowledge").glob("*.py"))
+        + list((REPO / "capabilities" / "plugins").glob("*.py"))
+        + list((REPO / "capabilities" / "feature_flags").glob("*.py"))
+        + list((REPO / "packages" / "pipeline-kit-assess" / "pipeline_assess").glob("*.py"))
     ):
         assert banned.search(path.read_text(encoding="utf-8")) is None, path.name
 

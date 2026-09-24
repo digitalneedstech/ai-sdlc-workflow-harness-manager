@@ -295,6 +295,117 @@ def _copy_tree(src: Path, dest: Path, root: Path, copied: list[str]) -> None:
         _copy_file(item, dest / rel, root, copied)
 
 
+GUARDRAIL_NEEDLE = ".pipeline/hooks/"
+OBS_NEEDLE = ".pipeline/hooks/obs/"
+
+
+def _hook_command_text(entry: Any) -> str:
+    if not isinstance(entry, dict):
+        return ""
+    parts: list[str] = []
+    for key in ("command", "bash", "powershell"):
+        value = entry.get(key)
+        if isinstance(value, str):
+            parts.append(value)
+    nested = entry.get("hooks")
+    if isinstance(nested, list):
+        parts.extend(_hook_command_text(item) for item in nested)
+    return " ".join(parts)
+
+
+def _is_guardrail_entry(entry: Any) -> bool:
+    text = _hook_command_text(entry)
+    return GUARDRAIL_NEEDLE in text and OBS_NEEDLE not in text
+
+
+def _append_guardrail_entries(bucket: list[Any], entries: list[Any]) -> int:
+    added = 0
+    seen = {_hook_command_text(item) for item in bucket}
+    for entry in entries:
+        command = _hook_command_text(entry)
+        if command and command in seen:
+            continue
+        bucket.append(entry)
+        if command:
+            seen.add(command)
+        added += 1
+    return added
+
+
+def _merge_hook_object(existing: dict[str, Any], fragment: dict[str, Any]) -> int:
+    hooks = existing.setdefault("hooks", {})
+    if not isinstance(hooks, dict):
+        raise ValueError("hooks must be an object")
+    added = 0
+    incoming = fragment.get("hooks") if isinstance(fragment.get("hooks"), dict) else {}
+    for event, entries in incoming.items():
+        if not isinstance(entries, list):
+            continue
+        bucket = hooks.setdefault(event, [])
+        if not isinstance(bucket, list):
+            raise ValueError(f"hooks.{event} must be an array")
+        added += _append_guardrail_entries(bucket, entries)
+    return added
+
+
+def _strip_guardrail_entries(data: dict[str, Any]) -> dict[str, Any]:
+    hooks = data.get("hooks")
+    if not isinstance(hooks, dict):
+        return data
+    for event, entries in list(hooks.items()):
+        if not isinstance(entries, list):
+            continue
+        kept = [item for item in entries if not _is_guardrail_entry(item)]
+        if kept:
+            hooks[event] = kept
+        else:
+            del hooks[event]
+    return data
+
+
+def merge_guardrail_hooks(*, ide: str, ide_root: Path, pack: Path) -> int:
+    """Append policy-hook commands. Does not replace existing or obs entries."""
+    if ide == "cursor":
+        fragment_path = pack / "hooks" / "cursor.hooks.json"
+        dest = ide_root / ".cursor" / "hooks.json"
+    elif ide == "claude-code":
+        fragment_path = pack / "hooks" / "claude.settings.json"
+        dest = ide_root / ".claude" / "settings.json"
+    else:
+        return 0
+    if not fragment_path.is_file():
+        return 0
+    fragment = json.loads(fragment_path.read_text(encoding="utf-8"))
+    if not isinstance(fragment, dict):
+        return 0
+    existing: dict[str, Any] = {"version": 1, "hooks": {}} if ide == "cursor" else {}
+    if dest.is_file():
+        loaded = json.loads(dest.read_text(encoding="utf-8"))
+        if isinstance(loaded, dict):
+            existing = loaded
+            existing.setdefault("hooks", {})
+            if ide == "cursor":
+                existing.setdefault("version", 1)
+    added = _merge_hook_object(existing, fragment)
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    dest.write_text(json.dumps(existing, indent=2) + "\n", encoding="utf-8")
+    return added
+
+
+def strip_guardrail_hooks(*, ide_root: Path) -> None:
+    for rel in (Path(".cursor") / "hooks.json", Path(".claude") / "settings.json"):
+        path = ide_root / rel
+        if not path.is_file():
+            continue
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if not isinstance(data, dict):
+            continue
+        path.write_text(json.dumps(_strip_guardrail_entries(data), indent=2) + "\n", encoding="utf-8")
+
+
 def generic_config(source: dict[str, Any]) -> dict[str, Any]:
     data = json.loads(json.dumps(source))
     data["_readme"] = (
@@ -544,6 +655,10 @@ def install(
                 _copy_file(skill_src, ide_root / skill_rel, target, copied)
             else:
                 print(f"note: --user --ide {ide} writes no IDE adapter (use cursor, claude-code, or --project)", file=sys.stderr)
+        if scope == "project":
+            added = merge_guardrail_hooks(ide=ide, ide_root=ide_root, pack=pack_dest)
+            if added:
+                print(f"policy hooks: merged {added} entries ({ide})", file=sys.stderr)
 
     if agent_stubs and mode != "orchestrator":
         stubs_dir = (
@@ -584,6 +699,7 @@ def uninstall(*, scope: str, target: Path, home: Path | None = None) -> int:
     if marker.is_file():
         marker.unlink()
         removed += 1
+    strip_guardrail_hooks(ide_root=root)
     print(f"removed {removed} kit files; features/ and local config edits were left.", file=sys.stderr)
     return 0
 
@@ -600,6 +716,61 @@ def _ensure_pkg_path() -> None:
     root = str(HERE)
     if root not in sys.path:
         sys.path.insert(0, root)
+    try:
+        from layout import install_source_importers
+    except ImportError:
+        return
+    install_source_importers()
+
+
+def _license_cli(args: argparse.Namespace) -> int:
+    _ensure_pkg_path()
+    from pipeline_kit.license import cmd_activate, cmd_issue, cmd_status
+
+    home = Path(args.home).expanduser().resolve() if getattr(args, "home", "") else None
+    if args.license_command == "issue":
+        try:
+            resolve_kit_checkout(args.repo or None)
+        except ValueError as exc:
+            print(str(exc), file=sys.stderr)
+            return 64
+        return cmd_issue(org=args.org, expires=args.expires, features=args.features)
+    if args.license_command == "activate":
+        return cmd_activate(home=home)
+    if args.license_command == "status":
+        return cmd_status(home=home)
+    print(f"unknown license command: {args.license_command}", file=sys.stderr)
+    return 2
+
+
+def _require_license(feature: str) -> int:
+    _ensure_pkg_path()
+    try:
+        from pipeline_kit.license import require
+    except ImportError:
+        print(
+            f"license: {feature} needs pipeline-kit license activate",
+            file=sys.stderr,
+        )
+        return 73
+    return int(require(feature))
+
+
+def _feature_for_saved_run(project: Path, slug: str) -> str:
+    from pipeline_kit.license import feature_for_workflow
+
+    for path in (
+        project / ".pipeline" / "state" / "runs" / f"{slug}.json",
+        project / "features" / slug / "pipeline-state.json",
+    ):
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        workflow = data.get("workflow") if isinstance(data, dict) else None
+        if isinstance(workflow, str) and workflow.strip():
+            return feature_for_workflow(workflow)
+    return "orchestrator"
 
 
 def _knowledge_commands():
@@ -693,9 +864,7 @@ def doctor(
         skill_rel = IDE_SKILL_REL.get(ide)
         if skill_rel:
             checks[f"{ide} adapter"] = (root / skill_rel).is_file()
-    root = str(HERE)
-    if root not in sys.path:
-        sys.path.insert(0, root)
+    _ensure_pkg_path()
     from knowledge.doctor import graphify_doctor_checks
     from pipeline_plugins.archify import archify_doctor_checks
     from pipeline_observability.commands import obs_doctor_checks
@@ -807,6 +976,26 @@ def cli_main(argv: list[str] | None = None) -> int:
     )
     workflows_parser.add_argument("--home", default="", help=argparse.SUPPRESS)
 
+    scan_parser = commands.add_parser(
+        "scan",
+        help="assess a repo from its Graphify graph (pipeline-kit-assess, license: assess)",
+    )
+    scan_parser.add_argument("project", nargs="?", default=".")
+    scan_parser.add_argument(
+        "--out",
+        default="",
+        help="directory for the assessment (default: features/assessment)",
+    )
+    scan_parser.add_argument("--yes", action="store_true", help="accept setup prompts in a terminal")
+    scan_parser.add_argument(
+        "--no-bootstrap",
+        action="store_true",
+        help="print setup steps and exit instead of installing Graphify or the pack",
+    )
+    scan_parser.add_argument("--json", action="store_true", help="print assessment.json on stdout")
+    scan_parser.add_argument("--apply", default="", help="comma-separated recommendation ids to apply")
+    scan_parser.add_argument("--dry-run", action="store_true", help="show apply changes without writing them")
+
     run_parser = commands.add_parser("run", help="run a workflow with the code orchestrator")
     run_parser.add_argument("project", nargs="?", default=".")
     run_parser.add_argument("--slug", required=True)
@@ -869,6 +1058,11 @@ def cli_main(argv: list[str] | None = None) -> int:
     )
     k_extract.add_argument("project", nargs="?", default=".")
     k_extract.add_argument("--force", action="store_true")
+    k_extract.add_argument(
+        "--update",
+        action="store_true",
+        help="incremental graphify update (no model) instead of a full extract",
+    )
     k_status = knowledge_commands.add_parser("status", help="Graphify CLI and graphify-out status")
     k_status.add_argument("project", nargs="?", default=".")
     k_validate = knowledge_commands.add_parser(
@@ -920,6 +1114,11 @@ def cli_main(argv: list[str] | None = None) -> int:
         default="cursor",
     )
     p_install.add_argument("--scope", choices=("project", "user"), default="project")
+    p_install.add_argument(
+        "--hook",
+        action="store_true",
+        help="after Graphify registers, install its commit hook",
+    )
     p_install.add_argument("--home", default="", help=argparse.SUPPRESS)
     p_status = plugins_commands.add_parser(
         "status",
@@ -1021,6 +1220,28 @@ def cli_main(argv: list[str] | None = None) -> int:
     )
     e_sync.add_argument("project", nargs="?", default=".")
 
+    license_parser = commands.add_parser("license", help="issue or activate an org license")
+    license_commands = license_parser.add_subparsers(dest="license_command", required=True)
+    issue_parser = license_commands.add_parser(
+        "issue",
+        help="sign a token from a kit checkout",
+    )
+    issue_parser.add_argument("--org", required=True)
+    issue_parser.add_argument("--expires", required=True, help="YYYY-MM-DD, valid through that UTC day")
+    issue_parser.add_argument(
+        "--features",
+        default="orchestrator,jira,governance,evidence",
+        help="comma list: orchestrator, jira, governance, evidence",
+    )
+    issue_parser.add_argument("--repo", default="", help="pipeline-kit checkout")
+    activate_parser = license_commands.add_parser(
+        "activate",
+        help="store PIPELINE_KIT_LICENSE in the home pack",
+    )
+    activate_parser.add_argument("--home", default="", help=argparse.SUPPRESS)
+    status_parser = license_commands.add_parser("status", help="print org, expiry, and paid areas")
+    status_parser.add_argument("--home", default="", help=argparse.SUPPRESS)
+
     version_parser = commands.add_parser(
         "version",
         help="show or set the kit release version (maintainers)",
@@ -1056,6 +1277,8 @@ def cli_main(argv: list[str] | None = None) -> int:
     version_parser.add_argument("--dry-run", action="store_true")
 
     args = parser.parse_args(argv)
+    if args.command == "license":
+        return _license_cli(args)
     if args.command == "version":
         return cmd_version(
             args.action,
@@ -1075,6 +1298,10 @@ def cli_main(argv: list[str] | None = None) -> int:
             return 64
         dest = ((home or Path.home()) if user else project) / ".pipeline"
         mode = getattr(args, "mode", None) or read_install_mode(dest)
+        if mode == "orchestrator":
+            blocked = _require_license("orchestrator")
+            if blocked:
+                return blocked
         return install(
             scope="user" if user else "project",
             target=(home or Path.home()) if user else project,
@@ -1087,6 +1314,10 @@ def cli_main(argv: list[str] | None = None) -> int:
     if args.command == "setup":
         dest = (home or Path.home()) / ".pipeline"
         mode = getattr(args, "mode", None) or read_install_mode(dest)
+        if mode == "orchestrator":
+            blocked = _require_license("orchestrator")
+            if blocked:
+                return blocked
         return install(
             scope="user",
             target=home or Path.home(),
@@ -1104,7 +1335,37 @@ def cli_main(argv: list[str] | None = None) -> int:
         )
     if args.command == "doctor":
         return doctor(target=project, user=args.user, ide=args.ide, home=home)
+    if args.command == "scan":
+        _ensure_pkg_path()
+        assess = HERE / "packages" / "pipeline-kit-assess"
+        if assess.is_dir() and str(assess) not in sys.path:
+            sys.path.insert(0, str(assess))
+        blocked = _require_license("assess")
+        if blocked:
+            return blocked
+        try:
+            from pipeline_assess.commands import cmd_scan
+        except ImportError:
+            print(
+                'pipeline-kit-assess is not installed. Run: uv tool install -e ".[assess]"',
+                file=sys.stderr,
+            )
+            return 1
+        out = Path(args.out).expanduser() if getattr(args, "out", "") else None
+        return cmd_scan(
+            project,
+            out=out,
+            yes=bool(getattr(args, "yes", False)),
+            no_bootstrap=bool(getattr(args, "no_bootstrap", False)),
+            as_json=bool(getattr(args, "json", False)),
+            apply=getattr(args, "apply", "") or "",
+            dry_run=bool(getattr(args, "dry_run", False)),
+        )
     if args.command == "workflows":
+        if getattr(args, "scaffold", "") or "":
+            blocked = _require_license("orchestrator")
+            if blocked:
+                return blocked
         return list_workflows(
             target=project,
             user=args.user,
@@ -1126,6 +1387,11 @@ def cli_main(argv: list[str] | None = None) -> int:
             print(f"not a directory: {project}", file=sys.stderr)
             return 64
         if args.command == "run":
+            from pipeline_kit.license import feature_for_workflow
+
+            blocked = _require_license(feature_for_workflow(args.workflow))
+            if blocked:
+                return blocked
             return cmd_run(
                 project,
                 slug=args.slug,
@@ -1137,8 +1403,14 @@ def cli_main(argv: list[str] | None = None) -> int:
                 request_file=getattr(args, "request_file", "") or "",
             )
         if args.command == "resume":
+            blocked = _require_license(_feature_for_saved_run(project, args.slug))
+            if blocked:
+                return blocked
             return cmd_resume(project, slug=args.slug, runner=args.runner)
         if args.command == "approve":
+            blocked = _require_license(_feature_for_saved_run(project, args.slug))
+            if blocked:
+                return blocked
             return cmd_approve(project, slug=args.slug, gate=args.gate, note=args.note)
         if args.command == "status":
             return cmd_status(project, slug=args.slug)
@@ -1166,7 +1438,7 @@ def cli_main(argv: list[str] | None = None) -> int:
                 ide=args.ide,
             )
         if args.knowledge_command == "extract":
-            return cmd_extract(project, force=args.force)
+            return cmd_extract(project, force=args.force, update=bool(getattr(args, "update", False)))
         if args.knowledge_command == "status":
             return cmd_status(project)
         if args.knowledge_command == "validate":
@@ -1197,6 +1469,7 @@ def cli_main(argv: list[str] | None = None) -> int:
                 ide=ide,
                 scope=scope,
                 home=home,
+                hook=bool(getattr(args, "hook", False)),
             )
         if args.plugins_command == "status":
             return cmd_status(
@@ -1227,6 +1500,13 @@ def cli_main(argv: list[str] | None = None) -> int:
         if args.features_command == "status":
             return cmd_status(project)
         if args.features_command == "enable":
+            from pipeline_kit.license import PAID_FLAGS
+
+            paid = PAID_FLAGS.get(args.name)
+            if paid:
+                blocked = _require_license(paid)
+                if blocked:
+                    return blocked
             return cmd_enable(project, args.name)
         if args.features_command == "disable":
             return cmd_disable(project, args.name)
@@ -1237,6 +1517,10 @@ def cli_main(argv: list[str] | None = None) -> int:
         if not project.is_dir():
             print(f"not a directory: {project}", file=sys.stderr)
             return 64
+        if args.obs_command != "report":
+            blocked = _require_license("evidence")
+            if blocked:
+                return blocked
         if args.obs_command == "install":
             return cmd_install(
                 project,
@@ -1260,6 +1544,9 @@ def cli_main(argv: list[str] | None = None) -> int:
         if not project.is_dir():
             print(f"not a directory: {project}", file=sys.stderr)
             return 64
+        blocked = _require_license("evidence")
+        if blocked:
+            return blocked
         if args.eval_command == "judges" and args.judges_command == "sync":
             return cmd_judges_sync(project)
         parser.error("unknown eval command")

@@ -70,7 +70,7 @@ def test_plugins_never_import_graphify_package():
     import re
 
     banned = re.compile(r"^\s*(import graphify|from graphify)\b", re.M)
-    for path in (REPO / "pipeline_plugins").glob("*.py"):
+    for path in (REPO / "capabilities" / "plugins").glob("*.py"):
         assert banned.search(path.read_text(encoding="utf-8")) is None, path.name
 
 

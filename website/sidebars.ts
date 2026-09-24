@@ -8,8 +8,14 @@ const sidebars: SidebarsConfig = {
       collapsed: false,
       items: [
         'intro/what-is-pipeline-kit',
+        {
+          type: 'doc',
+          id: 'capabilities/modes',
+          label: 'Two kits: pack and orchestrator',
+        },
         'intro/problems',
         'intro/how-it-works',
+        'intro/repo-layout',
         'intro/who-it-is-for',
       ],
     },
@@ -32,6 +38,12 @@ const sidebars: SidebarsConfig = {
       label: 'Capabilities',
       items: [
         'capabilities/overview',
+        {
+          type: 'doc',
+          id: 'capabilities/modes',
+          label: 'Two kits',
+        },
+        'capabilities/extensions',
         'capabilities/workflows',
         'capabilities/planning-gates',
         'capabilities/knowledge',

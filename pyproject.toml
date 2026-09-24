@@ -10,17 +10,27 @@ readme = "README.md"
 requires-python = ">=3.11"
 license = "MIT"
 authors = [{ name = "Pipeline Kit maintainers" }]
-dependencies = []
+dependencies = ["cryptography>=44"]
 
 [project.optional-dependencies]
-orchestrator = ["cursor-sdk"]
+orchestrator = ["cursor-sdk", "typesafe-sdk"]
+assess = ["pipeline-kit-assess"]
+
+[tool.uv.workspace]
+members = ["packages/pipeline-kit-assess"]
+
+[tool.uv.sources]
+pipeline-kit-assess = { workspace = true }
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
 
 [project.scripts]
 pipeline-kit = "pipeline_kit.install:cli_main"
 
 [tool.setuptools]
-packages = ["pipeline_kit", "knowledge", "pipeline_plugins", "pipeline_features", "pipeline_observability", "pipeline_observability.adapters", "pipeline_eval", "pipeline_orchestrator", "pipeline_orchestrator.runners"]
-package-dir = { pipeline_kit = ".", knowledge = "knowledge", pipeline_plugins = "pipeline_plugins", pipeline_features = "pipeline_features", pipeline_observability = "pipeline_observability", pipeline_eval = "pipeline_eval", pipeline_orchestrator = "pipeline_orchestrator" }
+packages = ["pipeline_kit", "knowledge", "pipeline_plugins", "pipeline_features", "pipeline_observability", "pipeline_observability.adapters", "pipeline_eval", "pipeline_orchestrator", "pipeline_orchestrator.deciders", "pipeline_orchestrator.runners"]
+package-dir = { pipeline_kit = ".", knowledge = "capabilities/knowledge", pipeline_plugins = "capabilities/plugins", pipeline_features = "capabilities/feature_flags", pipeline_observability = "capabilities/observability", pipeline_eval = "capabilities/eval", pipeline_orchestrator = "orchestrator" }
 include-package-data = true
 
 [tool.setuptools.dynamic]
@@ -30,6 +40,7 @@ version = { file = "VERSION" }
 pipeline_kit = [
   "VERSION",
   "CUSTOMER-GUIDE.md",
+  "license_public_key.txt",
   "kit/pipeline/**/*",
 ]
 pipeline_orchestrator = [

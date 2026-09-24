@@ -3,17 +3,29 @@ title: How it works
 description: Portable pack, thin IDE adapter, workflow as the unit of scale, per-step allowlists, config overlay.
 ---
 
+Pipeline Kit is **two kits**. The diagram below is **kit mode** (the default). Orchestrator mode uses the same workflow names and the same `features/{slug}/` folder, but a Python engine instead of the markdown loader. Compare them: [Two kits](/docs/capabilities/modes).
+
 ```mermaid
 flowchart TD
   ide["IDE adapter — one skill"]
   run["run-workflow receptionist"]
-  pack[".pipeline pack"]
+  pack[".pipeline pack — kit mode"]
   cfg["config.json — this engagement"]
   loader["loader — allowed_reads"]
   feat["features/slug — run artifacts"]
   ide --> run --> pack
   pack --> cfg
   pack --> loader --> feat
+```
+
+```mermaid
+flowchart TD
+  cli["pipeline-kit run --request …"]
+  engine["orchestrator engine"]
+  graph["sealed graph — same names"]
+  gate["approve / resume"]
+  feat["features/slug — run artifacts"]
+  cli --> engine --> graph --> gate --> feat
 ```
 
 ## Portable pack, thin IDE
@@ -42,6 +54,14 @@ Architects can later layer org template → user → project without changing th
 org template  →  team defaults  →  ~/.pipeline  →  <repo>/.pipeline (wins)
 ```
 
+## Two kits
+
+**Kit mode** (`--mode kit`, the default) copies the markdown pack to `.pipeline/` and runs specialists through the loader.
+
+**Orchestrator mode** (`--mode orchestrator`) keeps the chain in the Python engine. `init` does not copy `agents/`, `skills/`, `loader/`, or `workflows/`. You pass the user ask with `--request`. Chat is not inherited.
+
+Adding a process is an [extension](/docs/capabilities/extensions) in the matching kit. Full comparison: [Two kits — pack and orchestrator](/docs/capabilities/modes).
+
 ## Receptionist, not a monolith
 
 `AGENTS.md` stays a routing table. The agent does not load the pack until `run-workflow` runs the loader. Trivia and off-repo asks skip the pipeline entirely.
@@ -49,5 +69,7 @@ org template  →  team defaults  →  ~/.pipeline  →  <repo>/.pipeline (wins)
 ## Next
 
 - [Who it is for](/docs/intro/who-it-is-for)
+- [Repository layout](/docs/intro/repo-layout)
+- [Kit vs orchestrator](/docs/capabilities/modes)
 - [Loader and allowlists](/docs/capabilities/loader)
 - [Install the CLI](/docs/getting-started/install-cli)

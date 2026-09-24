@@ -44,3 +44,32 @@ html {
 .markdown h1:first-child {
   letter-spacing: -0.03em;
 }
+
+html.pk-foundry,
+html.pk-foundry body,
+html.pk-foundry .main-wrapper,
+html.pk-foundry .footer--dark {
+  background: #0b0c0f;
+}
+
+html.pk-foundry .navbar {
+  background: rgba(11, 12, 15, 0.7);
+  backdrop-filter: blur(16px);
+  border-bottom-color: rgba(243, 239, 230, 0.1);
+}
+
+html.pk-foundry .navbar__title,
+html.pk-foundry .navbar__brand,
+html.pk-foundry .navbar__link,
+html.pk-foundry .navbar__toggle {
+  color: #f3efe6;
+}
+
+html.pk-foundry .navbar__link:hover,
+html.pk-foundry .navbar__link--active {
+  color: #e08a4a;
+}
+
+html.pk-foundry .footer--dark {
+  border-top: 1px solid rgba(243, 239, 230, 0.1);
+}

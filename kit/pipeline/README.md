@@ -51,9 +51,10 @@ Resolution when a workflow runs:
 4. `features/{slug}/` is always written in the **current project**, never in `$HOME`.
 5. Active allowlist state is `{pack}/state/active-context.json`.
 
-`--ide none` installs the pack only. Policy hooks stay optional. Agent-run
-observability hooks are opt-in (`pipeline-kit obs install`) and merge into an
-existing `hooks.json` without replacing it.
+`--ide none` installs the pack only (including `.pipeline/hooks/` scripts).
+`--ide cursor` or `--ide claude-code` also merges policy guardrails into the
+IDE hook file. Agent-run observability hooks stay opt-in
+(`pipeline-kit obs install`) and merge without replacing existing entries.
 
 ## What to add to AGENTS.md
 

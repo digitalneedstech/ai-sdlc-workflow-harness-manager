@@ -110,6 +110,30 @@ runbooks. That is the scaling contract.
 
 ---
 
+## Two kits (pick one at init)
+
+This product ships **two kits**. Same first-party workflow names
+(`ask`, `feature-development`, Jira). Different how a step runs. Pick
+one per project. Do not mix.
+
+| | **Kit mode** (default) | **Orchestrator mode** |
+|--|------------------------|------------------------|
+| Flag | `pipeline-kit init --ide cursor` | `pipeline-kit init --mode orchestrator --ide cursor` |
+| What it is | Markdown pack in `.pipeline/` | Python engine in the wheel |
+| How work runs | IDE `run-workflow` + loader | `pipeline-kit run` / `approve` / `resume` |
+| What `init` copies | Skills, agents, loader, workflows, wiki, hooks, docs | Slim `.pipeline/` (config, hooks, wiki, docs). No skills/loader/workflows |
+| Extra workflows | Skill + JSON + `config.json` | `pipeline_extensions/*.py` |
+| Extra install | None | `uv tool install -e ".[orchestrator]"` and `CURSOR_API_KEY` |
+
+If you are unsure, use **kit mode**. Orchestrator mode does not inherit
+chat text — pass `--request` or `features/<slug>/request.md`.
+
+Add a process with [`extensions/`](./extensions/). Optional add-ons live
+under [`capabilities/`](./capabilities/) (plugins, knowledge, observability,
+eval, feature flags). Commands for both kits are in §2.
+
+---
+
 ## 1. What you get
 
 | Path | Role |
@@ -157,7 +181,8 @@ pipeline-kit doctor --ide cursor
 pipeline-kit workflows
 ```
 
-Default `--mode kit` copies the markdown pack. That path is unchanged.
+Default `--mode kit` copies the markdown pack. See [Two kits](#two-kits-pick-one-at-init)
+if you have not chosen yet.
 
 ### Orchestrator mode (optional, parallel)
 
@@ -182,7 +207,7 @@ pipeline-kit run --slug pci-gap --workflow security-review --runner fake \
 ```
 
 Copy-ready examples live in the kit repo at
-[`pipeline_orchestrator/demo/`](./pipeline_orchestrator/demo/)
+[`extensions/orchestrator/`](./extensions/orchestrator/)
 (`security-review`, `ci-audit`, `dependency-audit`,
 `accessibility-review`). Copy `pipeline_extensions/` into the customer
 app; they are not installed by `init`.
@@ -193,6 +218,40 @@ Custom workflows are orchestrator-only. They do not appear in kit-mode
 The wheel is version-pinned, not a hard sandbox: a developer can still
 edit their own `site-packages`. Every run records `workflow_provider` and
 `kit_version`.
+
+#### Model choice
+
+The sealed graph still picks the next agent. Before each agent, the engine
+asks a decider which Cursor model should run that step. Configure it under
+`orchestrator` in `.pipeline/config.json`.
+
+| Key | Meaning |
+|-----|---------|
+| `decider` | `jev` (default, TypeSafe Choice, needs `TYPESAFE_API_KEY`) or `fixed` (no network) |
+| `fallback_model` | Used when Jev is off, the call fails, or confidence is below `jev.min_confidence` |
+| `models.candidates` | Shortlist Jev may pick from, intersected with this account’s live Cursor list. Empty `[]` sends every catalog id. |
+| `models.cards` | Optional overlay: `kind`, `fit`, `display_name`, `description` for an id already in `candidates` |
+| `models.steps` | Pin one agent to an id. That step skips Jev. |
+| `jev.min_confidence` | Floor (kit default `0.5`). Below it, `fallback_model` runs and stdout still shows `jev_choice` |
+
+Do **not** put the same details in both `candidates` and `cards`. Use one form:
+
+- **One list:** `{ "id": "glm-5.2", "kind": "reasoning", "fit": "…" }` inside `candidates`
+- **Id + overlay:** `"glm-5.2"` in `candidates`, details under `models.cards.glm-5.2`
+
+`kind` is `coding`, `reasoning`, `general`, or `writing`. That value drives
+`for_this_agent` (planning/review mark Composer poor fit; implementation
+marks it good). The id must already appear in `Cursor.models.list()`. A
+name that exists only in config is skipped.
+
+`--dry-run` asks the decider and prints `need`, `basis`, `sent`, scores,
+then a `summary` table. It does not start Cursor agents. Without
+`CURSOR_API_KEY` it prints `reason=catalog_unavailable` and exits 0.
+`--change-class micro` only runs coding steps, so Composer is the expected
+pick. Use `feature` to see planning and review.
+
+Sign-off gates do not ask the decider. Full examples:
+[`orchestrator/README.md`](./orchestrator/README.md#model-choice).
 
 
 | Command | Purpose |
@@ -207,6 +266,7 @@ edit their own `site-packages`. Every run records `workflow_provider` and
 | `pipeline-kit uninstall --user` | Remove managed user files |
 | `pipeline-kit knowledge init [project]` | Opt-in: create `test-knowledge/` and set `test_design.enabled` |
 | `pipeline-kit knowledge extract [project]` | Run official `graphify extract . --code-only` (no homemade graph) |
+| `pipeline-kit scan [project]` | Assess the repo. Requires the `assess` package and an `assess` license. See Assessment below. |
 | `pipeline-kit knowledge status [project]` | Graphify CLI and `graphify-out/graph.json` |
 | `pipeline-kit plugins list` | List Graphify / Archify (observability uses `obs status`) |
 | `pipeline-kit plugins install graphify [project]` | Register the official Graphify IDE skill |
@@ -505,6 +565,11 @@ uses different names. Do not put the Jira site URL or API token in this file.
 | `gates.retry_cap` | Critic `changes-required` retries (default 2). |
 | `gates.require_planning_signoff_before_build` | User must approve PM / Architect / BA artifacts before waves (default true). |
 | `waves.child_chain` | Per-child developer → critic. Telemetry only if `RUN_TELEMETRY`. |
+| `orchestrator.decider` | Orchestrator mode only. `jev` or `fixed`. Kit mode ignores this block. |
+| `orchestrator.models.candidates` | Shortlist sent to Jev. See [Model choice](#model-choice). |
+| `orchestrator.models.cards` | Optional fit/kind overlay. Do not duplicate an object already in `candidates`. |
+| `orchestrator.models.steps` | Pin one step. That agent skips Jev. |
+| `orchestrator.jev.min_confidence` | Confidence floor before `fallback_model` is used. |
 
 PM, Architect, and BA follow **clarify-first**: they read prior `features/{slug}/`
 artifacts (`decisions.md`, plan, architecture) before asking, then ask remaining
@@ -628,8 +693,24 @@ not commit those. Commit `features/` only if you want specs in git.
 | Tracker MCP | Jira (or compatible) workflows. Enable `intake.jira` and authenticate the MCP in the IDE. |
 | Wiki | After a painful run, retro adds one page under `.pipeline/wiki/`. Start with the shipped index or empty it. |
 | `.pipeline/rules/*.mdc` | Durable coding standards. They do **not** auto-apply in Cursor (not under `.cursor/rules`). Mention a rule in `AGENTS.md` or on a step allowlist. |
-| Hooks | Policy hooks (allowlist, commit-deny) are still optional and not auto-copied. Agent-run observability hooks are opt-in via `pipeline-kit obs install` and merge without replacing existing entries. |
+| Hooks | Policy guardrails ship in `.pipeline/hooks/` (sibling of `hooks/obs/`). `init --ide cursor` or `--ide claude-code` merges them into the IDE hook file without replacing existing entries. Agent-run observability stays opt-in via `pipeline-kit obs install`. |
 | New workflow | See `.pipeline/README.md` (“How to add a workflow”). |
+
+---
+
+## Assessment (optional package)
+
+`pipeline-kit scan` ships as its own package, installed the same way as the orchestrator extra. `pipeline-kit init` does not include it.
+
+```bash
+uv tool install -e ".[assess]"
+```
+
+The license must include the `assess` area. Build the graph first with `pipeline-kit knowledge extract`.
+
+Scan writes `features/assessment/` (the report, the plan, `answers.md`, and `prompt.md`). On a terminal it asks any kickstarter that is still blank. It does not call a model, and it does not write rule, skill, or agent bodies.
+
+In chat, ask to assess this repo. The shipped `repo-assessment` workflow follows `features/assessment/prompt.md` and fills each draft from the templates in `.pipeline/skills/repo-assessment/assets/`. Those drafts stay in `features/assessment/proposed/` until you copy one into `.cursor/` or `.pipeline/`.
 
 ---
 

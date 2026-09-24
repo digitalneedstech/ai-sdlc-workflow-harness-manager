@@ -3,9 +3,10 @@ name: orchestration
 description: >-
   Top layer for any product-work ask. Invoke first when the user wants work
   done: “work on …”, “fix …”, “change …”, “develop …”, or a message that
-  contains a tracker issue key. Decide the **workflow** (ask |
+  contains a tracker issue key, or asks which skills, sub-agents,
+  workflows, rules, or hooks to add, or asks to assess this repo. Decide the **workflow** (ask |
   feature-development | jira-story | jira-bug | jira-epic |
-  test-knowledge-bootstrap). Questions stay on
+  test-knowledge-bootstrap | repo-assessment). Questions stay on
   `ask` (no Task chain). Product work writes features/{slug}/route.md, then
   drives that workflow’s Task chain. Parent-only. Never implements product
   code and never replaces a workflow skill.
@@ -48,6 +49,7 @@ When `work_source` is `text`, also classify **intent**:
 
 | Intent | Signals |
 |--------|---------|
+| `pack_gap` | assess this repo; pack scan; what skills, agents, workflows, rules, or hooks should we add; what is missing from the pipeline. Classify this before `question` and `product` — the words “what” and “add” also appear there |
 | `question` | how / what / why / where / explain / “can you tell”, and no product verb |
 | `knowledge_bootstrap` | bootstrap QA knowledge, bootstrap test knowledge |
 | `product` | work on, fix, change, develop, implement, add, build, or an explicit `WORKFLOW:` other than `ask` |
@@ -64,12 +66,15 @@ If intake returns `BLOCKED` because no tracker MCP is reachable, relay its recov
 
 | `work_source` | Workflow |
 |---------------|----------|
+| `text` + `pack_gap` | `repo-assessment` — parent only, no Task chain |
 | `text` + `question` | `ask` — parent answers from the allowlist; **no Task chain** |
 | `text` + `knowledge_bootstrap` | `test-knowledge-bootstrap` — not the feature ladder |
 | `text` + `product` | `feature-development` |
 | `jira` | `intake.jira.issue_type_map[{issue_type}]`, falling back to that map’s `default` |
 
 `ask` still runs the loader (`--workflow ask --step parent`) so the pack gate has an allowlist. Then follow [`../ask/SKILL.md`](../ask/SKILL.md) and stop — do not write `route.md` or spawn specialists.
+
+`repo-assessment` runs the loader (`--workflow repo-assessment --step parent`). Then follow [`../repo-assessment/SKILL.md`](../repo-assessment/SKILL.md). Do not write `route.md` or spawn specialists.
 
 `test-knowledge-bootstrap` runs the loader (`--workflow test-knowledge-bootstrap --step parent`). Then follow [`../test-knowledge-bootstrap/SKILL.md`](../test-knowledge-bootstrap/SKILL.md). Do not classify a change class and do not start feature-development.
 
@@ -82,7 +87,7 @@ User override: an explicit `WORKFLOW: {name}` or `CHANGE_CLASS: {class}` in the 
 
 ### O4 Write `features/{slug}/route.md`
 
-Skip this step for `ask` and `test-knowledge-bootstrap`.
+Skip this step for `ask`, `pack_gap`, and `test-knowledge-bootstrap`.
 
 Slug rules:
 
@@ -100,6 +105,7 @@ Read the chain for the resolved workflow (and class) from the config and spawn *
 | Workflow | Chain | Owning skill for the work |
 |----------|-------|---------------------------|
 | `ask` | none (parent only) | [`../ask/SKILL.md`](../ask/SKILL.md) |
+| `repo-assessment` | none (parent only) | [`../repo-assessment/SKILL.md`](../repo-assessment/SKILL.md) |
 | `feature-development` | class chain (`micro` / `minor` / `feature`) | [`../feature-development/SKILL.md`](../feature-development/SKILL.md) |
 | `jira-story` | intake → `@signoff:requirements` → architect? → `@signoff:architect` → BA → BA critic → `@signoff:ba` → waves → tester → devops → retro | [`../feature-development/SKILL.md`](../feature-development/SKILL.md), BA reads `intake.md` |
 | `jira-epic` | same as `jira-story` | same, BA reads `epic-plan.md` and writes one child spec per story |

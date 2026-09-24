@@ -3,6 +3,8 @@
 Project root is where `features/` is written. Pack root is the `.pipeline`
 directory that holds workflows and config: the project's `.pipeline` if
 present, otherwise `~/.pipeline`.
+
+Jira workflows ask the installed pipeline-kit license. Other workflows do not.
 """
 
 from __future__ import annotations
@@ -159,6 +161,23 @@ def activate(
     return data
 
 
+def _require_jira(workflow: str) -> int:
+    if workflow.strip().lower() not in {"jira-story", "jira-epic", "jira-bug"}:
+        return 0
+    require = None
+    try:
+        from pipeline_kit.license import require as require
+    except ImportError:
+        try:
+            from license import require as require  # type: ignore
+        except ImportError:
+            require = None
+    if require is None:
+        sys.stderr.write("license: jira needs pipeline-kit license activate\n")
+        return 73
+    return int(require("jira"))
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Activate a workflow step allowlist.")
     parser.add_argument("--workflow", required=True)
@@ -167,6 +186,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--repo-root", default="", help="Project root (features/ live here).")
     parser.add_argument("--pack-root", default="", help="Override .pipeline pack directory.")
     args = parser.parse_args(argv)
+    blocked = _require_jira(args.workflow)
+    if blocked:
+        return blocked
     project = Path(args.repo_root).resolve() if args.repo_root else project_root_from()
     pack_override = Path(args.pack_root).resolve() if args.pack_root else None
     try:

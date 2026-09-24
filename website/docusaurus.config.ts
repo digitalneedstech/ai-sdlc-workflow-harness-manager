@@ -89,6 +89,11 @@ const config: Config = {
           position: 'left',
         },
         {
+          to: '/docs/capabilities/modes',
+          label: 'Two kits',
+          position: 'left',
+        },
+        {
           to: '/docs/capabilities/overview',
           label: 'Capabilities',
           position: 'left',
@@ -111,6 +116,7 @@ const config: Config = {
           title: 'Start',
           items: [
             {label: 'What is Pipeline Kit', to: '/docs/intro/what-is-pipeline-kit'},
+            {label: 'Two kits', to: '/docs/capabilities/modes'},
             {label: 'Install', to: '/docs/getting-started/install-cli'},
             {label: 'First project', to: '/docs/getting-started/first-project'},
           ],
@@ -119,8 +125,8 @@ const config: Config = {
           title: 'Use',
           items: [
             {label: 'Capabilities', to: '/docs/capabilities/overview'},
+            {label: 'Two kits', to: '/docs/capabilities/modes'},
             {label: 'Knowledge base', to: '/docs/capabilities/knowledge'},
-            {label: 'Observability', to: '/docs/capabilities/observability'},
             {label: 'Plugins', to: '/docs/capabilities/plugins'},
           ],
         },

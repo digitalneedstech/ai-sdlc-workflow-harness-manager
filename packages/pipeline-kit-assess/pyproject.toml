@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pipeline-kit-assess"
+version = "1.2.2"
+description = "Graphify-backed codebase assessment for pipeline-kit"
+requires-python = ">=3.11"
+license = "MIT"
+dependencies = []
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["pipeline_assess*"]
+
+[tool.setuptools.package-data]
+pipeline_assess = ["catalog.json", "prompt.md"]
+
+[project.entry-points."pipeline_kit.commands"]
+scan = "pipeline_assess.commands:cmd_scan"

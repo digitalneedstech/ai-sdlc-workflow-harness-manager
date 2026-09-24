@@ -6,6 +6,11 @@ Clone this repository, then install `.pipeline` into any customer project
 (or into `~/.pipeline`). Process lives in the pack. The IDE is a thin adapter
 (`run-workflow` only). The pack is not tied to a product, language, or IDE.
 
+The repo is grouped by role: two **modes** (`kit/`, `orchestrator/`),
+**extensions** for new workflows in either mode, and **capabilities**
+(plugins, knowledge, observability, eval, feature flags, and the optional
+`assess` package).
+
 **Documentation site (local):** [website/](./website/) — what the kit is,
 install, capabilities, plugins, knowledge, observability, and CLI.
 
@@ -71,7 +76,31 @@ workflows from Python in the wheel via the Cursor SDK. Install the extra
 inherited. Kit mode stays the default. Associates add extra workflows with
 `pipeline-kit workflows --scaffold NAME` (orchestrator only).
 Copy-ready examples (security review, CI audit, dependency audit,
-accessibility review): [`pipeline_orchestrator/demo/`](./pipeline_orchestrator/demo/).
+accessibility review): [`extensions/orchestrator/`](./extensions/orchestrator/).
+
+Optional **assessment** is a separate package, the same kind of extra as
+orchestrator. Install it with `uv tool install -e ".[assess]"` and an
+`assess` license. `pipeline-kit scan` then writes `features/assessment/`
+from the Graphify graph. It does not call a model. In chat, the shipped
+`repo-assessment` workflow fills rule, skill, and agent drafts from the
+templates in `.pipeline/skills/repo-assessment/assets/`. Details:
+[CUSTOMER-GUIDE.md](./CUSTOMER-GUIDE.md).
+
+Before each orchestrator agent, a decider chooses the Cursor model. `jev` (default) asks TypeSafe with a shortlist (`models.candidates`), not the full catalog. `fixed` skips that call. Planning and review prefer Opus or GPT; implementation prefers Composer. Add a model as an object in `candidates`, or as a string plus `models.cards` — not both. A pin skips Jev for one step:
+
+```json
+"orchestrator": {
+  "decider": "jev",
+  "fallback_model": "composer-2.5",
+  "models": {
+    "steps": { "developer-agent": "composer-2.5" },
+    "candidates": ["composer-2.5", "claude-opus-5", "gpt-5.5"],
+    "cards": {}
+  }
+}
+```
+
+`--dry-run` prints `need`, `basis`, `sent`, and a `summary` table. It does not start Cursor agents. Details: [`orchestrator/README.md`](./orchestrator/README.md#model-choice).
 
 Use `--ide claude-code`, `--ide github`, or `--ide none` when appropriate.
 To install a shared user pack instead, run `pipeline-kit setup --ide cursor`.
@@ -93,6 +122,8 @@ After install, the same handbook is copied to
 | `.pipeline/config.json` | This engagement: chains, tracker, verify, deploy |
 | `.pipeline/docs/CUSTOMER-GUIDE.md` | Copied handbook |
 | `.pipeline/docs/OBSERVABILITY.md` | Agent-run observability (after `init`; see repo [OBSERVABILITY.md](./OBSERVABILITY.md)) |
+| `.pipeline/hooks/` | Policy guardrails (shell, MCP, pack allowlist). Merged on `init --ide cursor` / `claude-code` |
+| `.pipeline/hooks/obs/` | Observability collectors (off until `obs install`) |
 | `.cursor/skills/run-workflow/` or `.claude/skills/run-workflow/` | The only IDE-discovered skill |
 
 Shipped workflows: `ask`, `feature-development`, `jira-story` / `jira-epic` /
@@ -123,18 +154,36 @@ Must-configure overview:
 
 ---
 
-## This repository
+## Repository map
+
+```text
+kit/                    kit mode — portable pack copied to .pipeline
+orchestrator/           orchestrator mode — Python engine (import: pipeline_orchestrator)
+extensions/
+  kit/                  add a markdown workflow (skill + JSON + config)
+  orchestrator/         associate Python workflows (copy pipeline_extensions/)
+capabilities/
+  plugins/              Graphify + Archify (import: pipeline_plugins)
+  knowledge/            QA overlay that consumes Graphify
+  observability/        agent-run traces (import: pipeline_observability)
+  eval/                 judges / Langfuse eval (import: pipeline_eval)
+  feature_flags/        named on/off keys (import: pipeline_features)
+website/                local Docusaurus docs
+tests/
+```
+
+Python **import names are unchanged** (`pipeline_plugins`,
+`pipeline_orchestrator`, …) so hooks and associate workflows keep working.
+Folder names are the product map.
 
 | Path | Role |
 |------|------|
 | `pyproject.toml` / `install.sh` | Install the `pipeline-kit` command with `uv` or `pipx` |
 | `install.py` | CLI implementation and backward-compatible Python installer |
-| `knowledge/` | Optional QA overlay commands (consumes Graphify) |
-| `pipeline_plugins/` | Optional Graphify and Archify plugin lifecycle (not observability) |
-| `pipeline_observability/` | Agent-run traces, scores, Langfuse flush (`obs` CLI) |
-| `pipeline_orchestrator/` | Code-owned workflow engine (`--mode orchestrator`) |
-| `pipeline_orchestrator/demo/` | Example associate workflows to copy into an app |
-| `kit/pipeline/` | Bundled pack copied to `<app>/.pipeline` |
+| [`kit/`](./kit/) | Kit-mode pack (`kit/pipeline/` → `<app>/.pipeline`) |
+| [`orchestrator/`](./orchestrator/) | Orchestrator-mode engine (`--mode orchestrator`) |
+| [`extensions/`](./extensions/) | Add workflows in kit mode or orchestrator mode |
+| [`capabilities/`](./capabilities/) | Plugins, knowledge, observability, eval, feature flags |
 | [CUSTOMER-GUIDE.md](./CUSTOMER-GUIDE.md) | Architect / developer handbook |
 | `website/` | Local Docusaurus documentation (`npm start` in that folder) |
 | `tests/` | Installer tests (`pytest`) |
@@ -158,8 +207,9 @@ The write and the commit always land in **this** repository — resolved from `-
 kit is installed. Without `--commit` the files change and the git commands are printed instead.
 Details: [website/docs/maintainers/repo.md](./website/docs/maintainers/repo.md).
 
-How to add a workflow after install: see `.pipeline/README.md` in the
-customer repo (“How to add a workflow”).
+How to add a workflow: kit mode after install is `.pipeline/README.md`
+(“How to add a workflow”); both modes in this repo are
+[`extensions/`](./extensions/).
 
 Common tool commands:
 

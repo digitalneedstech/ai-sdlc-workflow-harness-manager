@@ -1,0 +1,16 @@
+---
+description: >-
+  One sentence: when this rule applies, and the check it requires.
+alwaysApply: false
+---
+
+# Rule title
+
+| Attribute | Value |
+|-----------|--------|
+| Type | Rule |
+| Audience | Who must follow this rule |
+| Adapt | Do not add a product name. Name the files and checks from this repo. |
+
+- First check, written the way `.pipeline/rules/security.mdc` writes a check.
+- Second check. Keep one behavior per bullet.

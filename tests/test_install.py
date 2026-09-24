@@ -24,6 +24,25 @@ def _run_cli(argv: list[str]) -> int:
     return int(ns["cli_main"](argv))
 
 
+def test_source_layout_keeps_import_names():
+    from layout import SOURCE_PACKAGES, install_source_importers
+
+    install_source_importers()
+    for name, path in SOURCE_PACKAGES.items():
+        assert path.is_dir(), name
+        assert (path / "__init__.py").is_file(), name
+    import knowledge
+    import pipeline_eval
+    import pipeline_features
+    import pipeline_observability
+    import pipeline_orchestrator
+    import pipeline_plugins
+
+    assert Path(knowledge.__file__).resolve().is_relative_to(REPO / "capabilities" / "knowledge")
+    assert Path(pipeline_plugins.__file__).resolve().is_relative_to(REPO / "capabilities" / "plugins")
+    assert Path(pipeline_orchestrator.__file__).resolve().is_relative_to(REPO / "orchestrator")
+
+
 def test_source_pack_is_bundled_kit():
     ns = runpy.run_path(str(INSTALL))
     pack = ns["source_pack"]()
@@ -212,23 +231,28 @@ def test_architect_allowlist_covers_jira_workflows(tmp_path: Path):
     app = tmp_path / "app"
     app.mkdir()
     assert _run(["--project", str(app), "--ide", "none"]) == 0
-    loader = app / ".pipeline" / "loader" / "load_workflow.py"
+    import importlib.util
+
+    loader = app / ".pipeline" / "loader" / "context_pack.py"
+    spec = importlib.util.spec_from_file_location("installed_context_pack", loader)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
     for workflow in ("jira-story", "jira-epic"):
-        subprocess.run(
-            [
-                "python3",
-                str(loader),
-                "--workflow",
-                workflow,
-                "--step",
-                "architect-agent",
-                "--slug",
-                f"try-{workflow}",
-            ],
-            cwd=app,
-            check=True,
-            capture_output=True,
-            text=True,
+        assert (
+            module.main(
+                [
+                    "--workflow",
+                    workflow,
+                    "--step",
+                    "architect-agent",
+                    "--slug",
+                    f"try-{workflow}",
+                    "--repo-root",
+                    str(app),
+                ]
+            )
+            == 0
         )
         pack = json.loads(
             (app / "features" / f"try-{workflow}" / "context-pack.json").read_text()
