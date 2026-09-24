@@ -8,7 +8,8 @@ Clone this repository, then install `.pipeline` into any customer project
 
 The repo is grouped by role: two **modes** (`kit/`, `orchestrator/`),
 **extensions** for new workflows in either mode, and **capabilities**
-(plugins, knowledge, observability, eval, feature flags).
+(plugins, knowledge, observability, eval, feature flags, and the optional
+`assess` package).
 
 **Documentation site (local):** [website/](./website/) — what the kit is,
 install, capabilities, plugins, knowledge, observability, and CLI.
@@ -76,6 +77,14 @@ inherited. Kit mode stays the default. Associates add extra workflows with
 `pipeline-kit workflows --scaffold NAME` (orchestrator only).
 Copy-ready examples (security review, CI audit, dependency audit,
 accessibility review): [`extensions/orchestrator/`](./extensions/orchestrator/).
+
+Optional **assessment** is a separate package, the same kind of extra as
+orchestrator. Install it with `uv tool install -e ".[assess]"` and an
+`assess` license. `pipeline-kit scan` then writes `features/assessment/`
+from the Graphify graph. It does not call a model. In chat, the shipped
+`repo-assessment` workflow fills rule, skill, and agent drafts from the
+templates in `.pipeline/skills/repo-assessment/assets/`. Details:
+[CUSTOMER-GUIDE.md](./CUSTOMER-GUIDE.md).
 
 Before each orchestrator agent, a decider chooses the Cursor model. `jev` (default) asks TypeSafe with a shortlist (`models.candidates`), not the full catalog. `fixed` skips that call. Planning and review prefer Opus or GPT; implementation prefers Composer. Add a model as an object in `candidates`, or as a string plus `models.cards` — not both. A pin skips Jev for one step:
 

@@ -18,7 +18,7 @@ ENV_LICENSE = "PIPELINE_KIT_LICENSE"
 ENV_SIGNING_KEY = "PIPELINE_KIT_LICENSE_SIGNING_KEY"
 EXIT_LICENSE = 73
 
-FEATURES = ("orchestrator", "jira", "governance", "evidence")
+FEATURES = ("orchestrator", "jira", "governance", "evidence", "assess")
 JIRA_WORKFLOWS = frozenset({"jira-story", "jira-epic", "jira-bug"})
 GOVERNANCE_WORKFLOWS = frozenset(
     {

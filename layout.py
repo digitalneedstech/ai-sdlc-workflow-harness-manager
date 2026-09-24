@@ -9,7 +9,6 @@ finder so public imports stay the same:
 * ``pipeline_features``
 * ``pipeline_observability``
 * ``pipeline_eval``
-* ``pipeline_scan``
 * ``pipeline_orchestrator``
 """
 
@@ -27,7 +26,6 @@ SOURCE_PACKAGES = {
     "pipeline_features": ROOT / "capabilities" / "feature_flags",
     "pipeline_observability": ROOT / "capabilities" / "observability",
     "pipeline_eval": ROOT / "capabilities" / "eval",
-    "pipeline_scan": ROOT / "capabilities" / "scan",
     "pipeline_orchestrator": ROOT / "orchestrator",
 }
 

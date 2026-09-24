@@ -20,12 +20,16 @@ Do not run `.pipeline/loader/load_workflow.py`. That file is not installed.
 The chat message does **not** reach `pipeline-kit run` by itself. You must
 persist it, then tell the user to run the CLI.
 
-If the user asks which skills, sub-agents, workflows, rules, or hooks to add
-for this repo, stop the run path. Run `pipeline-kit scan` when
-`features/pack-scan/prompt.md` is missing. Read that file and
-`features/pack-scan/context.md`, then answer in chat with those five lists.
-Do not write `request.md` for that ask. If scan says the graph is missing,
-relay its recovery line.
+If the user asks to assess this repo, or which skills, agents, workflows,
+rules, or hooks to add, stop the run path. Follow
+`.pipeline/skills/repo-assessment/SKILL.md` when that file is installed.
+Otherwise run `pipeline-kit scan --no-bootstrap`, then follow
+`features/assessment/prompt.md`. That prompt writes the rule, skill,
+agent, workflow, and hook bodies under `features/assessment/proposed/`
+from the answers and the code. Scan does not write those bodies.
+Do not copy those drafts into `.cursor/` or `.pipeline/`. Do not write
+`request.md` for that ask. If scan says the graph is missing, relay its
+recovery line.
 
 1. Invent a kebab slug from the ask (`add a line in AGENTS.md` → `agents-md-line`).
 2. Write the user's message **verbatim** to `features/{slug}/request.md`.

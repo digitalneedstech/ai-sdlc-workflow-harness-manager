@@ -17,7 +17,7 @@ The CLI is shared. The **project** is one of [two kits](/docs/capabilities/modes
 | `uninstall [project]` | Remove managed project files. `--user` for the home pack |
 | `doctor [project]` | Check Python, pack, config, loader, marker, and optional IDE adapter |
 | `workflows [project]` | List workflows from the active project or user pack. `--scaffold NAME` is orchestrator-only |
-| `scan [project]` | Write `features/pack-scan/context.md` and `prompt.md` from `graphify-out/graph.json` and the installed pack. `--out DIR`. Does not call a model or change the pack. Requires `knowledge extract` first |
+| `scan [project]` | Assess the repo from `graphify-out/graph.json`. Requires the `assess` package (`uv tool install -e ".[assess]"`) and an `assess` license. Writes `features/assessment/` (report, plan, answers, `prompt.md`). Does not write rule, skill, or agent bodies. `--yes`, `--no-bootstrap`, `--json`, `--apply`, `--dry-run`. Does not call a model |
 
 `--ide` is `cursor`, `claude-code`, `github`, or `none`. `--mode` is `kit` (default) or `orchestrator`.
 

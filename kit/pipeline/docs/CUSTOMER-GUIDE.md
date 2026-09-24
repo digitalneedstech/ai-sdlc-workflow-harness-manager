@@ -266,7 +266,7 @@ Sign-off gates do not ask the decider. Full examples:
 | `pipeline-kit uninstall --user` | Remove managed user files |
 | `pipeline-kit knowledge init [project]` | Opt-in: create `test-knowledge/` and set `test_design.enabled` |
 | `pipeline-kit knowledge extract [project]` | Run official `graphify extract . --code-only` (no homemade graph) |
-| `pipeline-kit scan [project]` | Write a pack-gap prompt from `graphify-out/graph.json`. Does not call a model or change the pack |
+| `pipeline-kit scan [project]` | Assess the repo. Requires the `assess` package and an `assess` license. See Assessment below. |
 | `pipeline-kit knowledge status [project]` | Graphify CLI and `graphify-out/graph.json` |
 | `pipeline-kit plugins list` | List Graphify / Archify (observability uses `obs status`) |
 | `pipeline-kit plugins install graphify [project]` | Register the official Graphify IDE skill |
@@ -695,6 +695,22 @@ not commit those. Commit `features/` only if you want specs in git.
 | `.pipeline/rules/*.mdc` | Durable coding standards. They do **not** auto-apply in Cursor (not under `.cursor/rules`). Mention a rule in `AGENTS.md` or on a step allowlist. |
 | Hooks | Policy guardrails ship in `.pipeline/hooks/` (sibling of `hooks/obs/`). `init --ide cursor` or `--ide claude-code` merges them into the IDE hook file without replacing existing entries. Agent-run observability stays opt-in via `pipeline-kit obs install`. |
 | New workflow | See `.pipeline/README.md` (“How to add a workflow”). |
+
+---
+
+## Assessment (optional package)
+
+`pipeline-kit scan` ships as its own package, installed the same way as the orchestrator extra. `pipeline-kit init` does not include it.
+
+```bash
+uv tool install -e ".[assess]"
+```
+
+The license must include the `assess` area. Build the graph first with `pipeline-kit knowledge extract`.
+
+Scan writes `features/assessment/` (the report, the plan, `answers.md`, and `prompt.md`). On a terminal it asks any kickstarter that is still blank. It does not call a model, and it does not write rule, skill, or agent bodies.
+
+In chat, ask to assess this repo. The shipped `repo-assessment` workflow follows `features/assessment/prompt.md` and fills each draft from the templates in `.pipeline/skills/repo-assessment/assets/`. Those drafts stay in `features/assessment/proposed/` until you copy one into `.cursor/` or `.pipeline/`.
 
 ---
 

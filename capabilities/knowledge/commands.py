@@ -9,8 +9,10 @@ from knowledge.const import INSTALL_HINT, RECOVERY
 from knowledge.graphify import (
     GraphifyError,
     extract_graph,
+    graph_freshness,
     graphify_status,
     register_skill as register_graphify_skill,
+    update_graph,
 )
 from knowledge.overlay import (
     OverlayError,
@@ -51,9 +53,9 @@ def cmd_init(project: Path, *, register_skill: bool = False, ide: str = "cursor"
     return 0
 
 
-def cmd_extract(project: Path, *, force: bool = False) -> int:
+def cmd_extract(project: Path, *, force: bool = False, update: bool = False) -> int:
     try:
-        path = extract_graph(project, force=force)
+        path = update_graph(project, force=force) if update else extract_graph(project, force=force)
     except GraphifyError as exc:
         print(str(exc), file=sys.stderr)
         print(exc.recovery, file=sys.stderr)
@@ -72,7 +74,15 @@ def cmd_status(project: Path) -> int:
         print(f"executable: {cli['executable']}")
     if cli["version"]:
         print(f"version: {cli['version']}")
+        print(f"supported: {str(bool(cli.get('supported'))).lower()}")
     print(f"graphify-out/graph.json: {'present' if overlay['graph_present'] else 'absent'}")
+    print(f"freshness: {overlay.get('graph_freshness', 'absent')}")
+    fresh = graph_freshness(project)
+    if fresh["state"] == "stale":
+        print(
+            f"stale: {fresh['missing']} missing, {fresh['changed']} changed. "
+            "Run: pipeline-kit knowledge extract --update"
+        )
     print(f"overlay: {'present' if overlay['present'] else 'absent'}")
     print(f"test_design.enabled: {str(overlay['test_design_enabled']).lower()}")
     if cli["state"] == "missing":

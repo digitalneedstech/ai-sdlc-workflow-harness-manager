@@ -19,7 +19,10 @@ from pipeline_plugins.archify import (
 )
 from pipeline_plugins.graphify import (
     INSTALL_HINT as GRAPHIFY_HINT,
+    graph_freshness,
     graphify_status,
+    hook_status,
+    install_hook,
     register_skill as register_graphify_skill,
     uninstall_skill as uninstall_graphify_skill,
 )
@@ -28,7 +31,7 @@ PLUGIN_NAMES = ("graphify", "archify")
 
 
 def cmd_list() -> int:
-    print("graphify\toptional\tQA knowledge graph (official CLI)")
+    print("graphify\toptional\tQA knowledge graph (official CLI). Used by scan and test design")
     print(
         f"archify\toptional\tArchitect diagrams (Agent Skill, pinned {PINNED_VERSION})"
     )
@@ -43,6 +46,7 @@ def cmd_install(
     ide: str = "cursor",
     scope: str = "project",
     home: Path | None = None,
+    hook: bool = False,
 ) -> int:
     if name == "graphify":
         status = graphify_status()
@@ -50,6 +54,11 @@ def cmd_install(
         registered = register_graphify_skill(project, ide=ide)
         if registered:
             print(f"registered Graphify skill: {registered}")
+            if hook:
+                if install_hook(project):
+                    print("graphify hook: installed")
+                else:
+                    print("graphify hook: not installed. Run: graphify hook install", file=sys.stderr)
             return 0
         print(
             "Graphify skill not registered. Install Graphify, then retry.\n"
@@ -111,6 +120,12 @@ def cmd_status(
                 print(f"executable: {status['executable']}")
             if status["version"]:
                 print(f"version: {status['version']}")
+                print(f"supported: {str(bool(status.get('supported'))).lower()}")
+            fresh = graph_freshness(project)
+            print(f"freshness: {fresh['state']}")
+            if fresh["state"] == "stale":
+                print(f"stale: {fresh['missing']} missing, {fresh['changed']} changed")
+            print(f"hook: {hook_status(project)}")
             if status["recovery"]:
                 print(status["recovery"])
             continue

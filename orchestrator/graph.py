@@ -141,6 +141,10 @@ def ask() -> WorkflowSpec:
     return WorkflowSpec(name="ask", nodes=[])
 
 
+def repo_assessment() -> WorkflowSpec:
+    return WorkflowSpec(name="repo-assessment", nodes=[])
+
+
 def test_knowledge_bootstrap() -> WorkflowSpec:
     return WorkflowSpec(
         name="test-knowledge-bootstrap",
@@ -156,6 +160,7 @@ BUILTIN: dict[str, WorkflowSpec] = {
         jira_epic(),
         jira_bug(),
         ask(),
+        repo_assessment(),
         test_knowledge_bootstrap(),
     )
 }

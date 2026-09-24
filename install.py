@@ -978,14 +978,23 @@ def cli_main(argv: list[str] | None = None) -> int:
 
     scan_parser = commands.add_parser(
         "scan",
-        help="write a pack-gap prompt from the Graphify graph (no model call)",
+        help="assess a repo from its Graphify graph (pipeline-kit-assess, license: assess)",
     )
     scan_parser.add_argument("project", nargs="?", default=".")
     scan_parser.add_argument(
         "--out",
         default="",
-        help="directory for context.md and prompt.md (default: features/pack-scan)",
+        help="directory for the assessment (default: features/assessment)",
     )
+    scan_parser.add_argument("--yes", action="store_true", help="accept setup prompts in a terminal")
+    scan_parser.add_argument(
+        "--no-bootstrap",
+        action="store_true",
+        help="print setup steps and exit instead of installing Graphify or the pack",
+    )
+    scan_parser.add_argument("--json", action="store_true", help="print assessment.json on stdout")
+    scan_parser.add_argument("--apply", default="", help="comma-separated recommendation ids to apply")
+    scan_parser.add_argument("--dry-run", action="store_true", help="show apply changes without writing them")
 
     run_parser = commands.add_parser("run", help="run a workflow with the code orchestrator")
     run_parser.add_argument("project", nargs="?", default=".")
@@ -1049,6 +1058,11 @@ def cli_main(argv: list[str] | None = None) -> int:
     )
     k_extract.add_argument("project", nargs="?", default=".")
     k_extract.add_argument("--force", action="store_true")
+    k_extract.add_argument(
+        "--update",
+        action="store_true",
+        help="incremental graphify update (no model) instead of a full extract",
+    )
     k_status = knowledge_commands.add_parser("status", help="Graphify CLI and graphify-out status")
     k_status.add_argument("project", nargs="?", default=".")
     k_validate = knowledge_commands.add_parser(
@@ -1100,6 +1114,11 @@ def cli_main(argv: list[str] | None = None) -> int:
         default="cursor",
     )
     p_install.add_argument("--scope", choices=("project", "user"), default="project")
+    p_install.add_argument(
+        "--hook",
+        action="store_true",
+        help="after Graphify registers, install its commit hook",
+    )
     p_install.add_argument("--home", default="", help=argparse.SUPPRESS)
     p_status = plugins_commands.add_parser(
         "status",
@@ -1318,10 +1337,30 @@ def cli_main(argv: list[str] | None = None) -> int:
         return doctor(target=project, user=args.user, ide=args.ide, home=home)
     if args.command == "scan":
         _ensure_pkg_path()
-        from pipeline_scan.commands import cmd_scan
-
-        out = Path(args.out).expanduser() if args.out else None
-        return cmd_scan(project, out=out)
+        assess = HERE / "packages" / "pipeline-kit-assess"
+        if assess.is_dir() and str(assess) not in sys.path:
+            sys.path.insert(0, str(assess))
+        blocked = _require_license("assess")
+        if blocked:
+            return blocked
+        try:
+            from pipeline_assess.commands import cmd_scan
+        except ImportError:
+            print(
+                'pipeline-kit-assess is not installed. Run: uv tool install -e ".[assess]"',
+                file=sys.stderr,
+            )
+            return 1
+        out = Path(args.out).expanduser() if getattr(args, "out", "") else None
+        return cmd_scan(
+            project,
+            out=out,
+            yes=bool(getattr(args, "yes", False)),
+            no_bootstrap=bool(getattr(args, "no_bootstrap", False)),
+            as_json=bool(getattr(args, "json", False)),
+            apply=getattr(args, "apply", "") or "",
+            dry_run=bool(getattr(args, "dry_run", False)),
+        )
     if args.command == "workflows":
         if getattr(args, "scaffold", "") or "":
             blocked = _require_license("orchestrator")
@@ -1399,7 +1438,7 @@ def cli_main(argv: list[str] | None = None) -> int:
                 ide=args.ide,
             )
         if args.knowledge_command == "extract":
-            return cmd_extract(project, force=args.force)
+            return cmd_extract(project, force=args.force, update=bool(getattr(args, "update", False)))
         if args.knowledge_command == "status":
             return cmd_status(project)
         if args.knowledge_command == "validate":
@@ -1430,6 +1469,7 @@ def cli_main(argv: list[str] | None = None) -> int:
                 ide=ide,
                 scope=scope,
                 home=home,
+                hook=bool(getattr(args, "hook", False)),
             )
         if args.plugins_command == "status":
             return cmd_status(

@@ -86,6 +86,11 @@
       "chain": [],
       "skips": {}
     },
+    "repo-assessment": {
+      "source": "text",
+      "chain": [],
+      "skips": {}
+    },
     "test-knowledge-bootstrap": {
       "source": "text",
       "chain": [

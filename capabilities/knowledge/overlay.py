@@ -24,7 +24,7 @@ from knowledge.const import (
     KNOWLEDGE_DIR,
     SECRET_PATTERNS,
 )
-from knowledge.graphify import graph_exists, graph_json_path
+from knowledge.graphify import graph_exists, graph_freshness, graph_json_path
 
 
 class OverlayError(ValueError):
@@ -159,6 +159,10 @@ def refresh_manifest_graph(project: Path) -> None:
     target = graph_json_path(project)
     graph["sha256"] = _sha256(target) if target.is_file() else None
     graph["updated_at"] = _now()
+    fresh = graph_freshness(project)
+    graph["freshness"] = fresh["state"]
+    if fresh["state"] == "stale":
+        graph["stale"] = True
     _replace_json(path, manifest)
 
 
@@ -170,6 +174,7 @@ def overlay_status(project: Path) -> dict[str, Any]:
         "test_design_enabled": test_design_enabled(project),
         "graph_present": graph_exists(project),
         "graph_path": str(graph_json_path(project)),
+        "graph_freshness": graph_freshness(project)["state"] if graph_exists(project) else "absent",
     }
 
 

@@ -1,0 +1,13 @@
+{
+  "name": "workflow-name",
+  "context": {
+    "parent": {
+      "files": [
+        ".pipeline/skills/orchestration/SKILL.md",
+        ".pipeline/config.json",
+        ".pipeline/workflows/workflow-name.json"
+      ]
+    },
+    "steps": {}
+  }
+}

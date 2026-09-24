@@ -9,8 +9,10 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
-if str(ROOT) not in sys.path:
-    sys.path.insert(0, str(ROOT))
+ASSESS = ROOT / "packages" / "pipeline-kit-assess"
+for entry in (ROOT, ASSESS):
+    if str(entry) not in sys.path:
+        sys.path.insert(0, str(entry))
 
 from layout import install_source_importers
 

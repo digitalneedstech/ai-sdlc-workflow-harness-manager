@@ -31,7 +31,7 @@ def test_knowledge_package_never_imports_graphify():
         list((REPO / "capabilities" / "knowledge").glob("*.py"))
         + list((REPO / "capabilities" / "plugins").glob("*.py"))
         + list((REPO / "capabilities" / "feature_flags").glob("*.py"))
-        + list((REPO / "capabilities" / "scan").glob("*.py"))
+        + list((REPO / "packages" / "pipeline-kit-assess" / "pipeline_assess").glob("*.py"))
     ):
         assert banned.search(path.read_text(encoding="utf-8")) is None, path.name
 

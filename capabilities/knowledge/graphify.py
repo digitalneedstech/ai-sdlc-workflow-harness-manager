@@ -9,11 +9,13 @@ from pipeline_plugins.graphify import (
     RECOVERY,
     extract_graph,
     graph_exists,
+    graph_freshness,
     graph_json_path,
     graphify_executable,
     graphify_status,
     register_skill,
     uninstall_skill,
+    update_graph,
 )
 
 __all__ = [
@@ -25,9 +27,11 @@ __all__ = [
     "RECOVERY",
     "extract_graph",
     "graph_exists",
+    "graph_freshness",
     "graph_json_path",
     "graphify_executable",
     "graphify_status",
     "register_skill",
     "uninstall_skill",
+    "update_graph",
 ]
