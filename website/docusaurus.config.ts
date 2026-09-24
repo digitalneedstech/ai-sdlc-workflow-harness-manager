@@ -1,6 +1,7 @@
 import {themes as prismThemes} from 'prism-react-renderer';
 import type {Config} from '@docusaurus/types';
 import type * as Preset from '@docusaurus/preset-classic';
+import pkg from './package.json';
 
 const config: Config = {
   title: 'Pipeline Kit',
@@ -38,6 +39,8 @@ const config: Config = {
         indexBlog: false,
         docsRouteBasePath: '/docs',
         highlightSearchTermsOnTargetPage: true,
+        searchBarShortcut: true,
+        searchBarShortcutHint: true,
       },
     ],
   ],
@@ -62,7 +65,8 @@ const config: Config = {
     image: 'img/logo.svg',
     colorMode: {
       defaultMode: 'light',
-      respectPrefersColorScheme: true,
+      disableSwitch: true,
+      respectPrefersColorScheme: false,
     },
     docs: {
       sidebar: {
@@ -78,30 +82,9 @@ const config: Config = {
       },
       items: [
         {
-          type: 'docSidebar',
-          sidebarId: 'docs',
+          type: 'html',
           position: 'left',
-          label: 'Docs',
-        },
-        {
-          to: '/docs/getting-started/install-cli',
-          label: 'Install',
-          position: 'left',
-        },
-        {
-          to: '/docs/capabilities/modes',
-          label: 'Two kits',
-          position: 'left',
-        },
-        {
-          to: '/docs/capabilities/overview',
-          label: 'Capabilities',
-          position: 'left',
-        },
-        {
-          to: '/docs/reference/cli',
-          label: 'CLI',
-          position: 'left',
+          value: `<span class="pk-version">${pkg.version}</span>`,
         },
         {
           type: 'search',
@@ -110,45 +93,27 @@ const config: Config = {
       ],
     },
     footer: {
-      style: 'dark',
-      links: [
-        {
-          title: 'Start',
-          items: [
-            {label: 'What is Pipeline Kit', to: '/docs/intro/what-is-pipeline-kit'},
-            {label: 'Two kits', to: '/docs/capabilities/modes'},
-            {label: 'Install', to: '/docs/getting-started/install-cli'},
-            {label: 'First project', to: '/docs/getting-started/first-project'},
-          ],
-        },
-        {
-          title: 'Use',
-          items: [
-            {label: 'Capabilities', to: '/docs/capabilities/overview'},
-            {label: 'Two kits', to: '/docs/capabilities/modes'},
-            {label: 'Knowledge base', to: '/docs/capabilities/knowledge'},
-            {label: 'Plugins', to: '/docs/capabilities/plugins'},
-          ],
-        },
-        {
-          title: 'Reference',
-          items: [
-            {label: 'CLI', to: '/docs/reference/cli'},
-            {label: 'config.json', to: '/docs/reference/config'},
-            {label: 'Troubleshooting', to: '/docs/troubleshooting'},
-            {label: 'Maintainers', to: '/docs/maintainers/repo'},
-          ],
-        },
-      ],
-      copyright: `Pipeline Kit documentation. Preview locally with npm start.`,
+      style: 'light',
+      links: [],
+      copyright: `<div class="pk-foot">
+        <p class="pk-footer-version">${pkg.version} · Cursor · Claude Code · GitHub</p>
+        <div class="pk-footer-bar">
+          <span>Pipeline Kit documentation.</span>
+          <nav class="pk-footer-links">
+            <a href="/docs/reference/cli">CLI</a>
+            <a href="/docs/troubleshooting">Troubleshooting</a>
+            <a href="/docs/intro/how-it-works">How it works</a>
+          </nav>
+        </div>
+      </div>`,
     },
     prism: {
-      theme: prismThemes.github,
-      darkTheme: prismThemes.dracula,
+      theme: prismThemes.vsDark,
+      darkTheme: prismThemes.vsDark,
       additionalLanguages: ['bash', 'json', 'python'],
     },
     mermaid: {
-      theme: {light: 'neutral', dark: 'dark'},
+      theme: {light: 'neutral', dark: 'neutral'},
     },
   } satisfies Preset.ThemeConfig,
 };
